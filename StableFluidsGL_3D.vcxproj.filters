@@ -53,6 +53,9 @@
     <ClInclude Include="include\vendor\stb\stb_image.h">
       <Filter>Header Files\vendor</Filter>
     </ClInclude>
+    <ClInclude Include="include\mat3d.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\fluidsolver3d.cpp">

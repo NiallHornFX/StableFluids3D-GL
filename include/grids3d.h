@@ -4,38 +4,170 @@
 #include <iostream>
 #include <vector>
 
-#include "vec2.h"
-#include "rgb.h"
+#include "vec3d.h"
 
-class grid2_scalar
+// ABC Grid 3D Class to Implement. ABC is Responsible for Grid_Data Construction. 
+
+// Unlike 2D Implmentation - 
+// Grids are polymoprhic, Templated Type (only explicitly instanted types in source will be used)
+// All Getter MFuncs are const to avoid accidental member esp grid_data modification.
+// Index Functions static? Pass Size N as Paramter, oppose to using Instance Member Size. 
+
+// Grid3 Abstract Base Class. 
+template <class T>
+class grid3
 {
-friend class renderobject_2D_OGL; // Temp. 
+public:
+	grid3() = delete;
+	grid3(std::size_t x_s, std::size_t y_s, std::size_t z_s, std::size_t e_s);
+
+	virtual ~grid3();
+
+	// PVMFs to Override in grid3_[..] derivations. 
+	// Data Acess (1D, 3D) -
+	virtual void setdata(T data, int i) = 0; 
+	virtual void setdata(T data, int i, int j, int k) = 0;
+
+	virtual void adddata(T data, int i) = 0; 
+	virtual void adddata(T data, int i, int j, int k) = 0;
+
+	virtual T getdata(int i) const = 0;
+	virtual T getdata(int i, int j, int k) const = 0;
+
+	virtual void swap(grid3 *B) = 0; 
+	virtual void clear() = 0;
+
+	virtual void printinfo() const = 0;
+	virtual void printsize() const = 0;
+- 
+	virtual std::vector<T>* griddataptr_getter() const = 0;
+	virtual T* getdataarray() const = 0;
+
+	virtual void tranpose_gridata(std::vector<T>*ptr) = 0;
+
+	virtual int idx_3Dto1D(int i, int j, int k) const = 0;
+	virtual vec2<int> idx_1Dto3D(int k) const = 0;
+
+protected:
+
+	std::vector<T> *grid_data;
+	std::size_t x_size, y_size, z_size, edge_size, total_size;
+
+};
+
+// Scalar Grid 3 Class - 
+template <class T>
+class grid3_scalar : public grid3<T>
+{
+public:
+	grid3_scalar() = delete;
+	grid3_scalar(std::size_t x_s, std::size_t y_s, std::size_t z_s, std::size_t e_s);
+
+	virtual ~grid3_scalar();
+
+	// Data Acess (1D, 3D) -
+	virtual void setdata(T data, int i) override; 
+	virtual void setdata(T data, int i, int j, int k) override;
+
+	virtual void adddata(T data, int i) override;
+	virtual void adddata(T data, int i, int j, int k) override;
+
+	virtual T getdata(int i) const override;
+	virtual T getdata(int i, int j, int k) const override;
+
+	virtual void swap(grid3 *B) override;
+	virtual void clear() override;
+
+	virtual void printinfo() const override;
+	virtual void printsize() const override;
+	
+	virtual std::vector<T>* griddataptr_getter() const override;
+	virtual T* getdataarray() const override;
+
+	virtual void tranpose_gridata(std::vector<T>*ptr) override;
+
+	virtual int idx_3Dto1D(int i, int j, int k) override;
+	virtual vec2<int> idx_1Dto3D(int k) override;
+};
+
+// Vector 3 Grid Class - 
+template <class T>
+class grid3_vector : public grid3<T>
+{
+public:
+	grid3_vector() = delete;
+	grid3_vector(std::size_t x_s, std::size_t y_s, std::size_t z_s, std::size_t e_s);
+
+	virtual ~grid3_vector();
+
+	// Data Acess (1D, 3D) -
+	virtual void setdata(T data, int i) override;
+	virtual void setdata(T data, int i, int j, int k) override;
+	void setdata_x(T xx, int i);
+	void setdata_x(T xx, int i, int j, int k); 
+	void setdata_y(T yy, int i);
+	void setdata_y(T yy, int i, int j, int k); 
+
+	virtual void adddata(T data, int i) override;
+	virtual void adddata(T data, int i, int j, int k) override;
+	void adddata_x(T xx, int i);
+	void adddata_x(T xx, int i, int j, int k);
+	void adddata_y(T yy, int i);
+	void adddata_y(T yy, int i, int j, int k);
+
+	virtual T getdata(int i) const override;
+	virtual T getdata(int i, int j, int k) const override;
+	T getdata_x(int i);
+	T getdata_x(int i, int j, int k); 
+	T getdata_y(int i);
+	T getdata_y(int i, int j, int k); 
+
+	virtual void swap(grid3 *B) override;
+	virtual void clear() override;
+
+	virtual void printinfo() const override;
+	virtual void printsize() const override;
+
+	virtual std::vector<T>* griddataptr_getter() const override;
+	virtual T* getdataarray() const override;
+
+	virtual void tranpose_gridata(std::vector<T>*ptr) override;
+
+	virtual int idx_3Dto1D(int i, int j, int k) override;
+	virtual vec2<int> idx_1Dto3D(int k) override;
+};
+
+
+
+/*
+class grid3_scalar
+{
+friend class renderobject_3D_OGL; // Temp. 
 
 public:
-	grid2_scalar() = delete; 
-	grid2_scalar(int x_s, int y_s, int e_s, int idd, float spc);
+	grid3_scalar() = delete; 
+	grid3_scalar(int x_s, int y_s, int z_s, int e_s, int idd, float spc);
 
-	grid2_scalar(grid2_scalar &copy);
+	grid3_scalar(grid3_scalar &copy);
 
-	~grid2_scalar();
+	~grid3_scalar();
 
-	// Grid2 MFs - 
+	// Grid3 MFs - 
 
-	grid2_scalar& operator=(grid2_scalar &copy);
+	grid3_scalar& operator=(grid3_scalar &copy);
 
 	//Set/Get Data Acess - 
-	// 1D and 2D IDX overloads. 
 	void setdata(float data, int i);
-	void setdata(float data, int i, int j);
+	void setdata(float data, int i, int j, int k);
 
 	void adddata(float data, int i);
-	void adddata(float data, int i, int j);
+	void adddata(float data, int i, int j, int k);
 
 	float getdata(int i); // 1D Access
-	float getdata(int i, int j); 
+	float getdata(int i, int j, int k); 
 
 	// Swap Field Grid_Data With Another Field Passed By Pointer.
-	void swap(grid2_scalar *B);
+	void swap(grid3_scalar *B);
 
 	// Util MFs - 
 	void clear();
@@ -62,7 +194,7 @@ private:
 	// Size will be determined by Constructor call Dimensions and spacing. 
 	std::vector<float> *grid_data;
 
-	int x_size, y_size, edge_size, total_size; 
+	int x_size, y_size, z_size, edge_size, total_size; 
 
 	float grid_spacing;
 
@@ -145,42 +277,5 @@ private:
 
 };
 
-class grid2_img
-{
-public:
-
-	explicit grid2_img(const char *path, int x_s, int y_s, int idd); 
-	~grid2_img();
-
-	void setdata(RGB data, int i, int j); // Keep GridData Private, Acess through MFs. 
-	void setdata_R(float xx, int i, int j); // Set X Component Vec Only at ij 2D Index. 
-	void setdata_G(float yy, int i, int j); // Set Y Component Vec Only, at ij 2D Index.
-	void setdata_B(float yy, int i, int j); // Set Y Component Vec Only, at ij 2D Index.
-
-	RGB getdata(int i, int j); // Get vec2 data at ij 2D Index. 
-	float getdata_R(int i, int j); // Get vec2 float component data at ij 2d index
-	float getdata_G(int i, int j); // Get vec2 float component data at ij 2d index
-	float getdata_B(int i, int j); // Get vec2 float component data at ij 2d index
-
-	// Swap Field Grid_Data With Another Field Passed By Pointer.
-	void swap(grid2_img *B);
-
-	// Indexing - 
-	int idx_2Dto1D(int i, int j);
-	vec2<int> idx_1Dto2D(int k);
-
-	// Debug MFuncs.
-	void print_rawdata();
-
-private:
-
-	unsigned char *raw_data_bytes; // Currently Unsused. For Storing Pure Binary 8Bit RGB Data. 
-	std::string *raw_data; // Keep Raw Data on Heap Always Via Ptr Also.
-	std::vector<RGB> *grid_data;
-	int x_size;
-	int y_size;
-	int ID;
-	const char *img_path; 
-};
-
+*/
 #endif
