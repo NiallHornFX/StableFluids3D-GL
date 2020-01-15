@@ -1,12 +1,14 @@
 // Implementation of grids2 
 
-#include "grids2.h"
+#include "grids3d.h"
+#include "vec3d.h"
 
 #include <memory>
 #include <fstream>
 #include <string>
 #include <cassert>
 #include <omp.h> 
+
 
 extern short verbose; // Get Verbose Global from main. 
 
@@ -498,121 +500,34 @@ vec2<float>* grid2_vector::getdataarray()
 
 //----------------------------------------------------------------------\\
 
-/*
-// grid2_img Implementation - \\ WIP
-
-grid2_img::grid2_img(const char *path, int x_s, int y_s, int idd)
-	: x_size(x_s), y_size(y_s), ID(idd), img_path(path)
-{
-	// Size Should Be Grid Size, and thus PPM Image Size. 
-	int size_1D = x_size * y_size;
-
-	// Allocate String RawData Member Ptr - 
-	raw_data = new std::string();
-	raw_data->reserve(10000); // Force Max Reserve. 
-
-	// Temp Array (Before going to Grid_Data Vector) - 
-	int *temp_1d = new int[size_1D];
-
-	// Input File Stream - 
-	std::ifstream in_img(path, std::ios::binary); // In Binary Mode...
-
-	/* ISSUES WITH TRY/CATCH EXCEPTION ENABLED READING (EVEN WITH NO FAILBIT) NoExcept Thrown, no read occurs. 
-	// Enable Execeptions on ifstream obj Set Bitmask, Dont use Failbit for LineByLine Read- 
-	in_img.exceptions(std::ios::badbit);
-
-	// Catch Exceptions Throw By ifstream exeception paramters. 
-	try
-	{
-		std::string line;
-		in_img.open(path);
-		
-		if (in_img.is_open())
-		{
-			while (std::getline(in_img, line)) // Read In LineByLine.
-			{
-				// Do Parsing (Binary P6 PPM - P3 PPM ASCII) Operations...
-				// Write into Raw_Data String Member
-				raw_data->operator+= (line);
-				std::cout << line << "\n";
-			}	
-		}
-		
-		in_img.close();
-	}
-	catch (std::ios::failure err)
-	{
-		std::cerr << "ERROR::Grid2_img_" << ID << "_ERROR READING IAMGE::" << err.what() << "\n";
-		std::cerr << "ERROR::Grid2_img_" << ID << "_CONSTRUCTION NOT SUCESSFUL \n";
-	}
 
 
-	std::string line;
-	if (in_img.is_open())
-	{
-		int line_n = 0;
-		// Dont Want to Parse ASCII PPM Header , so Skip lines 0-2. 
-		while (std::getline(in_img, line)) // Read In LineByLine.
-		{
-			// Append Write into Raw_Data String Member
-			raw_data->operator+= (line);
-			line_n++;
-		}
-	}
-	in_img.close();
 
-	// Do Parsing (Binary P6 PPM - P3 PPM ASCII Decimal Values) Operations.
-	// Raw Data String Size / 3 (RGB) Should Match Img Grid Size, Bar the first 3 Line (9 Character) PPM Header.
-	// Parse Final ASCII String, to 1D Temp Array - 
 
-	for (int i = 0; i < size_1D; i++)
-	{
-		if (i > 9) // Ignore Header ASCII Values.
-		{
-			// Get rid of Negative ASCII (RGB) Values?.. Use Abs.
-			*(temp_1d + i) = std::abs(int(raw_data->at(i)));
-		}
-		else if (i <= 9) // Set Header Values to 0.
-		{
-			*(temp_1d + i) = 0;
-		}
 
-	}
 
-	// NOT RIGHT DUH 3 VALUES (RGB per PIXEL)... (Minus 9 Chars (First 3 lines of PPM Header))
-	// ((img_str - 9) / 3) == Size of Img N^N (And thus 1D Array). 
 
-	// Debug Print 1D Array.
-	
-	for (int i = 0; i < size_1D; i++) 
-	{
-		//if (i > 9) std::cout << *(temp_1d + i);
-		std::cout << temp_1d[i] << "\n";
-	}
 
-	// ARRAY AND STRING SIZE DO NOT MATCH...
-	std::cout << "\n";
-	std::cout << "1D ARRAY SIZE = " << size_1D << "  " << "STRING SIZE = " << raw_data->size() << std::endl;
-	// - 9 (PPM Header Chars) 3 Values per pixel (RGB) so String Size  - 9 ) / 3 should == the 1D Array Size (img dim ^2) 
-	if (((raw_data->size() - 9) / 3) == size_1D) std::cout << "IMAGE VALUES RGB to 1D ARRAY - SIZE - TRUE \n";
-	
-	// Still need to debug ifstream exceptions...
 
-	// DEBUG - Print Raw Data - 
-	//print_rawdata();
-}
 
-// Grid 2 Image Destructor - 
-grid2_img::~grid2_img()
-{
-	// DeAllocate Raw_Data and Grid_Data From Heap.
-	delete raw_data; raw_data = nullptr;
-	delete grid_data; grid_data = nullptr;
-}
 
-// Debug Function, Print Input Image File, Raw Data String. 
-void grid2_img::print_rawdata()
-{
-	std::cout << *raw_data << std::endl;
-}
-*/
+
+
+
+
+
+// Explicit Instations - (Defintion of Templated Classes is Sepreated into this source file).
+
+// Grid3 ABC
+template class grid3<float>;
+template class grid3<double>;
+template class grid3<vec3<float>>;
+template class grid3<vec3<double>>;
+
+// Grid3 Scalar
+template class grid3_scalar<float>;
+template class grid3_scalar<double>;
+
+// Grid3 Vector
+template class grid3_vector<vec3<float>>;
+template class grid3_vector<vec3<double>>;
