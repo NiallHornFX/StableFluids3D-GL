@@ -23,6 +23,7 @@ Get Rid of Verbose Notes for github push.
 
 #include "grids3d.h"
 #include "vec3d.h"
+#include "mat3d.h"
 #include "fluidobj3d.h"
 #include "fluidsolver3d.h"
 #include "rendercontext3d.h"
@@ -31,7 +32,7 @@ Get Rid of Verbose Notes for github push.
 // Macros - 
 
 #define GLMajor 4
-#define GLMinor 0 
+#define GLMinor 0
 
 #define DEBUG_MODE 0 
 #define USE_ASSERT 0
@@ -44,7 +45,7 @@ Get Rid of Verbose Notes for github push.
 short verbose = 0;
 double const PI = 3.14159265359; 
 
-int const sqr = 512; // Square Grid Size N (1-N)
+int const cube = 64; // Cube Grid Size N (1-N)
 int const edg = 2; // Total Edge Cells E (1 For each dim) (0 | N+1). N+E per dim.
 int const solve_steps = 1000; 
 float const timestep = 1.0f / 60.0f;  // dt = 0.0166f

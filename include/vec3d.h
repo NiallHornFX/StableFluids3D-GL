@@ -11,12 +11,14 @@ template <class T>
 class vec2
 {
 public:
-	vec3(T xx, T yy) : x(xx), y(yy) {}
-	vec3() : x(0), y(0), z(0) {}
-	~vec3() {}
+	vec2(T xx, T yy) : x(xx), y(yy) {}
+	vec2() : x(0), y(0) {}
+	~vec2() {}
 
 	T x, y; 
 };
+
+// Vec3 Interface Implmentation - 
 
 template <class T>
 class vec3
@@ -174,7 +176,7 @@ inline vec3<T>& vec3<T>::operator+=(const vec3 &b)
 template <class T>
 inline vec3<T>& vec3<T>::operator-=(T scalar)
 {
-	x -= scalar, y -= scalar;
+	x -= scalar, y -= scalar, z -= scalar;
 	return *this;
 }
 template <class T>
@@ -212,14 +214,14 @@ vec3<T>& vec3<T>::operator/=(const vec3 &b)
 
 // Degrees to Radians
 template <class T>
-static inline float vec3<T>::degtoRad(float deg)
+inline float vec3<T>::degtoRad(float deg)
 {
 	return (float)deg * (PI / 180.0f);
 }
 
 // Radians to Degrees 
 template <class T>
-static inline float vec3<T>::radtoDeg(float rad)
+inline float vec3<T>::radtoDeg(float rad)
 {
 	return (float)rad * (180.0f / pi);
 }
@@ -231,7 +233,7 @@ static inline float vec3<T>::radtoDeg(float rad)
 template <class T>
 inline vec3<T>& operator* (float mult, vec3<T> &vec)
 {
-	vec.x *= mult, vec.y *= mult vec.z *= mult;
+	vec.x *= mult, vec.y *= mult, vec.z *= mult;
 	return vec; 
 }
 
