@@ -24,10 +24,12 @@ Get Rid of Verbose Notes for github push.
 #include "grids3d.h"
 #include "vec3d.h"
 #include "mat3d.h"
+/*
 #include "fluidobj3d.h"
 #include "fluidsolver3d.h"
 #include "rendercontext3d.h"
 #include "renderobject3d.h"
+*/
 
 // Macros - 
 
@@ -60,6 +62,11 @@ Inputs are handled within FluidSolver SolveStep or Embdedded RenderObject (withi
 
 int main()
 {
+	
+	grid3_scalar<float> test(cube, cube, cube, edg);
+	auto ptr = test.griddataptr_getter();
+
+	/*
 	// Create Render Context For OpenGL Context With Window Setup (in main thread). Window Dimensions Incl Edge Cell/Pixels. 
 	render_context_OGL render_c (sqr + edg, sqr + edg, short(GLMajor), short(GLMinor)); 
 	
@@ -103,6 +110,7 @@ int main()
 
 	// Call Solve Step Loop to start simulation and rendering - 
 	test_fluidsolver.solve_step(true, false, false, 0.001f, 0.001f, 10, 8, solve_steps);
+	*/
 
 	return 0;
 }

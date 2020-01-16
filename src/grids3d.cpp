@@ -575,17 +575,9 @@ void grid3<T>::swap(const grid3<T> *B)
 	// Check Grid_Data Element Type Sizes Match -
 	assert(sizeof(this->grid_data->at(0)) == sizeof(B->grid_data->at(0)));
 	// Swap grid_data vectors. 
-	this->grid_data->swap(*(dc->grid_data));
+	this->grid_data->swap(*(B->grid_data));
 }
 
-template <class T>
-void grid3<T>::clear()
-{
-	for (std::size_t i = 0; i < total_size; i++)
-	{
-		(*grid_data)[i] = T(0);
-	}
-}
 template <class T>
 std::size_t grid3<T>::get_edgesize() const
 {
@@ -639,10 +631,14 @@ vec3<int> grid3<T>::idx_1Dto3D(int i) const
 
 // Grid3_Scalar Implmentation \\
 
+// grid3_scalar shares most functionality with base grid3 class, apart from implmeneting pure virtual MFs. 
+
+// Note: explicit use's of this-> due to C3861 from Dependemt Base Class Template <T> Members. (No Two Phase Name Lookup)
+
 // Inilzation of Base grid3 Class Constructor. No Grid3_Scalar Specfic Members to initalize.
 template <class T>
 grid3_scalar<T>::grid3_scalar<T>(std::size_t x_s, std::size_t y_s, std::size_t z_s, std::size_t e_s)
-	: grid3(x_s, y_s, z_s, e_s) {}
+	: grid3<T>(x_s, y_s, z_s, e_s) {}
 
 template <class T>
 grid3_scalar<T>::~grid3_scalar()
@@ -650,25 +646,29 @@ grid3_scalar<T>::~grid3_scalar()
 	// Grid Data Dealloc by ABC Destructor. 
 }
 
+// Pure Virtual MFs Implementation - 
 
 template <class T>
-void grid3<T>::printinfo() const
+void grid3_scalar<T>::clear() 
 {
-	std::cout << "DEBUG::Grid 2D Scalar " << ID << " Info BEGIN - \n";
-	std::cout << "Grid Cell Count = " << total_size << "\n";
-	std::cout << "Grid X Row Size = " << x_size << "\n";
-	std::cout << "Grid Y Row Size = " << y_size << "\n";
-	std::cout << "Grid Edge Cell Size = " << edge_size << "\n";
-	std::cout << "DEBUG::Grid 2D Scalar " << ID << " Info END. \n \n";
+	for (std::size_t i = 0; i < this->total_size; i++)
+	{
+		(*this->grid_data)[i] = (T) 0;
+	}
 }
 
-
-
-
-
+template <class T>
+void grid3_scalar<T>::printinfo() const
+{
+	std::cout << "DEBUG::Grid 2D Scalar " << " Info BEGIN - \n";
+	std::cout << "Grid Cell Count = " << this->total_size << "\n";
+	std::cout << "Grid X Row Size = " << this->x_size << "\n";
+	std::cout << "Grid Y Row Size = " << this->y_size << "\n";
+	std::cout << "Grid Edge Cell Size = " << this->edge_size << "\n";
+	std::cout << "DEBUG::Grid 2D Scalar " << " Info END. \n \n";
+}
 
 //----------------------------------------------------------------------\\
-/*
 
 // Explicit Instations - (Defintion of Templated Classes is Sepreated into this source file).
 
@@ -682,6 +682,7 @@ template class grid3<vec3<double>>;
 template class grid3_scalar<float>;
 template class grid3_scalar<double>;
 
+/*
 // Grid3 Vector
 template class grid3_vector<vec3<float>>;
 template class grid3_vector<vec3<double>>;

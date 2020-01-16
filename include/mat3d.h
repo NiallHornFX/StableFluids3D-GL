@@ -24,7 +24,7 @@ public:
 
 	explicit matrix_4x4(T* val)
 	{
-		for (int i = 0; i < size; i++)
+		for (int i = 0; i < m_size; i++)
 		{
 			comp[i] = val[i];
 		}
@@ -40,7 +40,7 @@ public:
 	matrix_4x4& operator= (const matrix_4x4 &copy)
 	{
 		if (&copy == this) return *this;
-		memcpy(comp, copy.comp, (sizeof(T) * size));
+		memcpy(comp, copy.comp, (sizeof(T) * m_size));
 	}
 
 	~matrix_4x4() {};
@@ -111,7 +111,7 @@ inline void matrix_4x4<T>::print_mat()
 	{
 		for (int i = 0; i < 4; i++)
 		{
-			std::cout << comp[res.idx2Dto1D(i, j)] << "|";
+			std::cout << comp[idx2Dto1D(i, j)] << "|";
 		}
 		std::cout << "\n";
 	}

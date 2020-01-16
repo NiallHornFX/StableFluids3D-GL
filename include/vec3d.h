@@ -32,7 +32,7 @@ public:
 	vec3& operator= (const vec3 &copy)
 	{
 		if (&copy == this) return *this; 
-		this->x = copy.x, this->y = copy.y; this-> = copy.z;
+		this->x = copy.x, this->y = copy.y, this->z = copy.z;
 		return *this; 
 	}
 
@@ -223,7 +223,7 @@ inline float vec3<T>::degtoRad(float deg)
 template <class T>
 inline float vec3<T>::radtoDeg(float rad)
 {
-	return (float)rad * (180.0f / pi);
+	return (float)rad * (180.0f / PI);
 }
 
 

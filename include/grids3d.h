@@ -18,6 +18,7 @@
 template <class T>
 class grid3
 {
+	friend class renderobject_3D_OGL;
 public:
 	grid3() = delete;
 	grid3(std::size_t x_s, std::size_t y_s, std::size_t z_s, std::size_t e_s);
@@ -36,7 +37,7 @@ public:
 	virtual T getdata(int i, int j, int k) const;
 
 	virtual void swap(const grid3 *B);
-	virtual void clear();
+	virtual void clear() = 0;
 
 	virtual void printinfo() const = 0;
 	vec3<std::size_t> get_dimsize() const; 
@@ -55,42 +56,26 @@ protected:
 
 };
 
-// Scalar Grid 3 Class - 
+// Grid3 Scalar Class - 
+
 template <class T>
 class grid3_scalar : public grid3<T>
 {
+	friend class renderobject_3D_OGL;
 public:
 	grid3_scalar() = delete;
 	grid3_scalar(std::size_t x_s, std::size_t y_s, std::size_t z_s, std::size_t e_s);
 
 	virtual ~grid3_scalar() override;
 
-	// Data Acess (1D, 3D) -
-	virtual void setdata(T data, int i) override; 
-	virtual void setdata(T data, int i, int j, int k) override;
-
-	virtual void adddata(T data, int i) override;
-	virtual void adddata(T data, int i, int j, int k) override;
-
-	virtual T getdata(int i) const override;
-	virtual T getdata(int i, int j, int k) const override;
-
-	virtual void swap(grid3<T> *B) override;
-	virtual void clear() override;
-
-	virtual void printinfo() const override;
-	virtual void printsize() const override;
-	
-	virtual std::vector<T>* griddataptr_getter() const override;
-	virtual T* getdataarray() const override;
-
-	virtual void tranpose_gridata(std::vector<T>*ptr) override;
-
-	virtual int idx_3Dto1D(int i, int j, int k) override;
-	virtual vec3<int> idx_1Dto3D(int k) override;
+	virtual void clear() override; 
+	virtual void printinfo() const override; 
 };
 
-// Vector 3 Grid Class - 
+// WIP !!
+
+// Grid3 Vector Class - 
+
 template <class T>
 class grid3_vector : public grid3<T>
 {
@@ -122,24 +107,25 @@ public:
 	T getdata_y(int i);
 	T getdata_y(int i, int j, int k); 
 
-	virtual void swap(grid3 *B) override;
+	//virtual void swap(grid3 *B) override;
 	virtual void clear() override;
 
 	virtual void printinfo() const override;
-	virtual void printsize() const override;
 
-	virtual std::vector<T>* griddataptr_getter() const override;
-	virtual T* getdataarray() const override;
-
-	virtual void tranpose_gridata(std::vector<T>*ptr) override;
-
-	virtual int idx_3Dto1D(int i, int j, int k) override;
-	virtual vec2<int> idx_1Dto3D(int k) override;
+	////virtual std::vector<T>* griddataptr_getter() const override;
+	//virtual T* getdataarray() const override;
 };
 
 
 
-/*
+
+
+
+
+
+
+/* !! OLD NON POLYMORPHIC CODE !!
+
 class grid3_scalar
 {
 friend class renderobject_3D_OGL; // Temp. 
