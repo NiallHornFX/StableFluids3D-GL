@@ -12,6 +12,7 @@
 // Grids are polymoprhic, Templated Type (only explicitly instanted types in source will be used)
 // All Getter MFuncs are const to avoid accidental member esp grid_data modification.
 // Index Functions static? Pass Size N as Paramter, oppose to using Instance Member Size. 
+// ABC Can Implement Shared Beaviour MFs, that only differ in Type T, not grid specfic deffrent Beahviour. 
 
 // Grid3 Abstract Base Class. 
 template <class T>
@@ -35,11 +36,12 @@ public:
 	virtual T getdata(int i, int j, int k) const = 0;
 
 	virtual void swap(grid3 *B) = 0; 
+	virtual void swap(std::vector<T> *B) = 0;
 	virtual void clear() = 0;
 
 	virtual void printinfo() const = 0;
 	virtual void printsize() const = 0;
-- 
+ 
 	virtual std::vector<T>* griddataptr_getter() const = 0;
 	virtual T* getdataarray() const = 0;
 
@@ -63,7 +65,7 @@ public:
 	grid3_scalar() = delete;
 	grid3_scalar(std::size_t x_s, std::size_t y_s, std::size_t z_s, std::size_t e_s);
 
-	virtual ~grid3_scalar();
+	virtual ~grid3_scalar() override;
 
 	// Data Acess (1D, 3D) -
 	virtual void setdata(T data, int i) override; 
@@ -75,7 +77,7 @@ public:
 	virtual T getdata(int i) const override;
 	virtual T getdata(int i, int j, int k) const override;
 
-	virtual void swap(grid3 *B) override;
+	virtual void swap(grid3<T> *B) override;
 	virtual void clear() override;
 
 	virtual void printinfo() const override;
@@ -87,7 +89,7 @@ public:
 	virtual void tranpose_gridata(std::vector<T>*ptr) override;
 
 	virtual int idx_3Dto1D(int i, int j, int k) override;
-	virtual vec2<int> idx_1Dto3D(int k) override;
+	virtual vec3<int> idx_1Dto3D(int k) override;
 };
 
 // Vector 3 Grid Class - 

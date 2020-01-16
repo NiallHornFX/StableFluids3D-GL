@@ -7,6 +7,7 @@
 #include <fstream>
 #include <string>
 #include <cassert>
+
 #include <omp.h> 
 
 
@@ -16,6 +17,8 @@ extern short verbose; // Get Verbose Global from main.
 Seeing the copied code reminds me to make this more polymorhic on next round, ie derive
 vector grid from scalar etc. vec3 from vec2... 
 --*/
+
+/*
 
 // grid2_scalar Implementation - \\
 
@@ -497,24 +500,115 @@ vec2<float>* grid2_vector::getdataarray()
 {
 	return grid_data->data(); 
 }
+*/
 
 //----------------------------------------------------------------------\\
 
+// Grid 3 ABC Implmenetation - 
+
+template <class T>
+grid3<T>::grid3<T>(std::size_t x_s, std::size_t y_s, std::size_t z_s, std::size_t e_s)
+	: x_size(x_s), y_size(y_s), z_size(z_s), edge_size(e_s)
+{
+	total_size = (x_size + edge_size) * (y_size + edge_size) * (z_size + edge_size);
+
+	grid_data = new std::vector<T>(total_size, T());
+}
+
+// ABC Resonsible for Alloc and Dealloc of Grid_Data. 
+template <class T>
+grid3<T>::~grid3() 
+{
+	if (grid_data || grid_data != nullptr)
+	{
+		delete grid_data; grid_data = nullptr; 
+	}
+}
+
+//----------------------------------------------------------------------\\
+
+// Grid 3 Scalar Implmenetation \\
+
+// Inilzation of Base grid3 Class Constructor. No Grid3_Scalar Specfic Members to initalize.
+template <class T>
+grid3_scalar<T>::grid3_scalar<T>(std::size_t x_s, std::size_t y_s, std::size_t z_s, std::size_t e_s)
+	: grid3(x_s, y_s, z_s, e_s) {}
+
+template <class T>
+grid3_scalar<T>::~grid3_scalar()
+{
+	// Grid Data Dealloc by ABC Destructor. 
+}
+
+// Grid_Data - SETTERS \\
+
+template <class T>
+void grid3_scalar<T>::setdata(T data, int i)
+{
+	(*grid_data)[i] = data;
+}
+
+template <class T>
+void grid3_scalar<T>::setdata(T data, int i, int j, int k)
+{
+	int index = idx_3Dto1D(i, j, k);
+	(*grid_data)[index] = data; 
+}
+
+template <class T>
+void grid3_scalar<T>::adddata(T data, int i)
+{
+	(*grid_data)[i] += data;
+}
+
+template <class T>
+void grid3_scalar<T>::adddata(T data, int i, int j, int k)
+{
+	int index = idx_3Dto1D(i, j, k);
+	(*grid_data)[index] += data;
+}
+
+
+template <class T>
+T grid3_scalar<T>::getdata(int i, int j, int k) const
+{
+	return (*grid_data)[idx_3Dto1D(i, j, k)];
+}
+template <class T>
+T grid3_scalar<T>::getdata(int i) const
+{
+	return (*grid_data)[i];
+}
+
+template <class T>
+void grid3_scalar<T>::clear()
+{
+	for (std::size_t i = 0; i < total_size; i++)
+	{
+		(*grid_data)[i] = 0.0f;
+	}
+}
+
+// NOTE: Could just take std::vector<T> Ptr or Reference to avoid doing the grid3 abc downcast to derived grid_[..] class. 
+
+template <class T>
+void grid3_scalar<T>::swap(grid3<T> *B)
+{
+	// Check Grid_Data Sizes Match -  
+	assert(this->grid_data->size() == B->grid_data->size());
+	// Check Grid_Data Element Type Sizes Match -
+	assert(sizeof(this->grid_data->at(0)) == sizeof(B->grid_data->at(0)));
+
+	this->grid_data->swap(*(dc->grid_data));  
+}
 
 
 
 
 
 
-
-
-
-
-
-
-
-
-
+//----------------------------------------------------------------------\\
+/*
 
 // Explicit Instations - (Defintion of Templated Classes is Sepreated into this source file).
 
@@ -531,3 +625,4 @@ template class grid3_scalar<double>;
 // Grid3 Vector
 template class grid3_vector<vec3<float>>;
 template class grid3_vector<vec3<double>>;
+*/
