@@ -8,13 +8,8 @@
 #include "vec3d.h"
 #include "mat3d.h"
 
-// ABC Grid 3D Class to Implement. ABC is Responsible for Grid_Data Construction. 
-
-// Unlike 2D Implmentation - 
-// Grids are polymoprhic, Templated Type (only explicitly instanted types in source will be used)
-// All Getter MFuncs are const to avoid accidental member esp grid_data modification.
-// Index Functions static? Pass Size N as Paramter, oppose to using Instance Member Size. 
-// ABC Can Implement Shared Beaviour MFs, that only differ in Type T, not grid specfic deffrent Beahviour. 
+// ABC grid3<T> Class. To be part of derived grid3_scalar + grid3_vector implementations.
+// It is Responsible for Grid_Data<T> Construction. 
 
 // Grid3 Abstract Base Class. 
 template <class T>
@@ -82,6 +77,7 @@ public:
 template <class T>
 class grid3_vector : public grid3<T>
 {
+	friend class renderobject_3D_OGL;
 public:
 	grid3_vector() = delete;
 	grid3_vector(std::size_t x_s, std::size_t y_s, std::size_t z_s, std::size_t e_s);
