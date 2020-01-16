@@ -4,7 +4,9 @@
 #include <iostream>
 #include <vector>
 
+// Cannot Forward Decl due to Class TMP. 
 #include "vec3d.h"
+#include "mat3d.h"
 
 // ABC Grid 3D Class to Implement. ABC is Responsible for Grid_Data Construction. 
 
@@ -27,14 +29,14 @@ public:
 
 	// PVMFs to Override in grid3_[..] derivations. 
 	// Data Acess (1D, 3D) -
-	virtual void setdata(T data, int i);
-	virtual void setdata(T data, int i, int j, int k);
+	void setdata(T data, int i);
 
-	virtual void adddata(T data, int i);
-	virtual void adddata(T data, int i, int j, int k);
+	void setdata(T data, int i, int j, int k);
+	void adddata(T data, int i);
 
-	virtual T getdata(int i) const;
-	virtual T getdata(int i, int j, int k) const;
+	void adddata(T data, int i, int j, int k);
+	T getdata(int i) const;
+	T getdata(int i, int j, int k) const;
 
 	virtual void swap(const grid3 *B);
 	virtual void clear() = 0;
@@ -54,6 +56,8 @@ protected:
 	std::vector<T> *grid_data;
 	std::size_t x_size, y_size, z_size, edge_size, total_size;
 
+	matrix_4x4<float> GStoWS; // Local Grid Space to World Space Transformation Matrix. 
+
 };
 
 // Grid3 Scalar Class - 
@@ -72,7 +76,6 @@ public:
 	virtual void printinfo() const override; 
 };
 
-// WIP !!
 
 // Grid3 Vector Class - 
 
@@ -83,40 +86,34 @@ public:
 	grid3_vector() = delete;
 	grid3_vector(std::size_t x_s, std::size_t y_s, std::size_t z_s, std::size_t e_s);
 
-	virtual ~grid3_vector();
+	virtual ~grid3_vector() override;
 
 	// Data Acess (1D, 3D) -
-	virtual void setdata(T data, int i) override;
-	virtual void setdata(T data, int i, int j, int k) override;
 	void setdata_x(T xx, int i);
 	void setdata_x(T xx, int i, int j, int k); 
 	void setdata_y(T yy, int i);
 	void setdata_y(T yy, int i, int j, int k); 
+	void setdata_z(T zz, int i);
+	void setdata_z(T zz, int i, int j, int k);
 
-	virtual void adddata(T data, int i) override;
-	virtual void adddata(T data, int i, int j, int k) override;
 	void adddata_x(T xx, int i);
 	void adddata_x(T xx, int i, int j, int k);
 	void adddata_y(T yy, int i);
 	void adddata_y(T yy, int i, int j, int k);
+	void adddata_z(T zz, int i);
+	void adddata_z(T zz, int i, int j, int k);
 
-	virtual T getdata(int i) const override;
-	virtual T getdata(int i, int j, int k) const override;
-	T getdata_x(int i);
-	T getdata_x(int i, int j, int k); 
-	T getdata_y(int i);
-	T getdata_y(int i, int j, int k); 
+	T getdata_x(int i) const;
+	T getdata_x(int i, int j, int k) const; 
+	T getdata_y(int i) const;
+	T getdata_y(int i, int j, int k) const; 
+	T getdata_z(int i) const;
+	T getdata_z(int i, int j, int k) const;
 
-	//virtual void swap(grid3 *B) override;
 	virtual void clear() override;
-
 	virtual void printinfo() const override;
 
-	////virtual std::vector<T>* griddataptr_getter() const override;
-	//virtual T* getdataarray() const override;
 };
-
-
 
 
 

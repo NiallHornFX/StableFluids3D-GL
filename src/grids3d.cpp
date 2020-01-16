@@ -631,7 +631,7 @@ vec3<int> grid3<T>::idx_1Dto3D(int i) const
 
 // Grid3_Scalar Implmentation \\
 
-// grid3_scalar shares most functionality with base grid3 class, apart from implmeneting pure virtual MFs. 
+// grid3_scalar shares most implmentation with base grid3 class, apart from implmeneting pure virtual MFs. 
 
 // Note: explicit use's of this-> due to C3861 from Dependemt Base Class Template <T> Members. (No Two Phase Name Lookup)
 
@@ -643,7 +643,7 @@ grid3_scalar<T>::grid3_scalar<T>(std::size_t x_s, std::size_t y_s, std::size_t z
 template <class T>
 grid3_scalar<T>::~grid3_scalar()
 {
-	// Grid Data Dealloc by ABC Destructor. 
+	// Grid Data Dealloc by ABC grid3 Destructor. 
 }
 
 // Pure Virtual MFs Implementation - 
@@ -653,7 +653,7 @@ void grid3_scalar<T>::clear()
 {
 	for (std::size_t i = 0; i < this->total_size; i++)
 	{
-		(*this->grid_data)[i] = (T) 0;
+		(*(this->grid_data))[i] = (T) 0;
 	}
 }
 
@@ -667,6 +667,152 @@ void grid3_scalar<T>::printinfo() const
 	std::cout << "Grid Edge Cell Size = " << this->edge_size << "\n";
 	std::cout << "DEBUG::Grid 2D Scalar " << " Info END. \n \n";
 }
+
+//----------------------------------------------------------------------\\
+
+// Grid3_Vector Implmentation \\
+
+// grid3_vector shares some implementations with Base class, adds per component getter/setter MFs, aswell as defining Pure Virtaul MFs. 
+
+// Note: explicit use's of this-> due to C3861 from Dependemt Base Class Template <T> Members. (No Two Phase Name Lookup)
+
+// Inilzation of Base grid3 Class Constructor. No Grid3_Vector Specfic Members to initalize.
+template <class T>
+grid3_vector<T>::grid3_vector<T>(std::size_t x_s, std::size_t y_s, std::size_t z_s, std::size_t e_s)
+	: grid3<T>(x_s, y_s, z_s, e_s) {}
+
+template <class T>
+grid3_vector<T>::~grid3_vector()
+{
+	// Grid Data Dealloc by ABC grid3 Destructor. 
+}
+
+// Pure Virtual MFs Implementation - 
+
+template <class T>
+void grid3_vector<T>::clear()
+{
+	for (std::size_t i = 0; i < this->total_size; i++)
+	{
+		(*(this->grid_data))[i] = (T)0;
+	}
+}
+
+template <class T>
+void grid3_vector<T>::printinfo() const
+{
+	std::cout << "DEBUG::Grid 2D Vector " << " Info BEGIN - \n";
+	std::cout << "Grid Cell Count = " << this->total_size << "\n";
+	std::cout << "Grid X Row Size = " << this->x_size << "\n";
+	std::cout << "Grid Y Row Size = " << this->y_size << "\n";
+	std::cout << "Grid Edge Cell Size = " << this->edge_size << "\n";
+	std::cout << "DEBUG::Grid 2D Scalar " << " Info END. \n \n";
+}
+
+// grid3_vector Specfic, Component Wise Setters/Getters - 
+
+// Set X
+template <class T>
+void grid3_vector<T>::setdata_x(T xx, int i)
+{
+	(*(this->grid_data))[i].x = xx;
+}
+template <class T>
+void grid3_vector<T>::setdata_x(T xx, int i, int j, int k)
+{
+	(*(this->grid_data))[this->idx_3Dto1D(i, j, k)].x = xx;
+}
+// Set Y
+template <class T>
+void grid3_vector<T>::setdata_y(T yy, int i)
+{
+	(*(this->grid_data))[i].y = yy;
+}
+template <class T>
+void grid3_vector<T>::setdata_y(T yy, int i, int j, int k)
+{
+	(*(this->grid_data))[this->idx_3Dto1D(i, j, k)].y = yy;
+}
+// Set Z
+template <class T>
+void grid3_vector<T>::setdata_z(T zz, int i)
+{
+	(*(this->grid_data))[i].z = zz;
+}
+template <class T>
+void grid3_vector<T>::setdata_z(T zz, int i, int j, int k)
+{
+	(*(this->grid_data))[this->idx_3Dto1D(i, j, k)].z = zz;
+}
+
+// Add X
+template <class T>
+void grid3_vector<T>::adddata_x(T data, int i)
+{
+	(*(this->grid_data))[i].x += data;
+}
+template <class T>
+void grid3_vector<T>::adddata_x(T data, int i, int j, int k)
+{
+	(*(this->grid_data))[this->idx_3Dto1D(i,j,k)].x += data;
+}
+// Add Y
+template <class T>
+void grid3_vector<T>::adddata_y(T data, int i)
+{
+	(*(this->grid_data))[i].y += data;
+}
+template <class T>
+void grid3_vector<T>::adddata_y(T data, int i, int j, int k)
+{
+	(*(this->grid_data))[this->idx_3Dto1D(i, j, k)].y += data;
+}
+// Add Z
+template <class T>
+void grid3_vector<T>::adddata_z(T data, int i)
+{
+	(*(this->grid_data))[i].z += data;
+}
+template <class T>
+void grid3_vector<T>::adddata_z(T data, int i, int j, int k)
+{
+	(*(this->grid_data))[this->idx_3Dto1D(i, j, k)].z += data;
+}
+
+// Get X
+template <class T>
+T grid3_vector<T>::getdata_x(int i) const
+{
+	return (*(this->grid_data))[i].x;
+}
+template <class T>
+T grid3_vector<T>::getdata_x(int i, int j, int k) const
+{
+	return (*(this->grid_data))[this->idx_3Dto1D(i, j, k)].x;
+}
+// Get Y
+template <class T>
+T grid3_vector<T>::getdata_y(int i) const
+{
+	return (*(this->grid_data))[i].y;
+}
+template <class T>
+T grid3_vector<T>::getdata_y(int i, int j, int k) const
+{
+	return (*(this->grid_data))[this->idx_3Dto1D(i, j, k)].y;
+}
+// Get X
+template <class T>
+T grid3_vector<T>::getdata_z(int i) const
+{
+	return (*(this->grid_data))[i].z;
+}
+template <class T>
+T grid3_vector<T>::getdata_z(int i, int j, int k) const
+{
+	return (*(this->grid_data))[this->idx_3Dto1D(i, j, k)].z;
+}
+
 
 //----------------------------------------------------------------------\\
 

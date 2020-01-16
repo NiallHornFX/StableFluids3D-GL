@@ -13,7 +13,7 @@ template <class T>
 class matrix_4x4
 {
 public:
-	// Constructors 
+	// Ctors
 	matrix_4x4() { clear(); }
 
 	matrix_4x4(T aa, T ab, T ac, T ad, T ba, T bb, T bc, T bd, T ca, T cb, T cc, T cd, T da, T db, T dc, T dd)
@@ -47,8 +47,13 @@ public:
 
 	// Utils
 	inline void clear();
-	inline matrix_4x4& transpose();
 	inline void print_mat();
+
+	inline matrix_4x4& ident(); 
+	inline matrix_4x4& transpose();
+
+	static inline float degtoRad(float deg);
+	static inline float radtoDeg(float rad);
 
 	// Indexers
 	static inline int idx2Dto1D(int i, int j);
@@ -71,6 +76,10 @@ public:
 	inline matrix_4x4& operator/= (const matrix_4x4 &b);
 	inline matrix_4x4& operator/= (const T s);
 
+	// Transformation Operations - 
+	inline matrix_4x4& translate(const vec3<T> &tv);
+	inline matrix_4x4& rotate(const vec3<T> &axis, T angle);
+	inline matrix_4x4& scale(const vec3<T> &sv);
 
 	// Matrix Members - Default Inclass Initalized. 
 	const static std::size_t m_size = 16;
@@ -87,7 +96,28 @@ public:
 template <class T>
 inline void matrix_4x4<T>::clear()
 {
-	for (int i = 0; i < m_size; i++) { comp[i] = 0.0f; }
+	for (int i = 0; i < m_size; i++) { comp[i] = T(0); }
+}
+
+template <class T>
+inline matrix_4x4<T>& matrix_4x4<T>::ident()
+{
+	for (int j = 0; j < 4; j++)
+	{
+		for (int i = 0; i < 4; i++)
+		{
+			if (i == j)
+			{
+				comp[idx2Dto1D(i, j)] = (T)1;
+			}
+			else
+			{
+				comp[idx2Dto1D(i, j)] = (T)0;
+			}
+		}
+	}
+
+	return *this; 
 }
 
 template <class T>
@@ -107,6 +137,7 @@ inline matrix_4x4<T>& matrix_4x4<T>::transpose()
 template <class T>
 inline void matrix_4x4<T>::print_mat()
 {
+	std::cout << "DEBUG::MATRIX OUPUT BEGIN : \n";
 	for (int j = 0; j < 4; j++)
 	{
 		for (int i = 0; i < 4; i++)
@@ -115,6 +146,7 @@ inline void matrix_4x4<T>::print_mat()
 		}
 		std::cout << "\n";
 	}
+	std::cout << "DEBUG::MATRIX OUPUT END. \n";
 }
 
 // matrix_4x4 Math Operators \\
@@ -271,5 +303,22 @@ inline vec2<int> matrix_4x4<T>::idx1Dto2D(int i)
 	return vec2<int>(ii, jj);
 }
 
+
+// Matrix_4x4 Static MFs- 
+
+// Angle Conversion - Explcitlly uses <T> == float. 
+// Degrees to Radians
+template <class T>
+inline float matrix_4x4<T>::degtoRad(float deg)
+{
+	return (float)deg * (PI / 180.0f);
+}
+
+// Radians to Degrees 
+template <class T>
+inline float matrix_4x4<T>::radtoDeg(float rad)
+{
+	return (float)rad * (180.0f / PI);
+}
 
 #endif
