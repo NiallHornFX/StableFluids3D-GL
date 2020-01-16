@@ -256,7 +256,6 @@ inline matrix_4x4<T>& matrix_4x4<T>::operator*= (const matrix_4x4<T> &b)
 	}
 
 	return *this;
-
 }
 template <class T>
 inline matrix_4x4<T>& matrix_4x4<T>::operator*= (const T s)
