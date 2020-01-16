@@ -78,7 +78,7 @@ public:
 	T *start = comp; T *end = start + (m_size - 1); // Start/End Pointers. 
 };
 
-
+// ------------------------------------------------- \\
 
 // Templates/Inline MFs Implemenation \\
 

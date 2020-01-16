@@ -504,7 +504,7 @@ vec2<float>* grid2_vector::getdataarray()
 
 //----------------------------------------------------------------------\\
 
-// Grid 3 ABC Implmenetation - 
+// Grid3 ABC Implmentation \\ 
 
 template <class T>
 grid3<T>::grid3<T>(std::size_t x_s, std::size_t y_s, std::size_t z_s, std::size_t e_s)
@@ -525,9 +525,119 @@ grid3<T>::~grid3()
 	}
 }
 
+// Grid 3 ABC Virtual Default Implmenetation - 
+
+// Grid_Data - SETTERS \\
+
+template <class T>
+void grid3<T>::setdata(T data, int i)
+{
+	(*grid_data)[i] = data;
+}
+
+template <class T>
+void grid3<T>::setdata(T data, int i, int j, int k)
+{
+	int index = idx_3Dto1D(i, j, k);
+	(*grid_data)[index] = data;
+}
+
+template <class T>
+void grid3<T>::adddata(T data, int i)
+{
+	(*grid_data)[i] += data;
+}
+
+template <class T>
+void grid3<T>::adddata(T data, int i, int j, int k)
+{
+	int index = idx_3Dto1D(i, j, k);
+	(*grid_data)[index] += data;
+}
+
+template <class T>
+T grid3<T>::getdata(int i, int j, int k) const
+{
+	return (*grid_data)[idx_3Dto1D(i, j, k)];
+}
+template <class T>
+T grid3<T>::getdata(int i) const
+{
+	return (*grid_data)[i];
+}
+
+// NOTE: Could just take std::vector<T> Ptr or Reference to avoid doing the grid3 abc downcast to derived grid_[..] class. 
+template <class T>
+void grid3<T>::swap(const grid3<T> *B)
+{
+	// Check Grid_Data Sizes Match -  
+	assert(this->grid_data->size() == B->grid_data->size());
+	// Check Grid_Data Element Type Sizes Match -
+	assert(sizeof(this->grid_data->at(0)) == sizeof(B->grid_data->at(0)));
+	// Swap grid_data vectors. 
+	this->grid_data->swap(*(dc->grid_data));
+}
+
+template <class T>
+void grid3<T>::clear()
+{
+	for (std::size_t i = 0; i < total_size; i++)
+	{
+		(*grid_data)[i] = T(0);
+	}
+}
+template <class T>
+std::size_t grid3<T>::get_edgesize() const
+{
+	return edge_size; 
+}
+
+template <class T>
+vec3<std::size_t> grid3<T>::get_dimsize() const
+{
+	return vec3<std::size_t>(x_size, y_size, z_size);
+}
+
+// Grid Data Pointer / Data Array Pointer Getters - 
+
+// Returns grid_data (std::vector<T>) ptr, for external acess 
+// ! Use with caution
+template <class T>
+std::vector<T>* grid3<T>::griddataptr_getter() const
+{
+	return grid_data;
+}
+
+// Returns grid_data std::vector<T>::data() internal data array pointer, for external acess.
+// ! Use with caution
+template <class T>
+T* grid3<T>::getdataarray() const
+{
+	return grid_data->data();
+}
+
+// Indexers - 
+
+template <class T>
+int grid3<T>::idx_3Dto1D(int i, int j, int k) const
+{
+	return (int) i + (x_size + edge_size) * (j + (z_size + edge_size) * k);
+}
+
+template <class T>
+vec3<int> grid3<T>::idx_1Dto3D(int i) const
+{
+	int ii = i / ((y_size + edge_size) * (z_size + edge_size));
+	int jj = (i / (z_size + edge_size)) % (y_size + edge_size);
+	int kk = i % (z_size + edge_size);
+
+	return vec3<int>(ii, jj, kk);
+}
+
+
 //----------------------------------------------------------------------\\
 
-// Grid 3 Scalar Implmenetation \\
+// Grid3_Scalar Implmentation \\
 
 // Inilzation of Base grid3 Class Constructor. No Grid3_Scalar Specfic Members to initalize.
 template <class T>
@@ -540,66 +650,16 @@ grid3_scalar<T>::~grid3_scalar()
 	// Grid Data Dealloc by ABC Destructor. 
 }
 
-// Grid_Data - SETTERS \\
 
 template <class T>
-void grid3_scalar<T>::setdata(T data, int i)
+void grid3<T>::printinfo() const
 {
-	(*grid_data)[i] = data;
-}
-
-template <class T>
-void grid3_scalar<T>::setdata(T data, int i, int j, int k)
-{
-	int index = idx_3Dto1D(i, j, k);
-	(*grid_data)[index] = data; 
-}
-
-template <class T>
-void grid3_scalar<T>::adddata(T data, int i)
-{
-	(*grid_data)[i] += data;
-}
-
-template <class T>
-void grid3_scalar<T>::adddata(T data, int i, int j, int k)
-{
-	int index = idx_3Dto1D(i, j, k);
-	(*grid_data)[index] += data;
-}
-
-
-template <class T>
-T grid3_scalar<T>::getdata(int i, int j, int k) const
-{
-	return (*grid_data)[idx_3Dto1D(i, j, k)];
-}
-template <class T>
-T grid3_scalar<T>::getdata(int i) const
-{
-	return (*grid_data)[i];
-}
-
-template <class T>
-void grid3_scalar<T>::clear()
-{
-	for (std::size_t i = 0; i < total_size; i++)
-	{
-		(*grid_data)[i] = 0.0f;
-	}
-}
-
-// NOTE: Could just take std::vector<T> Ptr or Reference to avoid doing the grid3 abc downcast to derived grid_[..] class. 
-
-template <class T>
-void grid3_scalar<T>::swap(grid3<T> *B)
-{
-	// Check Grid_Data Sizes Match -  
-	assert(this->grid_data->size() == B->grid_data->size());
-	// Check Grid_Data Element Type Sizes Match -
-	assert(sizeof(this->grid_data->at(0)) == sizeof(B->grid_data->at(0)));
-
-	this->grid_data->swap(*(dc->grid_data));  
+	std::cout << "DEBUG::Grid 2D Scalar " << ID << " Info BEGIN - \n";
+	std::cout << "Grid Cell Count = " << total_size << "\n";
+	std::cout << "Grid X Row Size = " << x_size << "\n";
+	std::cout << "Grid Y Row Size = " << y_size << "\n";
+	std::cout << "Grid Edge Cell Size = " << edge_size << "\n";
+	std::cout << "DEBUG::Grid 2D Scalar " << ID << " Info END. \n \n";
 }
 
 

@@ -26,32 +26,30 @@ public:
 
 	// PVMFs to Override in grid3_[..] derivations. 
 	// Data Acess (1D, 3D) -
-	virtual void setdata(T data, int i) = 0; 
-	virtual void setdata(T data, int i, int j, int k) = 0;
+	virtual void setdata(T data, int i);
+	virtual void setdata(T data, int i, int j, int k);
 
-	virtual void adddata(T data, int i) = 0; 
-	virtual void adddata(T data, int i, int j, int k) = 0;
+	virtual void adddata(T data, int i);
+	virtual void adddata(T data, int i, int j, int k);
 
-	virtual T getdata(int i) const = 0;
-	virtual T getdata(int i, int j, int k) const = 0;
+	virtual T getdata(int i) const;
+	virtual T getdata(int i, int j, int k) const;
 
-	virtual void swap(grid3 *B) = 0; 
-	virtual void swap(std::vector<T> *B) = 0;
-	virtual void clear() = 0;
+	virtual void swap(const grid3 *B);
+	virtual void clear();
 
 	virtual void printinfo() const = 0;
-	virtual void printsize() const = 0;
+	vec3<std::size_t> get_dimsize() const; 
+	std::size_t get_edgesize() const; 
  
-	virtual std::vector<T>* griddataptr_getter() const = 0;
-	virtual T* getdataarray() const = 0;
+	virtual std::vector<T>* griddataptr_getter() const;
+	virtual T* getdataarray() const;
 
-	virtual void tranpose_gridata(std::vector<T>*ptr) = 0;
-
-	virtual int idx_3Dto1D(int i, int j, int k) const = 0;
-	virtual vec2<int> idx_1Dto3D(int k) const = 0;
+	// Non Virtual Indexers 
+	int idx_3Dto1D(int i, int j, int k) const;
+	vec3<int> idx_1Dto3D(int k) const;
 
 protected:
-
 	std::vector<T> *grid_data;
 	std::size_t x_size, y_size, z_size, edge_size, total_size;
 
