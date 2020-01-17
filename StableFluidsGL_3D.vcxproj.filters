@@ -12,6 +12,12 @@
     <Filter Include="Header Files\vendor">
       <UniqueIdentifier>{91bc48b7-5f10-42bc-84f6-acc42addc4fe}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\vendor\GLFW">
+      <UniqueIdentifier>{73039b38-34cd-4d94-a11e-07361965fe98}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\vendor\GLEW">
+      <UniqueIdentifier>{cc4b33aa-edef-4342-a6b0-113fc07664b5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\rendercontext3d.h">
@@ -32,29 +38,26 @@
     <ClInclude Include="include\grids3d.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\vendor\GLEW\eglew.h">
-      <Filter>Header Files\vendor</Filter>
-    </ClInclude>
-    <ClInclude Include="include\vendor\GLEW\glew.h">
-      <Filter>Header Files\vendor</Filter>
-    </ClInclude>
-    <ClInclude Include="include\vendor\GLFW\glfw3.h">
-      <Filter>Header Files\vendor</Filter>
-    </ClInclude>
-    <ClInclude Include="include\vendor\GLFW\glfw3native.h">
-      <Filter>Header Files\vendor</Filter>
-    </ClInclude>
-    <ClInclude Include="include\vendor\GLEW\glxew.h">
-      <Filter>Header Files\vendor</Filter>
-    </ClInclude>
-    <ClInclude Include="include\vendor\GLEW\wglew.h">
-      <Filter>Header Files\vendor</Filter>
-    </ClInclude>
-    <ClInclude Include="include\vendor\stb\stb_image.h">
-      <Filter>Header Files\vendor</Filter>
-    </ClInclude>
     <ClInclude Include="include\mat3d.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vendor\GLEW\eglew.h">
+      <Filter>Header Files\vendor\GLEW</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vendor\GLEW\glew.h">
+      <Filter>Header Files\vendor\GLEW</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vendor\GLEW\glxew.h">
+      <Filter>Header Files\vendor\GLEW</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vendor\GLEW\wglew.h">
+      <Filter>Header Files\vendor\GLEW</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vendor\GLFW\glfw3.h">
+      <Filter>Header Files\vendor\GLFW</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vendor\GLFW\glfw3native.h">
+      <Filter>Header Files\vendor\GLFW</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

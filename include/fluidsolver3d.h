@@ -154,7 +154,7 @@ protected:
 	void edge_bounds(grid2_scalar *grid);
 	void edge_bounds(grid2_vector *grid);
 
-	// Sphere/Circle Bounds - 
+	// Sphere/sphere Bounds - 
 	void sphere_bounds_set(float radius, float col_iso, const vec2<float> &offset);  // Set SphereBounds SDF Grid. 
 	void sphere_bounds_eval(grid2_scalar *grid, float col_iso);
 	void sphere_bounds_eval(grid2_vector *grid, float col_iso);

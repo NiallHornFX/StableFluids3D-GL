@@ -18,22 +18,29 @@ friend class renderobject_3d_OGL;
 using BYTE = unsigned char; 
 
 public:
-	fluidobj_3d(int x_size, int y_size, int edge_size, int idd, float spc);
+	fluidobj_3d(int x_size, int y_size, int z_size, int edge_size);
 	fluidobj_3d() = delete; 
 	~fluidobj_3d();
 
 	// Public MFuncs to be called from Fluidsolver to modifiy grids. 
-	void implicit_source(float dd, const vec3<float> &vv, const vec3<float> &offset, float rad);
 
-	void add_density(float dens, int i, int j);
-	void add_velocity(const vec3<float> &vel, int i, int j);
+	// Implicit Sphere Source To Source into Density and Velocity Grids (HardCodeed) 
+	void implicit_sphere_source(float dd, const vec3<float> &vv, const vec3<float> &offset, float rad);
+
+	// Implicit Sphere Source to Specfic Scalar Grid
+	void implicit_sphere_source(grid3_scalar<float> *grid, float quant, const vec3<float> &offset, float rad);
+	void implicit_sphere_source(grid3_vector<vec3<float>> *grid, const vec3<float> &quant, const vec3<float> &offset, float rad);
+
+	// For (Density, Velocity) Grid Specfic Cell MFs - 
+	void add_density(float d, int i, int j, int k);
+	void add_velocity(const vec3<float> &v, int i, int j, int k);
 
 	// Velocity Inital Condition/Overrides - 
 	void radial_vel(const vec3<float> &orig_offset, float speed); // Vel Override - Radial
 	void sink_vel(const vec3<float> &orig_offset, float speed); // Vel Override - Sink
 
 	// FORCES - 
-	void integrate_force(const vec3<float> &force, float dt, int i, int j); // Uniform Force - PerCell. 
+	void integrate_force(const vec3<float> &force, float dt, int i, int j, int k); // Uniform Force - PerCell. 
 	void radial_force(const vec3<float> &orig_offset, float strength, float dt); // Radial Force - Vel Grid
 
 	// UTILITYS -
@@ -68,9 +75,6 @@ private:
 	// Scalar Grid - Collide (Marker)
 	grid3_scalar<float> *col;
 
-	// Scalar Grid - Curl  
-	grid3_scalar<float> *curl;
-
 	// VECTOR GRIDS \\
 
 	// Vector Grid - Velocity
@@ -79,6 +83,7 @@ private:
 
 	// Vector Grid - (Vorticity Curl Gradient)
 	grid3_vector<vec3<float>> *vc;
+	grid3_vector<vec3<float>> *curl;
 
 	// DEBUG GRIDS \\ 
 

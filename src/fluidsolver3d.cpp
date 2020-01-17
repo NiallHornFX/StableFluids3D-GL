@@ -246,7 +246,7 @@ void fluidsolver_2::sphere_bounds_set(float radius, float col_iso, const vec2<fl
 	{
 		for (int i = 1; i <= N_dim; i++)
 		{
-			// Implicit Sphere/Circle Function: x^2 + y^2 - r . >= 0 <= Thresh == Surface. > Thresh = Exterior. < 0 = Interior. Cells. 
+			// Implicit Sphere/sphere Function: x^2 + y^2 - r . >= 0 <= Thresh == Surface. > Thresh = Exterior. < 0 = Interior. Cells. 
 			vec2<float> cell_gridSpace(float((i * h) - offset.x), float((j * h) - offset.y)); // Index to Grid Space 0-1N. 
 			float sphere_func = ((cell_gridSpace.x * cell_gridSpace.x) + (cell_gridSpace.y * cell_gridSpace.y)) - radius; // NoMoreSqrt.
 
@@ -271,7 +271,7 @@ void fluidsolver_2::sphere_bounds_eval(grid2_scalar *grid, float col_iso)
 	{
 		for (int i = 1; i <= N_dim; i++)
 		{
-			// Lookup Sphere/Circle SDF At CurCell i,j. 
+			// Lookup Sphere/sphere SDF At CurCell i,j. 
 			float sphere_func = spherebounds_sdf->getdata(i, j);
 			f2obj->col->setdata(0.0f, i, j); // Zero Out Prev Collison Cell Values. 
 
@@ -324,7 +324,7 @@ void fluidsolver_2::sphere_bounds_eval(grid2_vector *grid, float col_iso)
 	{
 		for (int i = 1; i <= N_dim; i++)
 		{
-			// Lookup Sphere/Circle SDF At CurCell i,j. 
+			// Lookup Sphere/sphere SDF At CurCell i,j. 
 			float sphere_func = spherebounds_sdf->getdata(i, j);
 
 			/*
