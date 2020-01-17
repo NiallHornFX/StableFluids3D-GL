@@ -27,21 +27,27 @@ public:
 	// Implicit Sphere Source To Source into Density and Velocity Grids (HardCodeed) 
 	void implicit_sphere_source(float dd, const vec3<float> &vv, const vec3<float> &offset, float rad);
 
+	/* ! TO IMPLEMENT
 	// Implicit Sphere Source to Specfic Scalar Grid
 	void implicit_sphere_source(grid3_scalar<float> *grid, float quant, const vec3<float> &offset, float rad);
 	void implicit_sphere_source(grid3_vector<vec3<float>> *grid, const vec3<float> &quant, const vec3<float> &offset, float rad);
+	*/
 
 	// For (Density, Velocity) Grid Specfic Cell MFs - 
 	void add_density(float d, int i, int j, int k);
 	void add_velocity(const vec3<float> &v, int i, int j, int k);
 
+	/* ! TO IMPLEMENT
 	// Velocity Inital Condition/Overrides - 
 	void radial_vel(const vec3<float> &orig_offset, float speed); // Vel Override - Radial
 	void sink_vel(const vec3<float> &orig_offset, float speed); // Vel Override - Sink
+	*/
 
 	// FORCES - 
 	void integrate_force(const vec3<float> &force, float dt, int i, int j, int k); // Uniform Force - PerCell. 
+	/* ! TO IMPLEMENT
 	void radial_force(const vec3<float> &orig_offset, float strength, float dt); // Radial Force - Vel Grid
+	*/
 
 	// UTILITYS -
 
@@ -52,9 +58,9 @@ public:
 	void print_info();
 	void writeto_txt(int frame); // DBG to view Vel grid values in ASCII. 
 
-private:
 	// Size Members (As Reference to All Grids Created Dimnensions)
 	std::size_t x_s, y_s, z_s, e_s, t_s; // X Size, Y Size, Z Size, Edge Size, Total Size. 
+private:
 
 	// SCALAR GRIDS \\
 

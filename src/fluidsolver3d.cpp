@@ -1,6 +1,5 @@
-// Implementation of fluidsolver_2
-
-//#include "fluidsolver_2.h"
+// Implementation of fluidsolver_3
+#include "fluidsolver3d.h"
 
 // C++ Headers - 
 #include <memory>
@@ -13,7 +12,6 @@
 // Windows Specfic Headers - 
 #include <omp.h> // OpenMP 2.0
 
-#define cur2d "[" << i << "," << j << "]  " // For Printing.
 #define dospherebound 1 // Enable Sphere Collisions
 #define JACOBI_DO_SOR 1 // Do Sucessive Over Relaxiation Inside Jacobi Projection.
 #define DO_SPHEREBOUNDS_MT 1
@@ -23,71 +21,57 @@
 
 // Replace with Parms ... 
 // Sphere Bound Globals (For Sphere Bound MFunc Paramters) Oppose to Pass Per Nested MFunc Call. 
-vec2<float> spherebound_offset(0.0f, 1.0f);  // NOW Set to x-h (y-k) So Sign IS Correct XY. 
-const float spherebound_coliso = 0.0025f; // Surface Value Threshold (0-Collison Iso Value) of Sphere SDF Func. 
-float spherebound_radius = 0.003f; // Much Smaller Values now no Sqrt on ImpFunc. 0.075f;
+vec3<float> spherebound_offset(0.0f, 0.0f, 0.0f);  
+const float spherebound_coliso = 0.0025f; 
+float spherebound_radius = 0.005f; 
 
 extern short verbose; // Get Verbose Global from main. 
-/* 
-	TO DO -
-	Refer to trello. 
-*/
 
-// !!! OPTIMIZATION IN PROGRESS - GL RENDERING DISABLED + PROJECTION OF VEL FIELD !!! \\
 
 /* ====================================================
-	FLUIDSOLVER_2 CONSTRUCTOR/DESTRUCTOR'S
+	fluidsolver_3 CONSTRUCTOR/DESTRUCTOR'S
    ==================================================== */
 
-// fluidsolver_2 CONSTRUCTOR (Explict Only) - 
+// fluidsolver_3 CONSTRUCTOR (Explict Only) - 
 // Added dt Param & HardCoded Spherebound Initalization List. 
 
-fluidsolver_2::fluidsolver_2(fluidobj_2d *f2dptr, float dtt) 
-	: dt(dtt), f2obj(f2dptr) //,spherebound_coliso(0.002f), spherebound_radius(0.01f), spherebound_offset(-0.5f, 0.75f)
+fluidsolver_3::fluidsolver_3(fluidobj_3d *f3dptr, float dtt) 
+	: dt(dtt), f3obj(f3dptr) //,spherebound_coliso(0.002f), spherebound_radius(0.01f), spherebound_offset(-0.5f, 0.75f)
 {
 	// Get Dimensions,Spacing from FluidObject Ensure Values Match. 
-	x_s = f2obj->x_s, y_s = f2obj->y_s, e_s = f2obj->e_s; 
-	total_size = (std::size_t) ((x_s + e_s) * (y_s + e_s));
+	x_s = f3obj->x_s, y_s = f3obj->y_s, z_s = f3obj->z_s, e_s = f3obj->e_s;
+	total_size = f3obj->t_s;
 
-	N_dim =  f2dptr->x_s; // Single Dim Size, No Edge. 
-	NE_dim = f2dptr->x_s + f2dptr->e_s; // Single Dim Size, With Edge Size. 
+	N_dim =  f3dptr->x_s; // Single Dim Size, No Edge. 
+	NE_dim = f3dptr->x_s + f3dptr->e_s; // Single Dim Size, With Edge Size. 
 
 	// Init Solver (non temp) grids.
-	spherebounds_sdf = new grid2_scalar(N_dim, N_dim, 2, 8, 1.0f);
+	spherebounds_sdf = new grid3_scalar<float>(N_dim, N_dim, N_dim, 2);
 
 }
 
-// fluidsolver_2 DESTRUCTOR 
-fluidsolver_2::~fluidsolver_2()
+// fluidsolver_3 DESTRUCTOR 
+fluidsolver_3::~fluidsolver_3()
 {
-	// Check if Pressure and Divergence Grids are not set to Null
-	// (Incase theyve been deleted/and ptr Nulled already). 
-	// Then ofc set ptrs to Null After Delete/Deallocation of Grids. 
-	if (pressure != NULL && pressure != nullptr)
+	delete spherebounds_sdf; spherebounds_sdf = nullptr; 
+
+	del_pressure();  del_divergence();
+
+	if (vort || vort != nullptr)
 	{
-		delete pressure;
-		pressure = nullptr;
+		delete vort; vort = nullptr; 
 	}
 
-	if (divergence != NULL && divergence != nullptr)
-	{
-		delete divergence;
-		divergence = nullptr; 
-	}
+	delete render_obj; render_obj = nullptr; 
 
-	// fluidsolver_2 has no other self alloacted data.
-	// WE DO NOT WANT TO DELTE fluidobj_2d PTR HERE and DELTE FLUID OBJECT...
-	// Let That Be Done in its own destructor/delete call. 
-
-	// Delete FluidObject (NOT GLFW Window, as this is pointed to elsewhere !)
-	//delete render_obj; render_obj = nullptr; DEBUGGING IF CAUSING ISSUES ...
+	// FluidObj Is Responsible for its own deletion. Do Not Delete Here. 
 }
 
 /* ====================================================
 	MANUAL USER FIELD DELTETION
    ==================================================== */
 
-void fluidsolver_2::del_pressure()
+void fluidsolver_3::del_pressure()
 {
 	// If Initalized, or not set to nullptr, then delete what there pointing to. 
 	if (pressure || pressure != nullptr)
@@ -104,7 +88,7 @@ void fluidsolver_2::del_pressure()
 	}
 }
 
-void fluidsolver_2::del_divergence()
+void fluidsolver_3::del_divergence()
 {
 	// If Initalized, or not set to nullptr, then delete what there pointing to. 
 	if (divergence || divergence != nullptr)
@@ -118,15 +102,16 @@ void fluidsolver_2::del_divergence()
 	VELOCITY AND DENSITY - BOUNDARY CONDTIONS 
    ==================================================== */
 
-// FLUIDSOLVER_2::edge_bounds INFO - 
+// fluidsolver_3::edge_bounds INFO - 
 // Set Edge Cell Reflection of XY Velocity And Average Corner Cells of Vel and Dens Field. 
 
 // ** EDGE_BOUNDS_SCALAR-FIELD IMPLEMENTATION ** \\ - 
-void fluidsolver_2::edge_bounds(grid2_scalar *grid)
+void fluidsolver_3::edge_bounds(grid3_scalar<float> *grid)
 {
 	// bool do_mt = Parms.p_MT_Global & Parms.p_MT_Global;
 
 	#pragma omp parallel for num_threads(omp_get_max_threads())
+
 	for (int i = 1; i <= N_dim; i++)
 	{
 		// X- Edge Boundary 
@@ -152,14 +137,14 @@ void fluidsolver_2::edge_bounds(grid2_scalar *grid)
 	float p_01 = 0.5 * (grid->getdata(1, N_dim + 1) + grid->getdata(0, N_dim));
 	grid->setdata(p_01, 0, N_dim + 1);
 	float p_02 = 0.5 * (grid->getdata(N_dim, 0) + grid->getdata(N_dim + 1, 1));
-	f2obj->dens->setdata(p_02, N_dim + 1, 0);
+	f3obj->dens->setdata(p_02, N_dim + 1, 0);
 	float p_03 = 0.5 * (grid->getdata(N_dim, N_dim + 1) + grid->getdata(N_dim + 1, N_dim));
 	grid->setdata(p_03, N_dim + 1, N_dim + 1);
 }
 
 // ** EDGE_BOUNDS_VECTOR-FIELD IMPLEMENTATION ** \\ - 
 
-void fluidsolver_2::edge_bounds(grid2_vector *grid)
+void fluidsolver_3::edge_bounds(grid3_vector<vec3<float>> *grid)
 {
 	// Loop Over Grid Not Including Edge Cells, 1D based Iteration. 1-N (N_dim). Set Edge Cells Layer Along 0 & N+1 On Each Axis +\-.  
 	
@@ -210,7 +195,7 @@ void fluidsolver_2::edge_bounds(grid2_vector *grid)
 
 	}
 
-		// Set Single Corner Cells (Average Of Neighbours) - (Set Per Component Oppose to using vec2 opoverload add/avg Operations)
+		// Set Single Corner Cells (Average Of Neighbours) - (Set Per Component Oppose to using vec3 opoverload add/avg Operations)
 
 		// X Vel Neighbour Averages - 
 		float x_00 = 0.5 * (grid->getdata_x(1, 0) + grid->getdata_x(0, 1));
@@ -237,7 +222,7 @@ void fluidsolver_2::edge_bounds(grid2_vector *grid)
 
 // Set SphereBounds At Beginning Of Each Step into FluidSolver spherebounds_sdf Scalar Grid -
 
-void fluidsolver_2::sphere_bounds_set(float radius, float col_iso, const vec2<float> &offset)
+void fluidsolver_3::sphere_bounds_set(float radius, float col_iso, const vec3<float> &offset)
 {
 	float h = 1.0f / N_dim; // Grid Spacing, Recoprical of One Dim Size (N). 
 
@@ -247,7 +232,7 @@ void fluidsolver_2::sphere_bounds_set(float radius, float col_iso, const vec2<fl
 		for (int i = 1; i <= N_dim; i++)
 		{
 			// Implicit Sphere/sphere Function: x^2 + y^2 - r . >= 0 <= Thresh == Surface. > Thresh = Exterior. < 0 = Interior. Cells. 
-			vec2<float> cell_gridSpace(float((i * h) - offset.x), float((j * h) - offset.y)); // Index to Grid Space 0-1N. 
+			vec3<float> cell_gridSpace(float((i * h) - offset.x), float((j * h) - offset.y)); // Index to Grid Space 0-1N. 
 			float sphere_func = ((cell_gridSpace.x * cell_gridSpace.x) + (cell_gridSpace.y * cell_gridSpace.y)) - radius; // NoMoreSqrt.
 
 			// Write to  spherebounds_sdf grid for spherebounds_eval() to lookup. 
@@ -262,7 +247,7 @@ void fluidsolver_2::sphere_bounds_set(float radius, float col_iso, const vec2<fl
 // Eval SphereBounds - On Scalar Field. Also Set "Col" Viz Grid For Cells Inside Sphere SDF For Render col viz. 
 // Unused (Surface and Exterior Condtions disabled for perf). 
 
-void fluidsolver_2::sphere_bounds_eval(grid2_scalar *grid, float col_iso)
+void fluidsolver_3::sphere_bounds_eval(grid3_scalar<float> *grid, float col_iso)
 {
 	float h = 1.0f / N_dim; // Grid Spacing, Recoprical of One Dim Size (N). 
 	
@@ -273,7 +258,7 @@ void fluidsolver_2::sphere_bounds_eval(grid2_scalar *grid, float col_iso)
 		{
 			// Lookup Sphere/sphere SDF At CurCell i,j. 
 			float sphere_func = spherebounds_sdf->getdata(i, j);
-			f2obj->col->setdata(0.0f, i, j); // Zero Out Prev Collison Cell Values. 
+			f3obj->col->setdata(0.0f, i, j); // Zero Out Prev Collison Cell Values. 
 
 			/*
 			// Surface - 
@@ -295,8 +280,8 @@ void fluidsolver_2::sphere_bounds_eval(grid2_scalar *grid, float col_iso)
 				}
 				
 				// Inside Operations - Collision Scalar Grid
-				// Set Collison Grid (HardCoded to pointed f2obj member) (Col Grid, probs should be Boolean Grid no? Evneutally MAC). 
-				f2obj->col->setdata(1.0f, i, j);
+				// Set Collison Grid (HardCoded to pointed f3obj member) (Col Grid, probs should be Boolean Grid no? Evneutally MAC). 
+				f3obj->col->setdata(1.0f, i, j);
 			}
 			
 			/*
@@ -315,7 +300,7 @@ void fluidsolver_2::sphere_bounds_eval(grid2_scalar *grid, float col_iso)
 // (This Function does not set col grid)
 // Unused (Surface and Exterior Condtions disabled for perf). 
 
-void fluidsolver_2::sphere_bounds_eval(grid2_vector *grid, float col_iso)
+void fluidsolver_3::sphere_bounds_eval(grid3_vector<vec3<float>> *grid, float col_iso)
 {
 	float h = 1.0f / N_dim; // Grid Spacing, Recoprical of One Dim Size (N). 
 
@@ -337,7 +322,7 @@ void fluidsolver_2::sphere_bounds_eval(grid2_vector *grid, float col_iso)
 				// Reflect from offset vector (Sphere Center) to CellPos Diriection, oppose to origin^ - 
 
 				//float input_spd = grid->getdata(i, j).length();
-				//vec2 refl_dir = vec2(offset.x, offset.y) - vec2(float(i) * h, float(j) * h);
+				//vec3 refl_dir = vec3(offset.x, offset.y) - vec3(float(i) * h, float(j) * h);
 				//refl_dir.normalize();
 				//refl_dir *= input_spd * 1.0f;
 
@@ -356,7 +341,7 @@ void fluidsolver_2::sphere_bounds_eval(grid2_vector *grid, float col_iso)
 				// Do Reflection On Interior Velocites Oppose to Zeroing Them? 
 				/* NOT Used, as Causes Relfection on Interior Cells Causes Advection Issues at Surface. 
 				float input_spd = grid->getdata(i, j).length();
-				vec2 refl_dir = vec2(float(i) * h, float(j) * h) - vec2(offset.x, offset.y) ;
+				vec3 refl_dir = vec3(float(i) * h, float(j) * h) - vec3(offset.x, offset.y) ;
 				refl_dir.normalize();
 				refl_dir *= input_spd * 1.0f;
 				// Override Interior Col Vel With Reflect Dir Vel
@@ -364,7 +349,7 @@ void fluidsolver_2::sphere_bounds_eval(grid2_vector *grid, float col_iso)
 
 
 				// Simply Zero Out Vector Grid Values In Interior Sphere Cells -   
-				grid->setdata(vec2<float>(0.0f, 0.0f), i, j);
+				grid->setdata(vec3<float>(0.0f, 0.0f), i, j);
 			}
 
 			/*
@@ -382,7 +367,7 @@ void fluidsolver_2::sphere_bounds_eval(grid2_vector *grid, float col_iso)
 				float mouse_velMult = 1.0f; 
 
 				// Get Stored Current Mouse Vel + to Current Grid Cell Velocity. 
-				vec2<float> cur_vel = grid->getdata(i, j);
+				vec3<float> cur_vel = grid->getdata(i, j);
 				grid->setdata(cur_vel + (mouse_vel *= mouse_velMult), i, j);
 			}
 		}
@@ -396,7 +381,7 @@ void fluidsolver_2::sphere_bounds_eval(grid2_vector *grid, float col_iso)
 
 // ** DIFFUSION-SCALAR-FIELD-LINSOLVE IMPLEMENTATION ** \\ - 
 
-void fluidsolver_2::diffuse(grid2_scalar *grid_0, grid2_scalar *grid_1, float diff, ushort iter)
+void fluidsolver_3::diffuse(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1, float diff, ushort iter)
 {
 	// Diffusion Value for "mat" A - 
 	float a = dt * diff * powf(N_dim, 2.0f);
@@ -431,7 +416,7 @@ void fluidsolver_2::diffuse(grid2_scalar *grid_0, grid2_scalar *grid_1, float di
 
 // ** DIFFUSION-VECTOR-FIELD-LINSOLVE IMPLEMENTATION ** \\ - 
 
-void fluidsolver_2::diffuse(grid2_vector *grid_0, grid2_vector *grid_1, float diff, ushort iter)
+void fluidsolver_3::diffuse(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3<float>> *grid_1, float diff, ushort iter)
 {
 	// Diffusion Value for "mat" A - 
 	float a = dt * diff * powf(N_dim, 2);
@@ -452,7 +437,7 @@ void fluidsolver_2::diffuse(grid2_vector *grid_0, grid2_vector *grid_1, float di
 					+ grid_1->getdata_y(i + 1, j) + grid_1->getdata_y(i, j - 1) + grid_1->getdata_y(i, j + 1)))
 					/ (1 + 4 * a);
 
-				vec2<float> new_vel(u_val, v_val);
+				vec3<float> new_vel(u_val, v_val);
 
 				// Set New Vector Val.
 				grid_1->setdata(new_vel, i, j);
@@ -471,7 +456,7 @@ void fluidsolver_2::diffuse(grid2_vector *grid_0, grid2_vector *grid_1, float di
 
 // ** DIFFUSION-SCALAR-FIELD-FDM IMPLEMENTATION ** \\ - 
 
-void fluidsolver_2::diffuse_FDM(grid2_scalar *grid_0, grid2_scalar *grid_1, float diff)
+void fluidsolver_3::diffuse_FDM(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1, float diff)
 {
 	float a = dt * diff * powf(N_dim, 2.0f);
 	a *= 0.001f; // Mult a down allows stablilty of diffusion, without fast propogation of density. But Hacky ofc. 
@@ -513,7 +498,7 @@ void fluidsolver_2::diffuse_FDM(grid2_scalar *grid_0, grid2_scalar *grid_1, floa
 // Assume ALL Advection is done using Main Vel Field. (Not using Input VelGrid Params). 
 // Advection Done along Scaled Index Space - 
 
-void fluidsolver_2::advect_sl(grid2_scalar *grid_0, grid2_scalar *grid_1)
+void fluidsolver_3::advect_sl(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1)
 {
 
 	float dt0 = dt*N_dim; // Step Distance (Velocity Scaling) of DeltaTime * Grid Length, Hence GridSpace Dt Coeff (dt0). 
@@ -526,8 +511,8 @@ void fluidsolver_2::advect_sl(grid2_scalar *grid_0, grid2_scalar *grid_1)
 		for (int i = 1; i <= N_dim; i++)
 		{
 			// Bind Vel Components Of CurCell to Vars to save multiple acess. 
-			float u = f2obj->vel->getdata_x(i, j);
-			float v = f2obj->vel->getdata_y(i, j);
+			float u = f3obj->vel->getdata_x(i, j);
+			float v = f3obj->vel->getdata_y(i, j);
 
 			// X i 
 			float x = i - dt0*u;
@@ -590,7 +575,7 @@ void fluidsolver_2::advect_sl(grid2_scalar *grid_0, grid2_scalar *grid_1)
 // ** ADVECT_SL(Semi-Lagragagin)_Vector Overload ** \\ - 
 // Assume ALL Advection is done using Main Vel Field. (Not using Input VelGrid Params). 
 
-void fluidsolver_2::advect_sl(grid2_vector *grid_0, grid2_vector *grid_1)
+void fluidsolver_3::advect_sl(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3<float>> *grid_1)
 {
 	float dt0 = dt*N_dim; // Step Distance (Velocity Scaling) of DeltaTime * Grid Length, Hence GridSpace Dt Coeff (dt0). 
 
@@ -600,10 +585,10 @@ void fluidsolver_2::advect_sl(grid2_vector *grid_0, grid2_vector *grid_1)
 		for (int i = 1; i <= N_dim; i++)
 		{
 			// Bind Vel Components Of CurCell to Vars to save multiple acess. 
-			float u = f2obj->vel->getdata_x(i, j);
-			float u0 = f2obj->prev_vel->getdata_x(i, j);
-			float v = f2obj->vel->getdata_y(i, j);
-			float v0 = f2obj->prev_vel->getdata_y(i, j);
+			float u = f3obj->vel->getdata_x(i, j);
+			float u0 = f3obj->prev_vel->getdata_x(i, j);
+			float v = f3obj->vel->getdata_y(i, j);
+			float v0 = f3obj->prev_vel->getdata_y(i, j);
 
 			// Calc Advection Vars - (Not Grid Specfic) - 
 			float x = i - dt0*u;
@@ -655,8 +640,8 @@ void fluidsolver_2::advect_sl(grid2_vector *grid_0, grid2_vector *grid_1)
 				
 			}
 
-			// Set New Cur vel vec2 to Velocity Grid cell value - 
-			vec2<float> new_vec(new_u, new_v);
+			// Set New Cur vel vec3 to Velocity Grid cell value - 
+			vec3<float> new_vec(new_u, new_v);
 			grid_1->setdata(new_vec, i, j);
 
 		}
@@ -678,7 +663,7 @@ void fluidsolver_2::advect_sl(grid2_vector *grid_0, grid2_vector *grid_1)
 // Velocity Components split for Advection Sampling and Interoplation.
 
 // ** ADVECT_SL_RK2(Semi-Lagragagin_MidPoint)_Scalar Overload ** \\ - 
-void fluidsolver_2::advect_sl_mp(grid2_scalar *grid_0, grid2_scalar *grid_1)
+void fluidsolver_3::advect_sl_mp(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1)
 {
 	float dt0 = dt * N_dim; // Scale DeltaTime to Grid Dimension Size. 
 
@@ -690,8 +675,8 @@ void fluidsolver_2::advect_sl_mp(grid2_scalar *grid_0, grid2_scalar *grid_1)
 		for (int i = 1; i <= N_dim; i++)
 		{
 			// Vel At Cur Cell Postion. 
-			float u_P = f2obj->vel->getdata_x(i, j);
-			float v_P = f2obj->vel->getdata_y(i, j);
+			float u_P = f3obj->vel->getdata_x(i, j);
+			float v_P = f3obj->vel->getdata_y(i, j);
 
 			// BackTrace Along Negative CurCell Vel - XG - dt0 * u(CurCell)
 			// XG -> Midpoint = XG - dt0 * u(XG)
@@ -706,16 +691,16 @@ void fluidsolver_2::advect_sl_mp(grid2_scalar *grid_0, grid2_scalar *grid_1)
 			float tm1 = yym - j_mid; float tm = 1 - tm1;
 
 			/* Get Mid Point Velocity (Average Neighbours).
-			float u_mid = (f2obj->vel->getdata_x(i_mid, j_mid) + f2obj->vel->getdata_x(i_mid_1, j_mid_1)) / 2.0f;
-			float v_mid = (f2obj->vel->getdata_y(i_mid, j_mid) + f2obj->vel->getdata_y(i_mid_1, j_mid_1)) / 2.0f;
+			float u_mid = (f3obj->vel->getdata_x(i_mid, j_mid) + f3obj->vel->getdata_x(i_mid_1, j_mid_1)) / 2.0f;
+			float v_mid = (f3obj->vel->getdata_y(i_mid, j_mid) + f3obj->vel->getdata_y(i_mid_1, j_mid_1)) / 2.0f;
 			*/
 
 			// Get Mid Point Velocity (Bilinear) - 
-			float u_mid = sm * (tm*f2obj->vel->getdata_x(i_mid, j_mid) + tm1 * f2obj->vel->getdata_x(i_mid, j_mid_1))
-				+ sm1 * (tm * f2obj->vel->getdata_x(i_mid_1, j_mid) + tm1 * f2obj->vel->getdata_x(i_mid_1, j_mid_1));
+			float u_mid = sm * (tm*f3obj->vel->getdata_x(i_mid, j_mid) + tm1 * f3obj->vel->getdata_x(i_mid, j_mid_1))
+				+ sm1 * (tm * f3obj->vel->getdata_x(i_mid_1, j_mid) + tm1 * f3obj->vel->getdata_x(i_mid_1, j_mid_1));
 
-			float v_mid = sm * (tm*f2obj->vel->getdata_y(i_mid, j_mid) + tm1 * f2obj->vel->getdata_y(i_mid, j_mid_1))
-				+ sm1 * (tm * f2obj->vel->getdata_y(i_mid_1, j_mid) + tm1 * f2obj->vel->getdata_y(i_mid_1, j_mid_1));
+			float v_mid = sm * (tm*f3obj->vel->getdata_y(i_mid, j_mid) + tm1 * f3obj->vel->getdata_y(i_mid, j_mid_1))
+				+ sm1 * (tm * f3obj->vel->getdata_y(i_mid_1, j_mid) + tm1 * f3obj->vel->getdata_y(i_mid_1, j_mid_1));
 
 			// BackTrace Along Negative Midpoint Vel - XG - dt0 * u(midpoint)
 			float xxp = i - dt0 * u_mid; float yyp = j - dt0 * v_mid;
@@ -750,7 +735,7 @@ void fluidsolver_2::advect_sl_mp(grid2_scalar *grid_0, grid2_scalar *grid_1)
 }
 
 // ** ADVECT_SL_RK2(Semi-Lagragagin_MidPoint)_Vector Overload ** \\ - 
-void fluidsolver_2::advect_sl_mp(grid2_vector *grid_0, grid2_vector *grid_1)
+void fluidsolver_3::advect_sl_mp(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3<float>> *grid_1)
 {
 	float dt0 = dt * N_dim; // Scale DeltaTime to Grid Dimension Size. 
 
@@ -762,8 +747,8 @@ void fluidsolver_2::advect_sl_mp(grid2_vector *grid_0, grid2_vector *grid_1)
 		for (int i = 1; i <= N_dim; i++)
 		{
 			// Vel At Cur Cell Postion. 
-			float u_P = f2obj->vel->getdata_x(i, j);
-			float v_P = f2obj->vel->getdata_y(i, j);
+			float u_P = f3obj->vel->getdata_x(i, j);
+			float v_P = f3obj->vel->getdata_y(i, j);
 
 			// BackTrace Along Negative CurCell Vel - XG - dt0 * u(CurCell)
 			// XG -> Midpoint = XG - dt0 * u(XG)
@@ -778,15 +763,15 @@ void fluidsolver_2::advect_sl_mp(grid2_vector *grid_0, grid2_vector *grid_1)
 			float tm1 = yym - j_mid; float tm = 1 - tm1;
 
 			/* Get Mid Point Velocity (Average Neighbours).
-			float u_mid = (f2obj->vel->getdata_x(i_mid, j_mid) + f2obj->vel->getdata_x(i_mid_1, j_mid_1)) / 2.0f;
-			float v_mid = (f2obj->vel->getdata_y(i_mid, j_mid) + f2obj->vel->getdata_y(i_mid_1, j_mid_1)) / 2.0f;
+			float u_mid = (f3obj->vel->getdata_x(i_mid, j_mid) + f3obj->vel->getdata_x(i_mid_1, j_mid_1)) / 2.0f;
+			float v_mid = (f3obj->vel->getdata_y(i_mid, j_mid) + f3obj->vel->getdata_y(i_mid_1, j_mid_1)) / 2.0f;
 			*/
 
 			// Get Mid Point Velocity (Bilinear) - 
-			float u_mid = sm * (tm*f2obj->vel->getdata_x(i_mid, j_mid) + tm1 * f2obj->vel->getdata_x(i_mid, j_mid_1))
-				+ sm1 * (tm * f2obj->vel->getdata_x(i_mid_1, j_mid) + tm1 * f2obj->vel->getdata_x(i_mid_1, j_mid_1));
-			float v_mid = sm * (tm*f2obj->vel->getdata_y(i_mid, j_mid) + tm1 * f2obj->vel->getdata_y(i_mid, j_mid_1))
-				+ sm1 * (tm * f2obj->vel->getdata_y(i_mid_1, j_mid) + tm1 * f2obj->vel->getdata_y(i_mid_1, j_mid_1));
+			float u_mid = sm * (tm*f3obj->vel->getdata_x(i_mid, j_mid) + tm1 * f3obj->vel->getdata_x(i_mid, j_mid_1))
+				+ sm1 * (tm * f3obj->vel->getdata_x(i_mid_1, j_mid) + tm1 * f3obj->vel->getdata_x(i_mid_1, j_mid_1));
+			float v_mid = sm * (tm*f3obj->vel->getdata_y(i_mid, j_mid) + tm1 * f3obj->vel->getdata_y(i_mid, j_mid_1))
+				+ sm1 * (tm * f3obj->vel->getdata_y(i_mid_1, j_mid) + tm1 * f3obj->vel->getdata_y(i_mid_1, j_mid_1));
 
 			// BackTrace Along Negative Midpoint Vel - XG - dt0 * u(midpoint)
 			float xxp = i - dt0 * u_mid; float yyp = j - dt0 * v_mid;
@@ -808,9 +793,9 @@ void fluidsolver_2::advect_sl_mp(grid2_vector *grid_0, grid2_vector *grid_1)
 			float new_v = s0 * (t0*grid_0->getdata_y(i0, j0) + t1 * grid_0->getdata_y(i0, j1))
 				+ s1 * (t0 * grid_0->getdata_y(i1, j0) + t1 * grid_0->getdata_y(i1, j1));
 
-			vec2<float> new_vec(new_u, new_v);
+			vec3<float> new_vec(new_u, new_v);
 
-			// Set New Cur vel vec2 to Velocity Grid cell value - 
+			// Set New Cur vel vec3 to Velocity Grid cell value - 
 			grid_1->setdata(new_vec, i, j);
 
 		}
@@ -829,17 +814,17 @@ void fluidsolver_2::advect_sl_mp(grid2_vector *grid_0, grid2_vector *grid_1)
 
 // ** ADVECT_SL_RK2(Semi-Lagragagin_MidPoint)_GRIDSPACE(GS) Scalar Overload ** \\ -
 // Grid Space (oppose to Index Space) Backtrcing. 
-void fluidsolver_2::advect_sl_mp_GS(grid2_scalar *grid_0, grid2_scalar *grid_1)
+void fluidsolver_3::advect_sl_mp_GS(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1)
 {
 	// Index-Grid-Index Space Lambdas - 
-	auto idx_indexToGrid = [&](int i, int j) -> vec2<float>
+	auto idx_indexToGrid = [&](int i, int j) -> vec3<float>
 	{
-		return vec2<float>((float)i / (float)N_dim, (float)j / (float)N_dim);
+		return vec3<float>((float)i / (float)N_dim, (float)j / (float)N_dim);
 	};
 
-	auto idx_gridToIndex = [&](auto x, auto y) -> vec2<int>
+	auto idx_gridToIndex = [&](auto x, auto y) -> vec3<int>
 	{
-		return vec2<int>((int) x * N_dim, (int) y * N_dim);
+		return vec3<int>((int) x * N_dim, (int) y * N_dim);
 	};
 
 	// Density (Scalar Field Advection) - 
@@ -850,11 +835,11 @@ void fluidsolver_2::advect_sl_mp_GS(grid2_scalar *grid_0, grid2_scalar *grid_1)
 		for (int i = 1; i <= N_dim; i++)
 		{
 			// Cur Cell Index to Grid Space - 
-			vec2<float> gsIDX = idx_indexToGrid(i, j);
+			vec3<float> gsIDX = idx_indexToGrid(i, j);
 
 			// Vel At Cur Cell Index. 
-			float u_P = f2obj->vel->getdata_x(i, j);
-			float v_P = f2obj->vel->getdata_y(i, j);
+			float u_P = f3obj->vel->getdata_x(i, j);
+			float v_P = f3obj->vel->getdata_y(i, j);
 
 			// Back Trace in Grid Space. 
 			// BackTrace Along Negative CurCell Vel - XG - dt0 * u(CurCell)
@@ -865,7 +850,7 @@ void fluidsolver_2::advect_sl_mp_GS(grid2_scalar *grid_0, grid2_scalar *grid_1)
 			xxm_gs = solver_utils::clamp(xxm_gs, 0.0f, 1.0f); yym_gs = solver_utils::clamp(yym_gs, 0.0f, 1.0);
 
 			// MidPoint Postion to Index Space - 
-			vec2<int> mpIDX = idx_gridToIndex(xxm_gs, yym_gs);  // Ideally vec2 would return ints via Templated Types avoid float-int casting. 
+			vec3<int> mpIDX = idx_gridToIndex(xxm_gs, yym_gs);  // Ideally vec3 would return ints via Templated Types avoid float-int casting. 
 
 			// Get Midpoint i,j indices
 			int mpidx_i = (int) mpIDX.x; int mpidx_i1 = mpidx_i + 1;
@@ -876,11 +861,11 @@ void fluidsolver_2::advect_sl_mp_GS(grid2_scalar *grid_0, grid2_scalar *grid_1)
 			float tm1 = mpIDX.y - mpidx_j; float tm = 1 - tm1;
 
 			// Sample Mid Point Velocity Components (Bilinear) - 
-			float u_mid = sm * (tm*f2obj->vel->getdata_x(mpidx_i, mpidx_j) + tm1 * f2obj->vel->getdata_x(mpidx_i, mpidx_j1))
-				+ sm1 * (tm * f2obj->vel->getdata_x(mpidx_i1, mpidx_j) + tm1 * f2obj->vel->getdata_x(mpidx_i1, mpidx_j1));
+			float u_mid = sm * (tm*f3obj->vel->getdata_x(mpidx_i, mpidx_j) + tm1 * f3obj->vel->getdata_x(mpidx_i, mpidx_j1))
+				+ sm1 * (tm * f3obj->vel->getdata_x(mpidx_i1, mpidx_j) + tm1 * f3obj->vel->getdata_x(mpidx_i1, mpidx_j1));
 
-			float v_mid = sm * (tm*f2obj->vel->getdata_y(mpidx_i, mpidx_j) + tm1 * f2obj->vel->getdata_y(mpidx_i, mpidx_j1))
-				+ sm1 * (tm * f2obj->vel->getdata_y(mpidx_i1, mpidx_j) + tm1 * f2obj->vel->getdata_y(mpidx_i1, mpidx_j1));
+			float v_mid = sm * (tm*f3obj->vel->getdata_y(mpidx_i, mpidx_j) + tm1 * f3obj->vel->getdata_y(mpidx_i, mpidx_j1))
+				+ sm1 * (tm * f3obj->vel->getdata_y(mpidx_i1, mpidx_j) + tm1 * f3obj->vel->getdata_y(mpidx_i1, mpidx_j1));
 
 			// BackTrace Along Negative Midpoint Vel - XG - dt0 * u(midpoint)
 			float xxp_gs = gsIDX.x - dt * u_mid; float yyp_gs = gsIDX.y - dt * v_mid;
@@ -889,7 +874,7 @@ void fluidsolver_2::advect_sl_mp_GS(grid2_scalar *grid_0, grid2_scalar *grid_1)
 			xxp_gs = solver_utils::clamp(xxp_gs, 0.0f, 1.0f); yyp_gs = solver_utils::clamp(yyp_gs, 0.0f, 1.0);
 
 			// BackTraced Postion to Index Space - 
-			vec2<int> btIDX = idx_gridToIndex(xxp_gs, yyp_gs);
+			vec3<int> btIDX = idx_gridToIndex(xxp_gs, yyp_gs);
 			// Get BackTraced i,j indices -
 			int btidx_i = (int) btIDX.x; int btidx_i1 = btidx_i + 1;
 			int btidx_j = (int) btIDX.y; int btidx_j1 = btidx_j + 1;
@@ -919,17 +904,17 @@ void fluidsolver_2::advect_sl_mp_GS(grid2_scalar *grid_0, grid2_scalar *grid_1)
 // ** ADVECT_SL_RK2(Semi-Lagragagin_MidPoint)_GRIDSPACE(GS) Vector Overload ** \\ -
 // Grid Space (oppose to Index Space) Backtrcing. 
 
-void fluidsolver_2::advect_sl_mp_GS(grid2_vector *grid_0, grid2_vector *grid_1)
+void fluidsolver_3::advect_sl_mp_GS(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3<float>> *grid_1)
 {
 	// Index-Grid-Index Space Lambdas - 
-	auto idx_indexToGrid = [&](int i, int j) -> vec2<float>
+	auto idx_indexToGrid = [&](int i, int j) -> vec3<float>
 	{
-		return vec2<float>((float)i / (float)N_dim, (float)j / (float)N_dim);
+		return vec3<float>((float)i / (float)N_dim, (float)j / (float)N_dim);
 	};
 
-	auto idx_gridToIndex = [&](auto x, auto y) -> vec2<int>
+	auto idx_gridToIndex = [&](auto x, auto y) -> vec3<int>
 	{
-		return vec2<int>(x * N_dim, y * N_dim);
+		return vec3<int>(x * N_dim, y * N_dim);
 	};
 
 	// Density (Scalar Field Advection) - 
@@ -940,11 +925,11 @@ void fluidsolver_2::advect_sl_mp_GS(grid2_vector *grid_0, grid2_vector *grid_1)
 		for (int i = 1; i <= N_dim; i++)
 		{
 			// Cur Cell Index to Grid Space - 
-			vec2<float> gsIDX = idx_indexToGrid(i, j);
+			vec3<float> gsIDX = idx_indexToGrid(i, j);
 
 			// Vel At Cur Cell Index. 
-			float u_P = f2obj->vel->getdata_x(i, j);
-			float v_P = f2obj->vel->getdata_y(i, j);
+			float u_P = f3obj->vel->getdata_x(i, j);
+			float v_P = f3obj->vel->getdata_y(i, j);
 
 			// Back Trace in Grid Space. 
 			// BackTrace Along Negative CurCell Vel - XG - dt0 * u(CurCell)
@@ -955,7 +940,7 @@ void fluidsolver_2::advect_sl_mp_GS(grid2_vector *grid_0, grid2_vector *grid_1)
 			xxm_gs = solver_utils::clamp(xxm_gs, 0.0f, 1.0f); yym_gs = solver_utils::clamp(yym_gs, 0.0f, 1.0);
 
 			// MidPoint Postion to Index Space - 
-			vec2<int> mpIDX = idx_gridToIndex(xxm_gs, yym_gs);  // Ideally vec2 would return ints via Templated Types avoid float-int casting. 
+			vec3<int> mpIDX = idx_gridToIndex(xxm_gs, yym_gs);  // Ideally vec3 would return ints via Templated Types avoid float-int casting. 
 			// Get Midpoint i,j indices
 			int mpidx_i = (int)mpIDX.x; int mpidx_i1 = mpidx_i + 1;
 			int mpidx_j = (int)mpIDX.y; int mpidx_j1 = mpidx_j + 1;
@@ -965,14 +950,14 @@ void fluidsolver_2::advect_sl_mp_GS(grid2_vector *grid_0, grid2_vector *grid_1)
 			float tm1 = mpIDX.y - mpidx_j; float tm = 1 - tm1;
 
 			// Sample Mid Point Velocity Components (Bilinear) - 
-			float u_mid = sm * (tm*f2obj->vel->getdata_x(mpidx_i, mpidx_j) + tm1 * f2obj->vel->getdata_x(mpidx_i, mpidx_j1))
-				+ sm1 * (tm * f2obj->vel->getdata_x(mpidx_i1, mpidx_j) + tm1 * f2obj->vel->getdata_x(mpidx_i1, mpidx_j1));
+			float u_mid = sm * (tm*f3obj->vel->getdata_x(mpidx_i, mpidx_j) + tm1 * f3obj->vel->getdata_x(mpidx_i, mpidx_j1))
+				+ sm1 * (tm * f3obj->vel->getdata_x(mpidx_i1, mpidx_j) + tm1 * f3obj->vel->getdata_x(mpidx_i1, mpidx_j1));
 
-			float v_mid = sm * (tm*f2obj->vel->getdata_y(mpidx_i, mpidx_j) + tm1 * f2obj->vel->getdata_y(mpidx_i, mpidx_j1))
-				+ sm1 * (tm * f2obj->vel->getdata_y(mpidx_i1, mpidx_j) + tm1 * f2obj->vel->getdata_y(mpidx_i1, mpidx_j1));
+			float v_mid = sm * (tm*f3obj->vel->getdata_y(mpidx_i, mpidx_j) + tm1 * f3obj->vel->getdata_y(mpidx_i, mpidx_j1))
+				+ sm1 * (tm * f3obj->vel->getdata_y(mpidx_i1, mpidx_j) + tm1 * f3obj->vel->getdata_y(mpidx_i1, mpidx_j1));
 
-			u_mid = f2obj->vel->getdata_x(mpidx_i, mpidx_j);
-			v_mid = f2obj->vel->getdata_y(mpidx_i, mpidx_j);
+			u_mid = f3obj->vel->getdata_x(mpidx_i, mpidx_j);
+			v_mid = f3obj->vel->getdata_y(mpidx_i, mpidx_j);
 
 			// BackTrace Along Negative Midpoint Vel - XG - dt0 * u(midpoint)
 			float xxp_gs = gsIDX.x - dt * u_mid; float yyp_gs = gsIDX.y - dt * v_mid;
@@ -981,7 +966,7 @@ void fluidsolver_2::advect_sl_mp_GS(grid2_vector *grid_0, grid2_vector *grid_1)
 			xxp_gs = solver_utils::clamp(xxp_gs, 0.0f, 1.0f); yyp_gs = solver_utils::clamp(yyp_gs, 0.0f, 1.0);
 
 			// BackTraced Postion to Index Space - 
-			vec2<int> btIDX = idx_gridToIndex(xxp_gs, yyp_gs);
+			vec3<int> btIDX = idx_gridToIndex(xxp_gs, yyp_gs);
 			// Get BackTraced i,j indices -
 			int btidx_i = (int)btIDX.x; int btidx_i1 = btidx_i + 1;
 			int btidx_j = (int)btIDX.y; int btidx_j1 = btidx_j + 1;
@@ -1000,9 +985,9 @@ void fluidsolver_2::advect_sl_mp_GS(grid2_vector *grid_0, grid2_vector *grid_1)
 			new_u = grid_0->getdata_x(btidx_i, btidx_j);
 			new_v = grid_0->getdata_y(btidx_i, btidx_j);
 
-			vec2<float> new_vec(new_u, new_v);
+			vec3<float> new_vec(new_u, new_v);
 
-			// Set New Cur vel vec2 to Velocity Grid cell value - 
+			// Set New Cur vel vec3 to Velocity Grid cell value - 
 			grid_1->setdata(new_vec, i, j);
 
 
@@ -1021,7 +1006,7 @@ void fluidsolver_2::advect_sl_mp_GS(grid2_vector *grid_0, grid2_vector *grid_1)
 /*
 //  ADVECT_SL_RK2(Semi-Lagragagin_MidPoint)_Scalar Overload \\ - 
 // WITH BICUBIC INTEROPLATION - WIP
-void fluidsolver_2::advect_sl_mp_bc(grid2_scalar *grid_0, grid2_scalar *grid_1)
+void fluidsolver_3::advect_sl_mp_bc(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1)
 {
 	float dt0 = dt * N_dim; // Scale DeltaTime to Grid Dimension Size. 
 
@@ -1032,8 +1017,8 @@ void fluidsolver_2::advect_sl_mp_bc(grid2_scalar *grid_0, grid2_scalar *grid_1)
 		for (int i = 1; i <= N_dim; i++)
 		{
 			// Vel At Cur Cell Postion. 
-			float u_P = f2obj->vel->getdata_x(i, j);
-			float v_P = f2obj->vel->getdata_y(i, j);
+			float u_P = f3obj->vel->getdata_x(i, j);
+			float v_P = f3obj->vel->getdata_y(i, j);
 
 			// BackTrace Along Negative CurCell Vel - XG - dt0 * u(CurCell)
 			// XG -> Midpoint = XG - dt0 * u(XG)
@@ -1048,19 +1033,19 @@ void fluidsolver_2::advect_sl_mp_bc(grid2_scalar *grid_0, grid2_scalar *grid_1)
 			float tm1 = yym - j_mid; float tm = 1 - tm1;
 
 			/* Get Mid Point Velocity (Average Neighbours).
-			float u_mid = (f2obj->vel->getdata_x(i_mid, j_mid) + f2obj->vel->getdata_x(i_mid_1, j_mid_1)) / 2.0f;
-			float v_mid = (f2obj->vel->getdata_y(i_mid, j_mid) + f2obj->vel->getdata_y(i_mid_1, j_mid_1)) / 2.0f;
+			float u_mid = (f3obj->vel->getdata_x(i_mid, j_mid) + f3obj->vel->getdata_x(i_mid_1, j_mid_1)) / 2.0f;
+			float v_mid = (f3obj->vel->getdata_y(i_mid, j_mid) + f3obj->vel->getdata_y(i_mid_1, j_mid_1)) / 2.0f;
 			*/
 
 /*
 			// Get Mid Point Velocity (Bilinear) - 
-			//float u_mid = sm * (tm*f2obj->vel->getdata_x(i_mid, j_mid) + tm1 * f2obj->vel->getdata_x(i_mid, j_mid_1))
-				//+ sm1 * (tm * f2obj->vel->getdata_x(i_mid_1, j_mid) + tm1 * f2obj->vel->getdata_x(i_mid_1, j_mid_1));
-			//float v_mid = sm * (tm*f2obj->vel->getdata_y(i_mid, j_mid) + tm1 * f2obj->vel->getdata_y(i_mid, j_mid_1))
-			//	+ sm1 * (tm * f2obj->vel->getdata_y(i_mid_1, j_mid) + tm1 * f2obj->vel->getdata_y(i_mid_1, j_mid_1));
+			//float u_mid = sm * (tm*f3obj->vel->getdata_x(i_mid, j_mid) + tm1 * f3obj->vel->getdata_x(i_mid, j_mid_1))
+				//+ sm1 * (tm * f3obj->vel->getdata_x(i_mid_1, j_mid) + tm1 * f3obj->vel->getdata_x(i_mid_1, j_mid_1));
+			//float v_mid = sm * (tm*f3obj->vel->getdata_y(i_mid, j_mid) + tm1 * f3obj->vel->getdata_y(i_mid, j_mid_1))
+			//	+ sm1 * (tm * f3obj->vel->getdata_y(i_mid_1, j_mid) + tm1 * f3obj->vel->getdata_y(i_mid_1, j_mid_1));
 
-			float u_mid = solver_utils::bicubic_V(f2obj->vel, sm, sm1, tm, tm1, i, j, 0);
-			float v_mid = solver_utils::bicubic_V(f2obj->vel, sm, sm1, tm, tm1, i, j, 1);
+			float u_mid = solver_utils::bicubic_V(f3obj->vel, sm, sm1, tm, tm1, i, j, 0);
+			float v_mid = solver_utils::bicubic_V(f3obj->vel, sm, sm1, tm, tm1, i, j, 1);
 
 			// BackTrace Along Negative Midpoint Vel - XG - dt0 * u(midpoint)
 			float xxp = i - dt0 * u_mid; float yyp = j - dt0 * v_mid;
@@ -1102,20 +1087,20 @@ void fluidsolver_2::advect_sl_mp_bc(grid2_scalar *grid_0, grid2_scalar *grid_1)
 	==================================================== */
 
 // Loop Through Vel Grid, and Add passed force to velocity * dt. 
-void fluidsolver_2::vel_force(vec2<float> ff, float dtt)
+void fluidsolver_3::vel_force(vec3<float> ff, float dtt)
 {
 	for (int j = 1; j <= N_dim; j++)
 	{
 		for (int i = 1; i <= N_dim; i++)
 		{
-			vec2<float> temp (ff.x, ff.y); // UN NEGATE AXIS for coord fix/dbg ?
-			f2obj->integrate_force(temp, dtt, i, j);   // Call add_force MF in fluid_obj.
+			vec3<float> temp (ff.x, ff.y); // UN NEGATE AXIS for coord fix/dbg ?
+			f3obj->integrate_force(temp, dtt, i, j);   // Call add_force MF in fluid_obj.
 		}
 	}
 }
 
 // Pass Custom Force Callback (Lambda) to run over each vector grid cell and integrate as force. 
-void fluidsolver_2::custom_force(grid2_vector *grid, std::function <vec2<float>(vec2<int> idx)> &force)
+void fluidsolver_3::custom_force(grid3_vector<vec3<float>> *grid, std::function <vec3<float>(vec3<int> idx)> &force)
 {
 	#pragma omp parallel for 
 	for (int j = 1; j <= N_dim; j++)
@@ -1124,9 +1109,9 @@ void fluidsolver_2::custom_force(grid2_vector *grid, std::function <vec2<float>(
 		for (int i = 1; i <= N_dim; i++)
 		{
 			// Call Callback - Get Force Vector. 
-			vec2<float> force_vec = force(vec2<int>(i, j));
+			vec3<float> force_vec = force(vec3<int>(i, j));
 			// Integrate Force -
-			f2obj->integrate_force(force_vec, dt, i, j);
+			f3obj->integrate_force(force_vec, dt, i, j);
 		}
 	}
 }
@@ -1141,20 +1126,20 @@ void fluidsolver_2::custom_force(grid2_vector *grid, std::function <vec2<float>(
 // CURL in 2D is a Scalar, not a vector. As theres no Cross Product for single XY Plane Vel.
 
 /*
-void fluidsolver_2::vorticty_confine(float strength)
+void fluidsolver_3::vorticty_confine(float strength)
 {
 	// VCForce = strength * cell size * (N cross W) ... Intergrate to Vel Field over Dt. 
 	float dx = 1.0f / N_dim; // (h / cell size)
 
 	// Allocate Vorticity Grids (Per Call)
-	vort = new grid2_vector(X_dim, Y_dim, edge_size, 6, 1.0f); // Vorticity Field Grid
-	deltavort = new grid2_vector(X_dim, Y_dim, edge_size, 7, 1.0f); // Vorticity Gradient Field Grid. 
+	vort = new grid3_vector<vec3<float>>(X_dim, Y_dim, edge_size, 6, 1.0f); // Vorticity Field Grid
+	deltavort = new grid3_vector<vec3<float>>(X_dim, Y_dim, edge_size, 7, 1.0f); // Vorticity Gradient Field Grid. 
 
-	// Cap f2obj ptr by ref [&]. 
+	// Cap f3obj ptr by ref [&]. 
 	std::function<float(int, int)> curl2d = [&](int i , int j) -> float 
 	{
-		return float(f2obj->vel->getdata_x(i, j + 1) - f2obj->vel->getdata_x(i, j - 1)) 
-		+ (f2obj->vel->getdata_y(i + 1, j) - f2obj->vel->getdata_x(i, j - 1));
+		return float(f3obj->vel->getdata_x(i, j + 1) - f3obj->vel->getdata_x(i, j - 1)) 
+		+ (f3obj->vel->getdata_y(i + 1, j) - f3obj->vel->getdata_x(i, j - 1));
 	};
 
 	/*
@@ -1177,7 +1162,7 @@ void fluidsolver_2::vorticty_confine(float strength)
 		I'm Calling Curl (w) Vorticity Here ... Bridson dentotes (w') as Voriticty/Curl, because he uses w as vel axis of Z, as u,v,w reprenseting velocity components for 3Dimensions. 
 
 		Apprently 2D Length of Curl Directly Calculating is - 
-		curl_length = (f2obj->vel->getdata_x(i, j + 1) - f2obj->vel->getdata_x(i, j - 1)) - (f2obj->vel->getdata_y(i + 1, j) - f2obj->vel->getdata_x(i, j - 1));
+		curl_length = (f3obj->vel->getdata_x(i, j + 1) - f3obj->vel->getdata_x(i, j - 1)) - (f3obj->vel->getdata_y(i + 1, j) - f3obj->vel->getdata_x(i, j - 1));
 
 	*/
 
@@ -1188,8 +1173,8 @@ void fluidsolver_2::vorticty_confine(float strength)
 		for (int i = 1; i < N_dim; i++)
 		{
 		    // Central Diffrence To Calc Curl from XY Velocity - / i +/- (j) constant, then viceversa. Divide by h (dx) *2 Because Over 2 Cells +/- Distance h. 
-		//	vec2 w_xy = (f2obj->vel->getdata(i + 1, j) - f2obj->vel->getdata(i - 1, j) /= dx*2) - (f2obj->vel->getdata(i, j + 1) - f2obj->vel->getdata(i, j - 1) /= dx*2);
-			vec2 w_xy = (f2obj->vel->getdata(i + 1, j) - f2obj->vel->getdata(i - 1, j)) - (f2obj->vel->getdata(i, j + 1) - f2obj->vel->getdata(i, j - 1));
+		//	vec3 w_xy = (f3obj->vel->getdata(i + 1, j) - f3obj->vel->getdata(i - 1, j) /= dx*2) - (f3obj->vel->getdata(i, j + 1) - f3obj->vel->getdata(i, j - 1) /= dx*2);
+			vec3 w_xy = (f3obj->vel->getdata(i + 1, j) - f3obj->vel->getdata(i - 1, j)) - (f3obj->vel->getdata(i, j + 1) - f3obj->vel->getdata(i, j - 1));
 			w_xy /= dx * 2; 
 			vort->setdata(w_xy, i, j); // Set Resulting Curl/Vorticity (w) Vector Per Voxel. 
 		}
@@ -1212,12 +1197,12 @@ void fluidsolver_2::vorticty_confine(float strength)
 			// Calc N ie Normalized Gradient/Delta Vort of Curl Length Central Diffrence of Scalar Curl Length Per Partial D, Dimension X,Y. 
 			float xx = ((vort->getdata(i+1, j)).length() - (vort->getdata(i-1, j)).length()) / dx * 2;
 			float yy = ((vort->getdata(i + 1, j)).length() - (vort->getdata(i - 1, j)).length()) / dx * 2;
-			vec2 grad(xx, yy); 
+			vec3 grad(xx, yy); 
 			//grad.normalize(); // Normalize Gradient N
 
 			// Resulting Vorticity Confinement Vector W X N
-			vec2 vc_vec = vort->getdata(i, j).cross(grad); 
-			vec2 vc_force = vc_vec *= (strength * dx);
+			vec3 vc_vec = vort->getdata(i, j).cross(grad); 
+			vec3 vc_force = vc_vec *= (strength * dx);
 
 			// VCForce = Strength * dx * (W X N)
 			// Vel += VCForce * dt; // Integrate VC Force to vel. 
@@ -1225,27 +1210,27 @@ void fluidsolver_2::vorticty_confine(float strength)
 			// Debuggin currently so messing with what I Intergrate to vel field... 
 
 			// Get Current Cell Velocity From VelField - 
-			vec2 vel = f2obj->vel->getdata(i, j);
+			vec3 vel = f3obj->vel->getdata(i, j);
 			// vel = vel + (vc_force *= dt) ; // Integrate vc force. 
-			vec2 vcurl = vort->getdata(i, j);
+			vec3 vcurl = vort->getdata(i, j);
 			//vcurl.normalize();
 			vel = vel + (vcurl *= 0.002f); // Integrate vc force. 
-			f2obj->vel->setdata(vel, i, j); // Set to new Vel Value. 
-		//	f2obj->vel->setdata(vel + vort->getdata(i,j), i, j); // Set to new Vel Value. 
+			f3obj->vel->setdata(vel, i, j); // Set to new Vel Value. 
+		//	f3obj->vel->setdata(vel + vort->getdata(i,j), i, j); // Set to new Vel Value. 
 			
 
 			//float xx = std::abs(curl2d(i, j+1)) - std::abs(curl2d(i, j-1));
 			float xx = curl2d(i, j - 1) - curl2d(i, j + 1);
 			float yy = curl2d(i+1, j) - curl2d(i-1, j);
-			vec2 dir(xx, yy);
+			vec3 dir(xx, yy);
 
 		//	float f = (10.0f / dir.length()) + 1e-05f;
 		//	dir *= f; 
-			vec2 old_vel = f2obj->vel->getdata(i, j);
+			vec3 old_vel = f3obj->vel->getdata(i, j);
 		//	float dtc = dt * curl2d(i, j);
-		//	vec2 vc = dir *= dtc; 
-		//	vec2 new_vel = old_vel + vc; 
-			f2obj->vel->setdata(old_vel + ((dir += 1e-05f) *= 5.0f * dt), i, j);
+		//	vec3 vc = dir *= dtc; 
+		//	vec3 new_vel = old_vel + vc; 
+			f3obj->vel->setdata(old_vel + ((dir += 1e-05f) *= 5.0f * dt), i, j);
 
 
 		}
@@ -1269,23 +1254,23 @@ void fluidsolver_2::vorticty_confine(float strength)
 
 // Vorticity Confinement On The Fly (No Writing to Vorticity/Curl Grids, Curl, Curl Grad and Resulting VC Force
 // calculated all within one loop, via Curl Lambda to calc  Curl (w) and Curl Gradient (w'). 
-void fluidsolver_2::vorticty_confine_otf(float strength)
+void fluidsolver_3::vorticty_confine_otf(float strength)
 {
 	// Calculate 2D Velocity Curl Scalar - Without Central Diff Offsets, for Calling within Curl gradient CentralDiff calc lines. 
-	std::function<float(int, int)> curl2d = [&](int i, int j) -> float // Cap f2obj ptr by ref [&]. 
+	std::function<float(int, int)> curl2d = [&](int i, int j) -> float // Cap f3obj ptr by ref [&]. 
 	{
 		// i j offsets will be set on call. 
-		return float(f2obj->vel->getdata_x(i, j) - f2obj->vel->getdata_x(i, j))
-			+ (f2obj->vel->getdata_y(i, j) - f2obj->vel->getdata_x(i, j));
+		return float(f3obj->vel->getdata_x(i, j) - f3obj->vel->getdata_x(i, j))
+			+ (f3obj->vel->getdata_y(i, j) - f3obj->vel->getdata_x(i, j));
 		// Should be / dx*2 ie central diff over h. 
 	};
 
 	// Curl With ij central diff offsets, for calling when eval curl only. 
-	std::function<float(int, int)> curl2d_wo = [&](int i, int j) -> float // Cap f2obj ptr by ref [&]. 
+	std::function<float(int, int)> curl2d_wo = [&](int i, int j) -> float // Cap f3obj ptr by ref [&]. 
 	{
 		// i j set with offset.
-		return float(f2obj->vel->getdata_x(i, j+1) - f2obj->vel->getdata_x(i, j-1))
-			+ (f2obj->vel->getdata_y(i+1, j) - f2obj->vel->getdata_x(i-1, j));
+		return float(f3obj->vel->getdata_x(i, j+1) - f3obj->vel->getdata_x(i, j-1))
+			+ (f3obj->vel->getdata_y(i+1, j) - f3obj->vel->getdata_x(i-1, j));
 		// Should be / dx*2 ie central diff over h. 
 	};
 
@@ -1296,45 +1281,45 @@ void fluidsolver_2::vorticty_confine_otf(float strength)
 			// w' from w Calc both curl and gradient curl per axis using central diff. 
 			float xx = curl2d(i, j-1) - curl2d(i, j+1);
 			float yy = curl2d(i+1, j) - curl2d(i-1, j);
-			vec2<float> dir(xx, yy); // resulting w' grad vector. 
-			f2obj->vc->setdata(dir, i, j); // Pass To VC Grid for viz. Pre Normalization (will be clampped vals on GPU).
+			vec3<float> dir(xx, yy); // resulting w' grad vector. 
+			f3obj->vc->setdata(dir, i, j); // Pass To VC Grid for viz. Pre Normalization (will be clampped vals on GPU).
 			dir += 1e-05; // Prevent /0 errors on normalization.
 			dir.normalize();
 
 			// Integrate VC to new vel value.
-			vec2<float> old_vel = f2obj->vel->getdata(i, j);
+			vec3<float> old_vel = f3obj->vel->getdata(i, j);
 			dir *= strength; // Mult By Strength Scalar Coeff. 
-			//f2obj->vel->setdata(old_vel + (dir *= (dt * curl2d(i, j))), i, j);
+			//f3obj->vel->setdata(old_vel + (dir *= (dt * curl2d(i, j))), i, j);
 			// v + strength*(Curl (w) and GradCurl (w')*dt) = v1 (v with VC). 
-			f2obj->vel->setdata(old_vel + ((dir *= dt) *= curl2d_wo(i,j)), i, j);
+			f3obj->vel->setdata(old_vel + ((dir *= dt) *= curl2d_wo(i,j)), i, j);
 		}
 	}
 }
 // End of Vorticity_Confine_otf Member Func Implementation.
 
-void fluidsolver_2::vorticity_confine_B(float strength)
+void fluidsolver_3::vorticity_confine_B(float strength)
 {
 	// Alloc Vorticity Grid - 
-	vort = new grid2_scalar(x_s, y_s, e_s, 5, 1.0f);
+	vort = new grid3_scalar<float>(x_s, y_s, e_s, 5, 1.0f);
 
 	float dx = 1.0f / N_dim; // cellsize dx (h). 
 
 	// Calculate 2D Velocity Curl Scalar - At Given Cell Indices- 
-	std::function<float(int, int)> curl2d = [&](int i, int j) -> float // Cap f2obj ptr by ref [&]. 
+	std::function<float(int, int)> curl2d = [&](int i, int j) -> float // Cap f3obj ptr by ref [&]. 
 	{
 		return float(
-			(f2obj->vel->getdata_x(i, j+1) - f2obj->vel->getdata_x(i, j-1) / (2 * dx))
+			(f3obj->vel->getdata_x(i, j+1) - f3obj->vel->getdata_x(i, j-1) / (2 * dx))
 			- 
-			(f2obj->vel->getdata_y(i+1, j) - f2obj->vel->getdata_y(i-1, j) / (2 * dx))
+			(f3obj->vel->getdata_y(i+1, j) - f3obj->vel->getdata_y(i-1, j) / (2 * dx))
 			);
 	};
 
 	// Calculate 2D Vorticity Gradient Vector - At Given Cell Indices- - 
-	std::function<vec2<float>(int, int)> grad2d = [&](int i, int j) -> vec2<float>
+	std::function<vec3<float>(int, int)> grad2d = [&](int i, int j) -> vec3<float>
 	{
 		float xx = (vort->getdata(i + 1, j) - vort->getdata(i - 1, j)) / (2 * dx); // 2.0f * dx;
 		float yy = (vort->getdata(i, j + 1) - vort->getdata(i, j - 1)) / (2 * dx); // 2.0f * dx;
-		vec2<float> grad(xx, yy);
+		vec3<float> grad(xx, yy);
 		grad += 1e-05; // Add Small Constant, to prevent divide by 0 error on Grad Vector Normalization. 
 		grad.normalize(); 
 		return grad; 
@@ -1356,25 +1341,25 @@ void fluidsolver_2::vorticity_confine_B(float strength)
 		{
 			// Calc Gradient and Final VortCon Vector. 
 			float W = vort->getdata(i, j);
-			vec2<float> N = grad2d(i, j);
+			vec3<float> N = grad2d(i, j);
 
-			// Write W (as vec2(W,W)) OR N (VC Gradient) to FluidObj vc grid, for Viz/Rendering via RenderObject. 
-		   // f2obj->vc->setdata(vec2(W, W), i, j); // W VIZ
-			f2obj->vc->setdata(vec2<float>(N) *= 1.0f , i, j); // N VIZ
+			// Write W (as vec3(W,W)) OR N (VC Gradient) to FluidObj vc grid, for Viz/Rendering via RenderObject. 
+		   // f3obj->vc->setdata(vec3(W, W), i, j); // W VIZ
+			f3obj->vc->setdata(vec3<float>(N) *= 1.0f , i, j); // N VIZ
 
-			vec2<float> VC = N; VC *= W; 
-			//f2obj->vc->setdata(VC, i, j); // N VIZ
+			vec3<float> VC = N; VC *= W; 
+			//f3obj->vc->setdata(VC, i, j); // N VIZ
 			//VC *= (strength * dx);
 			VC *= strength; // Final Vort Con Vector
 
 			// Intergrate - 
-			vec2<float> vel_0 = f2obj->vel->getdata(i, j);
-			//vec2 vel_1 = vel_0 + (VC *= dt);
+			vec3<float> vel_0 = f3obj->vel->getdata(i, j);
+			//vec3 vel_1 = vel_0 + (VC *= dt);
 			N *= strength; //10.0f; // strength; // Mult By Stength Coeff. 
-			vec2<float> vel_1 = vel_0 + (N *= (curl2d(i, j) * dt));
+			vec3<float> vel_1 = vel_0 + (N *= (curl2d(i, j) * dt));
 
 			// Set Vel - 
-			f2obj->vel->setdata(vel_1, i, j);
+			f3obj->vel->setdata(vel_1, i, j);
 
 		}
 	}
@@ -1401,7 +1386,7 @@ void fluidsolver_2::vorticity_confine_B(float strength)
 	data races across threads and allow correct synchroized reads of updated cells within the same iteration for reamaing cells. 
 	Divergence and Pressure Gradient Subtraction loops are MT, these are thread safe (Only read or write from same grids). */
 
-void fluidsolver_2::project(int iter)
+void fluidsolver_3::project(int iter)
 {
 	float h = 1.0f/N_dim; // CellSize 1.0f/N (N_dim); 
 
@@ -1409,8 +1394,8 @@ void fluidsolver_2::project(int iter)
 	del_divergence(); del_pressure(); 
 
 	// Init Solvers Own Divergence and Pressure Fields, Only needed for Scope of this Function.  
-	divergence = new grid2_scalar(x_s, y_s, e_s, 4, 1.0f);
-	pressure = new grid2_scalar(x_s, y_s, e_s, 5, 1.0f);
+	divergence = new grid3_scalar<float>(x_s, y_s, e_s, 4, 1.0f);
+	pressure = new grid3_scalar<float>(x_s, y_s, e_s, 5, 1.0f);
 
 	// DIVERGENCE FIELD CALC \\ - 
 
@@ -1424,17 +1409,17 @@ void fluidsolver_2::project(int iter)
 			divergence->setdata(0.0f, i, j);
 
 			// Compute Divergence Cell Value. 
-			float div = -0.5 * h * (f2obj->vel->getdata_x(i + 1, j) - f2obj->vel->getdata_x(i - 1, j)
-			+ f2obj->vel->getdata_y(i, j + 1) - f2obj->vel->getdata_y(i, j - 1));
+			float div = -0.5 * h * (f3obj->vel->getdata_x(i + 1, j) - f3obj->vel->getdata_x(i - 1, j)
+			+ f3obj->vel->getdata_y(i, j + 1) - f3obj->vel->getdata_y(i, j - 1));
 			
 			// Set Divergence Cell Value. 
 			divergence->setdata(div, i, j);
 
-			// Zero Out Pressure Grid, as Inital Value PreLinSolve. (Index Based oppose to calling grid2_scalar->clear()).
+			// Zero Out Pressure Grid, as Inital Value PreLinSolve. (Index Based oppose to calling grid3_scalar<float>->clear()).
 			pressure->setdata(0.0f, i, j);
 
 			// Write Inital PreProjected VelField to Grid For dbg - 
-			f2obj->preproj_vel->setdata(f2obj->vel->getdata(i, j), i, j);
+			f3obj->preproj_vel->setdata(f3obj->vel->getdata(i, j), i, j);
 
 		}
 	}
@@ -1525,18 +1510,18 @@ void fluidsolver_2::project(int iter)
 			//grad_y = 0.5f * N_dim * (pressure->getdata(i, j + 1) - pressure->getdata(i, j - 1));
 
 			// Subtract Gradient Components from Velocity Field Components and set to Velocity-
-			float new_vel_x = f2obj->vel->getdata_x(i, j) - grad_x;
-			f2obj->vel->setdata_x(new_vel_x, i, j);
-			float new_vel_y = f2obj->vel->getdata_y(i, j) - grad_y;
-			f2obj->vel->setdata_y(new_vel_y, i, j);
+			float new_vel_x = f3obj->vel->getdata_x(i, j) - grad_x;
+			f3obj->vel->setdata_x(new_vel_x, i, j);
+			float new_vel_y = f3obj->vel->getdata_y(i, j) - grad_y;
+			f3obj->vel->setdata_y(new_vel_y, i, j);
 
 		}
 	}
 
 	// Call and Enforce Boundary Condtions After Projection on Vel Field - 
-	edge_bounds(f2obj->vel);
+	edge_bounds(f3obj->vel);
 	#if dospherebound == 1
-	sphere_bounds_eval(f2obj->vel, spherebound_coliso);
+	sphere_bounds_eval(f3obj->vel, spherebound_coliso);
 	#endif
 		
 	// Delete Solver Temp Pressure and Divergence Fields - 
@@ -1550,7 +1535,7 @@ void fluidsolver_2::project(int iter)
 	Allows Multithreading as Cells (inner i,j presure loop) Only lookup Previous Pressure Values, but results in slower Convergence. 
 	Divergence and Pressure Gradient Subtraction loops are MT, these are thread safe.*/
 
-void fluidsolver_2::project_jacobi(int iter)
+void fluidsolver_3::project_jacobi(int iter)
 {
 	float h = 1.0f/N_dim; // CellSize 1.0f/N (N_dim); 
 
@@ -1558,9 +1543,9 @@ void fluidsolver_2::project_jacobi(int iter)
 	del_divergence(); del_pressure();
 	
 	// Alloc New DP Grids. 
-	divergence = new grid2_scalar(x_s, y_s, e_s, 4, 1.0f);
-	pressure = new grid2_scalar(x_s, y_s, e_s, 5, 1.0f);
-	pressure_1 = new grid2_scalar(x_s, y_s, e_s, 6, 1.0f);
+	divergence = new grid3_scalar<float>(x_s, y_s, e_s, 4, 1.0f);
+	pressure = new grid3_scalar<float>(x_s, y_s, e_s, 5, 1.0f);
+	pressure_1 = new grid3_scalar<float>(x_s, y_s, e_s, 6, 1.0f);
 
 	// DIVERGENCE FIELD CALC \\ - 
 
@@ -1574,13 +1559,13 @@ void fluidsolver_2::project_jacobi(int iter)
 			divergence->setdata(0.0f, i, j);
 
 			// Compute Divergence Cell Value. 
-			float div = -0.5 * h * (f2obj->vel->getdata_x(i + 1, j) - f2obj->vel->getdata_x(i - 1, j)
-			+ f2obj->vel->getdata_y(i, j + 1) - f2obj->vel->getdata_y(i, j - 1));
+			float div = -0.5 * h * (f3obj->vel->getdata_x(i + 1, j) - f3obj->vel->getdata_x(i - 1, j)
+			+ f3obj->vel->getdata_y(i, j + 1) - f3obj->vel->getdata_y(i, j - 1));
 			
 			// Set Divergence Cell Value. 
 			divergence->setdata(div, i, j);
 
-			// Zero Out Pressure Grid, as Inital Value PreLinSolve. (Index Based oppose to calling grid2_scalar->clear()).
+			// Zero Out Pressure Grid, as Inital Value PreLinSolve. (Index Based oppose to calling grid3_scalar<float>->clear()).
 			pressure->setdata(0.0f, i, j);
 
 		}
@@ -1639,17 +1624,17 @@ void fluidsolver_2::project_jacobi(int iter)
 			float grad_y = 0.5 * (pressure->getdata(i, j + 1) - pressure->getdata(i, j - 1)) / h;
 
 			// Subtract Gradient Components from Velocity Field Components and set to Velocity-
-			float new_vel_x = f2obj->vel->getdata_x(i, j) - grad_x;
-			f2obj->vel->setdata_x(new_vel_x, i, j);
-			float new_vel_y = f2obj->vel->getdata_y(i, j) - grad_y;
-			f2obj->vel->setdata_y(new_vel_y, i, j);
+			float new_vel_x = f3obj->vel->getdata_x(i, j) - grad_x;
+			f3obj->vel->setdata_x(new_vel_x, i, j);
+			float new_vel_y = f3obj->vel->getdata_y(i, j) - grad_y;
+			f3obj->vel->setdata_y(new_vel_y, i, j);
 		}
 	}
 	// Call and Enforce Boundary Condtions After Projection on Vel Field - 
-	edge_bounds(f2obj->vel);
+	edge_bounds(f3obj->vel);
 
 	#if dospherebound == 1
-	sphere_bounds_eval(f2obj->vel, spherebound_coliso);
+	sphere_bounds_eval(f3obj->vel, spherebound_coliso);
 	#endif
 
 	// TEMP FIELD DELETION/DEALLOCATION - 
@@ -1660,7 +1645,7 @@ void fluidsolver_2::project_jacobi(int iter)
 
 // PROJECT - Gauss-Seidel + SOR - SIMD TESTING - 
 
-void fluidsolver_2::project_SIMD(int iter)
+void fluidsolver_3::project_SIMD(int iter)
 {
 	float h = 1.0f / N_dim; // CellSize 1.0f/N (N_dim); 
 
@@ -1668,8 +1653,8 @@ void fluidsolver_2::project_SIMD(int iter)
 	del_divergence(); del_pressure();
 
 	// Init Solvers Own Divergence and Pressure Fields, Only needed for Scope of this Function.  
-	divergence = new grid2_scalar(x_s, y_s, e_s, 4, 1.0f);
-	pressure = new grid2_scalar(x_s, y_s, e_s, 5, 1.0f);
+	divergence = new grid3_scalar<float>(x_s, y_s, e_s, 4, 1.0f);
+	pressure = new grid3_scalar<float>(x_s, y_s, e_s, 5, 1.0f);
 
 	// DIVERGENCE FIELD CALC \\ - 
 
@@ -1683,17 +1668,17 @@ void fluidsolver_2::project_SIMD(int iter)
 			divergence->setdata(0.0f, i, j);
 
 			// Compute Divergence Cell Value. 
-			float div = -0.5 * h * (f2obj->vel->getdata_x(i + 1, j) - f2obj->vel->getdata_x(i - 1, j)
-				+ f2obj->vel->getdata_y(i, j + 1) - f2obj->vel->getdata_y(i, j - 1));
+			float div = -0.5 * h * (f3obj->vel->getdata_x(i + 1, j) - f3obj->vel->getdata_x(i - 1, j)
+				+ f3obj->vel->getdata_y(i, j + 1) - f3obj->vel->getdata_y(i, j - 1));
 
 			// Set Divergence Cell Value. 
 			divergence->setdata(div, i, j);
 
-			// Zero Out Pressure Grid, as Inital Value PreLinSolve. (Index Based oppose to calling grid2_scalar->clear()).
+			// Zero Out Pressure Grid, as Inital Value PreLinSolve. (Index Based oppose to calling grid3_scalar<float>->clear()).
 			pressure->setdata(0.0f, i, j);
 
 			// Write Inital PreProjected VelField to Grid For dbg - 
-			f2obj->preproj_vel->setdata(f2obj->vel->getdata(i, j), i, j);
+			f3obj->preproj_vel->setdata(f3obj->vel->getdata(i, j), i, j);
 
 		}
 	}
@@ -1846,18 +1831,18 @@ void fluidsolver_2::project_SIMD(int iter)
 			//grad_y = 0.5f * N_dim * (pressure->getdata(i, j + 1) - pressure->getdata(i, j - 1));
 
 			// Subtract Gradient Components from Velocity Field Components and set to Velocity-
-			float new_vel_x = f2obj->vel->getdata_x(i, j) - grad_x;
-			f2obj->vel->setdata_x(new_vel_x, i, j);
-			float new_vel_y = f2obj->vel->getdata_y(i, j) - grad_y;
-			f2obj->vel->setdata_y(new_vel_y, i, j);
+			float new_vel_x = f3obj->vel->getdata_x(i, j) - grad_x;
+			f3obj->vel->setdata_x(new_vel_x, i, j);
+			float new_vel_y = f3obj->vel->getdata_y(i, j) - grad_y;
+			f3obj->vel->setdata_y(new_vel_y, i, j);
 
 		}
 	}
 
 	// Call and Enforce Boundary Condtions After Projection on Vel Field - 
-	edge_bounds(f2obj->vel);
+	edge_bounds(f3obj->vel);
 	#if dospherebound == 1
-	sphere_bounds_eval(f2obj->vel, spherebound_coliso);
+	sphere_bounds_eval(f3obj->vel, spherebound_coliso);
 	#endif
 
 	// Delete Solver Temp Pressure and Divergence Fields - 
@@ -1872,31 +1857,31 @@ void fluidsolver_2::project_SIMD(int iter)
 	==================================================== */
 // Implementation of Simulation Solve step of Density solve operations. 
 
-void fluidsolver_2::density_step(int diff_iter, float diffA, bool dodiff)
+void fluidsolver_3::density_step(int diff_iter, float diffA, bool dodiff)
 {
 	// DIFFUSE Density - 
 	// If Using Diffusion, If Not Need to Manually set Cur to Prev, rather than swapping.
 	if (Parms.p_Do_Dens_Diff == true)
 	{
-		f2obj->dens->swap(f2obj->prev_dens); // Swap Density With Prev_Density. 
+		f3obj->dens->swap(f3obj->prev_dens); // Swap Density With Prev_Density. 
 		// Gauss-Seidel Iterative Density (Scalar) Diffusion - 
-		diffuse(f2obj->prev_dens, f2obj->dens, diffA, diff_iter);
+		diffuse(f3obj->prev_dens, f3obj->dens, diffA, diff_iter);
 
 		// Finite Diffrence Unstable Density (Scalar) Diffusion - 
-		//diffuse_scalar_FDM(f2obj->prev_dens, f2obj->dens, diffA);
-		f2obj->dens->swap(f2obj->prev_dens); // Re-Swap Density With Prev_Density. 
+		//diffuse_scalar_FDM(f3obj->prev_dens, f3obj->dens, diffA);
+		f3obj->dens->swap(f3obj->prev_dens); // Re-Swap Density With Prev_Density. 
 	}
 	else if (Parms.p_Do_Dens_Diff == false)
 	{
 		// Use "SetCurToPrev" Funcs to Copy Grids, Oppose to via Diffusion - 
-		f2obj->setcurtoprev_dens();
+		f3obj->setcurtoprev_dens();
 
 		if (Parms.p_useColour)
 		{
 			// SetCurtoPrev - Colour - 
-			f2obj->setcurtoprev(f2obj->c_R_prev, f2obj->c_R);
-			f2obj->setcurtoprev(f2obj->c_G_prev, f2obj->c_G);
-			f2obj->setcurtoprev(f2obj->c_B_prev, f2obj->c_B);
+			f3obj->setcurtoprev(f3obj->c_R_prev, f3obj->c_R);
+			f3obj->setcurtoprev(f3obj->c_G_prev, f3obj->c_G);
+			f3obj->setcurtoprev(f3obj->c_B_prev, f3obj->c_B);
 		}
 
 	}
@@ -1905,12 +1890,12 @@ void fluidsolver_2::density_step(int diff_iter, float diffA, bool dodiff)
 
 	if (Parms.p_AdvectionType == Parms.Advect_SL_BackTrace_Euler)
 	{
-		advect_sl(f2obj->prev_dens, f2obj->dens); 
+		advect_sl(f3obj->prev_dens, f3obj->dens); 
 	}
 	else if (Parms.p_AdvectionType == Parms.Advect_SL_BackTrace_RK2)
 	{
-		advect_sl_mp(f2obj->prev_dens, f2obj->dens);
-		advect_sl_mp_GS(f2obj->prev_dens, f2obj->dens);
+		advect_sl_mp(f3obj->prev_dens, f3obj->dens);
+		advect_sl_mp_GS(f3obj->prev_dens, f3obj->dens);
 	}
 	
 	if (Parms.p_useColour)
@@ -1918,23 +1903,23 @@ void fluidsolver_2::density_step(int diff_iter, float diffA, bool dodiff)
 		// Advect Colour -
 		if (Parms.p_AdvectionType == Parms.Advect_SL_BackTrace_Euler)
 		{
-			advect_sl(f2obj->c_R_prev, f2obj->c_R);
-			advect_sl(f2obj->c_G_prev, f2obj->c_G);
-			advect_sl(f2obj->c_B_prev, f2obj->c_B);
+			advect_sl(f3obj->c_R_prev, f3obj->c_R);
+			advect_sl(f3obj->c_G_prev, f3obj->c_G);
+			advect_sl(f3obj->c_B_prev, f3obj->c_B);
 		}
 		else if (Parms.p_AdvectionType == Parms.Advect_SL_BackTrace_RK2)
 		{
 			// RK2 (MidPoint) 
-			advect_sl_mp(f2obj->c_R_prev, f2obj->c_R);
-			advect_sl_mp(f2obj->c_G_prev, f2obj->c_G);
-			advect_sl_mp(f2obj->c_B_prev, f2obj->c_B);
+			advect_sl_mp(f3obj->c_R_prev, f3obj->c_R);
+			advect_sl_mp(f3obj->c_G_prev, f3obj->c_G);
+			advect_sl_mp(f3obj->c_B_prev, f3obj->c_B);
 		}
 	}
 
 	if (Parms.p_Do_Dens_Disp)
 	{
 		// DISSIPATE Density by multipler - 
-		dissipate(f2obj->dens, Parms.p_Dens_Disp_Mult, this->dt); // Density Dissipation. 
+		dissipate(f3obj->dens, Parms.p_Dens_Disp_Mult, this->dt); // Density Dissipation. 
 	}
 
 }
@@ -1948,36 +1933,36 @@ void fluidsolver_2::density_step(int diff_iter, float diffA, bool dodiff)
 // Excluding Sourcing which will be done via user in FluidObject.
 // Removed Pre Advection Projection Calls, So I can use One Call Post Advection, With Higher Iter Counts.
 
-void fluidsolver_2::velocity_step(int diff_iter, int proj_iter, float diffA, bool dodiff)
+void fluidsolver_3::velocity_step(int diff_iter, int proj_iter, float diffA, bool dodiff)
 {
 	// If Using Diffusion, If Not Need to Manually set Cur to Prev, rather than swapping. 
 	if (dodiff == true)
 	{
-		f2obj->vel->swap(f2obj->prev_vel); // Swap Vel Field with Prev_VelField.
-		diffuse(f2obj->prev_vel, f2obj->vel, diffA, diff_iter);
-		f2obj->vel->swap(f2obj->prev_vel); // Re-Swap Vel With Prev_Vel. 
+		f3obj->vel->swap(f3obj->prev_vel); // Swap Vel Field with Prev_VelField.
+		diffuse(f3obj->prev_vel, f3obj->vel, diffA, diff_iter);
+		f3obj->vel->swap(f3obj->prev_vel); // Re-Swap Vel With Prev_Vel. 
 	}
 	else if (dodiff == false)
 	{
-		f2obj->setcurtoprev_vel();
+		f3obj->setcurtoprev_vel();
 	}
 
 	// ADVECT VELOCITY FIELD (Self Advect) \\
 
 	if (Parms.p_AdvectionType == Parms.Advect_SL_BackTrace_Euler)
 	{
-		advect_sl(f2obj->prev_vel, f2obj->vel);
+		advect_sl(f3obj->prev_vel, f3obj->vel);
 	}
 	else if (Parms.p_AdvectionType == Parms.Advect_SL_BackTrace_RK2)
 	{
-		advect_sl_mp(f2obj->prev_vel, f2obj->vel);
-		//advect_sl_mp_GS(f2obj->prev_vel, f2obj->vel);
+		advect_sl_mp(f3obj->prev_vel, f3obj->vel);
+		//advect_sl_mp_GS(f3obj->prev_vel, f3obj->vel);
 	}
 
 	if (Parms.p_Do_Vel_Disp)
 	{
 		// DISSIPATE Density by multipler - 
-		dissipate(f2obj->vel, Parms.p_Vel_Disp_Mult, this->dt); // Density Dissipation. 
+		dissipate(f3obj->vel, Parms.p_Vel_Disp_Mult, this->dt); // Density Dissipation. 
 	}
 
 	// VORTICITY CONFINEMENT WIP \\
@@ -2016,10 +2001,10 @@ void fluidsolver_2::velocity_step(int diff_iter, int proj_iter, float diffA, boo
 	SOLVE STEP -
 	==================================================== */
 
-// Implementation of A Single solve Step of fluidsolver_2. Once User Calls this
+// Implementation of A Single solve Step of fluidsolver_3. Once User Calls this
 // Simulation will begin. And for now occur Untill program is closed. 
 
-void fluidsolver_2::solve_step(bool solve, bool do_diffdens, bool do_diffvel, float dens_diff, float vel_diff, int proj_iter, int diff_iter, int max_step)
+void fluidsolver_3::solve_step(bool solve, bool do_diffdens, bool do_diffvel, float dens_diff, float vel_diff, int proj_iter, int diff_iter, int max_step)
 {
 	// Init Step/time vals. 
 	int step_count = 0;
@@ -2063,8 +2048,8 @@ void fluidsolver_2::solve_step(bool solve, bool do_diffdens, bool do_diffvel, fl
 		if (glfwGetKey(winptr, GLFW_KEY_R) == GLFW_PRESS) // Messy inline for now. 
 		{
 			// Re-init Texture-ColourGrids - 
-			f2obj->vel->clear(); // Also Clear Vel Field. 
-			f2obj->RGB_imageLoad(f2obj->img_data.path);
+			f3obj->vel->clear(); // Also Clear Vel Field. 
+			f3obj->RGB_imageLoad(f3obj->img_data.path);
 		}
 		// Interp Switching.
 		//if (glfwGetKey(winptr, GLFW_KEY_I) == GLFW_PRESS) { Parms.p_InteroplationType == Parms.Interoplation_Linear; };
@@ -2084,20 +2069,20 @@ void fluidsolver_2::solve_step(bool solve, bool do_diffdens, bool do_diffvel, fl
 		sphere_bounds_set(spherebound_radius, spherebound_coliso, spherebound_offset);
 
 		// STEP SOURCING OPERATIONS \\ ----------------
-		//vec2 offset(-0.5, -0.85);
+		//vec3 offset(-0.5, -0.85);
 		//anim_offset.x = xpos; anim_offset.y = ypos; // Use Cursor Pos
-		//vec2 anim_offset(0.4 + (float(sin(float(step_count) / float(max_step) * 50.0f))) * 0.1, 0.1); 
+		//vec3 anim_offset(0.4 + (float(sin(float(step_count) / float(max_step) * 50.0f))) * 0.1, 0.1); 
 		// Fun Times Below - 
-	//	vec2 anim_offset(0.4 + (float(sin(float(step_count) / float(max_step) * 50.0f))) * 0.1f, 0.4 + (float(cos(float(step_count) / float(max_step) * (float(step_count) / float(max_step) * 10.0f)))) * 0.2f);
-	//	f2obj->implicit_source(0.1f, vec2(0.0f, 0.1f), anim_offset, 0.002f);
-		//f2obj->implicit_source(0.25f, vec2(0.0f, 0.1f), vec2(0.5f, 0.1f), 0.025f); 
+	//	vec3 anim_offset(0.4 + (float(sin(float(step_count) / float(max_step) * 50.0f))) * 0.1f, 0.4 + (float(cos(float(step_count) / float(max_step) * (float(step_count) / float(max_step) * 10.0f)))) * 0.2f);
+	//	f3obj->implicit_source(0.1f, vec3(0.0f, 0.1f), anim_offset, 0.002f);
+		//f3obj->implicit_source(0.25f, vec3(0.0f, 0.1f), vec3(0.5f, 0.1f), 0.025f); 
 
-		f2obj->implicit_source(0.2f, vec2<float>(0.0f, 0.25f), vec2<float>(0.5f, 0.2f), 0.01f);
+		f3obj->implicit_source(0.2f, vec3<float>(0.0f, 0.25f), vec3<float>(0.5f, 0.2f), 0.01f);
 
-	//	f2obj->implicit_source(0.25f, vec2<float>(0.0f, 0.0f), vec2<float>(0.5f, 0.5f), 0.1f);
+	//	f3obj->implicit_source(0.25f, vec3<float>(0.0f, 0.0f), vec3<float>(0.5f, 0.5f), 0.1f);
 
 		// Forces- 
-	//	if (step_count <= 20) f2obj->radial_force(vec2<float>(0.499f, 0.499f), 0.8f, this->dt);
+	//	if (step_count <= 20) f3obj->radial_force(vec3<float>(0.499f, 0.499f), 0.8f, this->dt);
 
 		// STEP - SUB - SOLVER STEP OPERATIONS \\ -------------- 
 		velocity_step(diff_iter, proj_iter, vel_diff, do_diffvel);
@@ -2108,17 +2093,17 @@ void fluidsolver_2::solve_step(bool solve, bool do_diffdens, bool do_diffvel, fl
 		// Pass Cur Step - 
 		render_obj->et = step_count; 
 		// Uniform/Texture Set Calls (ShaderPipe) -
-		render_obj->shader_pipe(f2obj); // Pass Grids Via Friend Acess to shader_pipe() MF
+		render_obj->shader_pipe(f3obj); // Pass Grids Via Friend Acess to shader_pipe() MF
 		// Render Operations Call - 
 		render_obj->call_ren(rend_state::RENDER_ACTIVE); // Call Render Step Ops here within solver loop, ie NON Debug Mode (Pass RENDER_ACTIVE).
 		#endif	
 
 		#if RENDER_IMG == 1
 		// STEP WRITE OUTPUT OPERATIONS - Non OGL Img output.
-		//f2obj->writeto_img_all(step_count, pressure);
-		f2obj->writeto_img(step_count); // Write Density Only, Debug.
-	//	f2obj->writeto_img_vel(step_count); // Write Velocity Only, Debug. 
-	//	f2obj->writeto_txt(step_count);
+		//f3obj->writeto_img_all(step_count, pressure);
+		f3obj->writeto_img(step_count); // Write Density Only, Debug.
+	//	f3obj->writeto_img_vel(step_count); // Write Velocity Only, Debug. 
+	//	f3obj->writeto_txt(step_count);
 		#endif
 
 		// STEP CONSLE DEBUG OPERATIONS \\ -------------------- 
@@ -2144,9 +2129,9 @@ void fluidsolver_2::solve_step(bool solve, bool do_diffdens, bool do_diffvel, fl
 			log_out << " \n *** DEBUG::Solve_Step::TOTAL_FPS = ~" << double(max_step) / total_elapsed << " FPS *** \n \n";
 
 			// Write Last Frame To Img 
-			//f2obj->writeto_img(step_count);
-			//std::cout << "\n"; f2obj->print_info();
-			//f2obj->writeto_img_vel(step_count);
+			//f3obj->writeto_img(step_count);
+			//std::cout << "\n"; f3obj->print_info();
+			//f3obj->writeto_img_vel(step_count);
 		}
 
 		// Print Log_output - 
@@ -2167,14 +2152,14 @@ void fluidsolver_2::solve_step(bool solve, bool do_diffdens, bool do_diffvel, fl
 	==================================================== */
 
 // Window Setter. Passed from Render Context Object.  
-void fluidsolver_2::set_window(GLFWwindow *win)
+void fluidsolver_3::set_window(GLFWwindow *win)
 {
 	assert(win != nullptr); // Check for Passing a nullptr FluidSolver GLFW WinPtr. Assert this.
 	this->winptr = win; 
 }
 
 // Call To Update Mouse Pos - (Pixel (Cell Index) Space)
-void fluidsolver_2::updt_mousepos(const step step_id)
+void fluidsolver_3::updt_mousepos(const step step_id)
 {
 	glfwPollEvents();
 
@@ -2193,7 +2178,7 @@ void fluidsolver_2::updt_mousepos(const step step_id)
 }
 
 // Call To Update Mouse Pos Norm (0-1 XY) - (Normalized Window / GridSpace).
-void fluidsolver_2::updt_mouseposNorm(const step step_id)
+void fluidsolver_3::updt_mouseposNorm(const step step_id)
 {
 	glfwPollEvents();
 	if (step_id == step::STEP_CUR)
@@ -2223,7 +2208,7 @@ void fluidsolver_2::updt_mouseposNorm(const step step_id)
 // Call To Update Mouse Pos Norm Within Clamped Range
 // NOT USED NOW Y AXIS issues are fixed within updt_mouseposNorm. Will keep for now. 
 
-void fluidsolver_2::updt_mouseposRange(const step step_id)
+void fluidsolver_3::updt_mouseposRange(const step step_id)
 {
 	glfwPollEvents();
 	if (step_id == step::STEP_CUR)
@@ -2251,7 +2236,7 @@ void fluidsolver_2::updt_mouseposRange(const step step_id)
 }
 
 // Calc Mouse Velocity - 
-void fluidsolver_2::updt_mousevel()
+void fluidsolver_3::updt_mousevel()
 {
 	// Prev and Cur Mouse Postions. 
 	vec2<float> p_0(xpos_0_N, ypos_0_N);
@@ -2268,7 +2253,7 @@ void fluidsolver_2::updt_mousevel()
 }
 
 // Dissipate Grid Quanities By Multiplier - 
-void fluidsolver_2::dissipate(grid2_scalar *grid, float disp_mult, float dt)
+void fluidsolver_3::dissipate(grid3_scalar<float> *grid, float disp_mult, float dt)
 {
 	//disp_mult = std::max(0.0f, std::min(disp_mult, 1.0f)); // Enforce 0-1 Mult. 
 	disp_mult = solver_utils::clamp(disp_mult, 0.0f, 1.0f); 
@@ -2285,7 +2270,7 @@ void fluidsolver_2::dissipate(grid2_scalar *grid, float disp_mult, float dt)
 	}
 }
 
-void fluidsolver_2::dissipate(grid2_vector *grid, float disp_mult, float dt)
+void fluidsolver_3::dissipate(grid3_vector<vec3<float>> *grid, float disp_mult, float dt)
 {
 	disp_mult = solver_utils::clamp(disp_mult, 0.0f, 1.0f);
 	for (int j = 1; j <= N_dim; j++)
@@ -2293,7 +2278,7 @@ void fluidsolver_2::dissipate(grid2_vector *grid, float disp_mult, float dt)
 		for (int i = 1; i <= N_dim; i++)
 		{
 			// Don't Mult By dt for now. 
-			vec2<float> cur_vel = grid->getdata(i, j);
+			vec3<float> cur_vel = grid->getdata(i, j);
 			cur_vel *= disp_mult;
 			grid->setdata(cur_vel, i, j);
 		}
@@ -2335,7 +2320,7 @@ std::function<float(float, float, float)> solver_utils::cosinterp = [&](float va
 
 // BILINEAR: 2D Linear Interoplation Of Cell i,j by Coefficents a,b. 
 // Scalar Grid Input - (Cannot use Generics, due to inner Type diffs)
-std::function<float(grid2_scalar*, float, float, int, int)> solver_utils::bilinear_S = [&](grid2_scalar *grid, float a, float b, int i, int j) -> float
+std::function<float(grid3_scalar<float>*, float, float, int, int)> solver_utils::bilinear_S = [&](grid3_scalar<float> *grid, float a, float b, int i, int j) -> float
 {
 	// Complement to get other coeffs. 
 	float a1 = 1 - a; float b1 = 1 - b;
@@ -2346,7 +2331,7 @@ std::function<float(grid2_scalar*, float, float, int, int)> solver_utils::biline
 		a1 * (b * grid->getdata(i + 1, j) + b1 * grid->getdata(i + 1, j + 1));
 };
 // Vector Grid Input - (short specfices x or y component) 
-std::function<float(grid2_vector*, float, float, int, int, ushort)> solver_utils::bilinear_V = [&](grid2_vector *grid, float a, float b, int i, int j, ushort mode) -> float
+std::function<float(grid3_vector<vec3<float>>*, float, float, int, int, ushort)> solver_utils::bilinear_V = [&](grid3_vector<vec3<float>> *grid, float a, float b, int i, int j, ushort mode) -> float
 {
 	assert(mode <= 1); // 0 = X, 1 = Y.
 
@@ -2371,8 +2356,8 @@ std::function<float(grid2_vector*, float, float, int, int, ushort)> solver_utils
 
 // BICUBIC
 // Scalar - 
-std::function<float(grid2_scalar*, float, float, float, float, int, int)> solver_utils::bicubic_S = [&]
-	(grid2_scalar *grid,
+std::function<float(grid3_scalar<float>*, float, float, float, float, int, int)> solver_utils::bicubic_S = [&]
+	(grid3_scalar<float> *grid,
 	float wn1, float w0, float w1, float w2,
 	int i, int j) -> float
 {
@@ -2386,8 +2371,8 @@ std::function<float(grid2_scalar*, float, float, float, float, int, int)> solver
 };
 
 // Vector - 
-std::function<float(grid2_vector*, float, float, float, float, int, int, ushort)> solver_utils::bicubic_V = [&]
-	(grid2_vector *grid,
+std::function<float(grid3_vector<vec3<float>>*, float, float, float, float, int, int, ushort)> solver_utils::bicubic_V = [&]
+	(grid3_vector<vec3<float>> *grid,
 	float wn1, float w0, float w1, float w2,
 	int i, int j, ushort mode) -> float
 {
@@ -2427,7 +2412,7 @@ q = w-1 qj-1 + w0 qj + w1 qj+1 + w2 qj+2
 	DEBUG - Member FUnctions 
 	==================================================== */
 
-void fluidsolver_2::fill_test(int x)
+void fluidsolver_3::fill_test(int x)
 {
 	if (x >= NE_dim) x = NE_dim; 
 
@@ -2435,13 +2420,13 @@ void fluidsolver_2::fill_test(int x)
 	{
 		for (int i = 0; i < x; i++)
 		{
-			f2obj->dens->setdata(1.0f, i, j);
+			f3obj->dens->setdata(1.0f, i, j);
 		}
 	}
 }
 
 // Test Implementation of Interactive Sphere Radius - Can Cause Pressure Solver Crashes. 
-void fluidsolver_2::sphere_rad_test()
+void fluidsolver_3::sphere_rad_test()
 {
 	if (glfwGetKey(winptr, GLFW_KEY_PAGE_UP) == GLFW_PRESS)
 	{

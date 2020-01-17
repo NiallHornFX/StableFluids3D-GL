@@ -76,7 +76,7 @@ class fluidsolver_3
 public:
 
 	// Enforce no default constructor/implicit construction. FluidObject Pointer Is NEEDED for Construction.
-	fluidsolver_3(fluidobj_3d *f2dptr, float dtt);
+	fluidsolver_3(fluidobj_3d *f3dptr, float dtt);
 	~fluidsolver_3();
 	fluidsolver_3() = delete; // Delete Default Constructor. 
 
@@ -243,13 +243,13 @@ protected:
 
 private:
 
-	fluidobj_3d *f2obj; // Pointer to FluidObject3D this FluidSolver Instance is Solving/Operating on.
+	fluidobj_3d *f3obj; // Pointer to FluidObject3D this FluidSolver Instance is Solving/Operating on.
 	float dt;
 
 	// Hard Coded on Construction (Constant) Not Paramters - (Get from FluidObj Ideally, Kinda Dont need these do we?)
 	// Size Members, Get from Fluid Object. 
 
-	int x_s, y_s, e_s; // Axis Sizes and Edge Cell Size/Count. 
+	int x_s, y_s, z_s, e_s; // Axis Sizes and Edge Cell Size/Count.
 	std::size_t total_size; // Total Cell Size (X+E) * (Y+E). 
 
 	// Assume Square Grid - 
@@ -268,7 +268,7 @@ private:
 	grid3_scalar<float> *spherebounds_sdf; // Grid to hold SphereBounds SDF Value For Cur Step. 
 
 	// Render Members - 
-	renderobject_3d_OGL *render_obj = nullptr; // Uses OGL Not Base Ptr for now, nocast. 
+	renderobject_3d_OGL *render_obj; // Uses OGL Not Base Ptr for now, nocast. 
 	GLFWwindow *winptr; // From Render Contex Passed In Window. 
 };
 
