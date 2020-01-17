@@ -1,8 +1,8 @@
 #ifndef FLUIDSOLVER_2_H
 #define FLUIDSOLVER_2_H
 
-#include "fluidobj.h"
-#include "renderobject.h"
+#include "fluidobj3d.h"
+//#include "renderobject.h"
 
 // Vendor Headers - 
 #include <GLFW\glfw3.h>
@@ -11,13 +11,12 @@
 #include <immintrin.h> // SIMD Intrinsics. 
 #include <functional> // std::function object. 
 #include <iostream>
+
+// Forward Decls -  
+class renderobject_3d_OGL;
+
 using ushort = unsigned short; 
 using avx256 = __m256;
-
-// TypeDef Per SIMD Arch. 
-// Set Packed Float - Intel. 
-// typedef avx256(*SIMDSet)(float, float, float, float, float, float, float, float);
-// Unresv symbols from this when set to set_ps ... 
 
 // SIMD - Free Function Utilties -
 
@@ -61,22 +60,25 @@ struct solver_utils
 	static std::function<float(float, float, float)> cosinterp; 
 
 	// 2D
-	static std::function<float(grid2_scalar*, float, float, int, int)> bilinear_S; // Bilinear - Scalar. 
-	static std::function<float(grid2_vector*, float, float, int, int, ushort)> bilinear_V; // Bilinear - Vector. 
-	static std::function<float(grid2_scalar*, float, float, float, float, int, int)> bicubic_S; // BiCubic - Scalar.
-	static std::function<float(grid2_vector*, float, float, float, float, int, int, ushort)> bicubic_V; // BiCubic - Vector.
+	/*
+	static std::function<float(grid3_scalar<float>*, float, float, int, int)> bilinear_S; // Bilinear - Scalar. 
+	static std::function<float(grid3_vector<vec3<float>>*, float, float, int, int, ushort)> bilinear_V; // Bilinear - Vector. 
+	static std::function<float(grid3_scalar<float>*, float, float, float, float, int, int)> bicubic_S; // BiCubic - Scalar.
+	static std::function<float(grid3_vector<vec3<float>>*, float, float, float, float, int, int, ushort)> bicubic_V; // BiCubic - Vector.
+	*/
 };
 
 
 // 2D Fluid Solver Class - Interface/Decleration. 
 
-class fluidsolver_2
+class fluidsolver_3
 {
 public:
+
 	// Enforce no default constructor/implicit construction. FluidObject Pointer Is NEEDED for Construction.
-	explicit fluidsolver_2(fluidobj_2d *f2dptr, float dtt);
-	~fluidsolver_2();
-	fluidsolver_2() = delete; // Delete Default Constructor. 
+	fluidsolver_3(fluidobj_3d *f2dptr, float dtt);
+	~fluidsolver_3();
+	fluidsolver_3() = delete; // Delete Default Constructor. 
 
 	// Setter/Getters - 
 	void set_window(GLFWwindow *win);
@@ -151,42 +153,42 @@ protected:
 
 	// ! Generic Boundary MFuncs
 	// Edge Bounds - 
-	void edge_bounds(grid2_scalar *grid);
-	void edge_bounds(grid2_vector *grid);
+	void edge_bounds(grid3_scalar<float> *grid);
+	void edge_bounds(grid3_vector<vec3<float>> *grid);
 
 	// Sphere/sphere Bounds - 
 	void sphere_bounds_set(float radius, float col_iso, const vec2<float> &offset);  // Set SphereBounds SDF Grid. 
-	void sphere_bounds_eval(grid2_scalar *grid, float col_iso);
-	void sphere_bounds_eval(grid2_vector *grid, float col_iso);
+	void sphere_bounds_eval(grid3_scalar<float> *grid, float col_iso);
+	void sphere_bounds_eval(grid3_vector<vec3<float>> *grid, float col_iso);
 
 	// DIFFUSION \\ - 
 	// Gauss-Seidel Relaxation Diffusion Based on Grid Neighbours 
 
 	// ! Generic Diffusion MFuncs- 	
-	void diffuse(grid2_scalar *grid_0, grid2_scalar *grid_1, float diff, ushort iter);
-	void diffuse(grid2_vector *grid_0, grid2_vector *grid_1, float diff, ushort iter);
+	void diffuse(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1, float diff, ushort iter);
+	void diffuse(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3<float>> *grid_1, float diff, ushort iter);
 
 	// Unstable standard FDM Diffusion - 
-	void diffuse_FDM(grid2_scalar *grid_0, grid2_scalar *grid_1, float diff);
-	//void diffuse_FDM(grid2_vector *grid_0, grid2_vector *grid_1);
+	void diffuse_FDM(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1, float diff);
+	//void diffuse_FDM(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3<float>> *grid_1);
 
 	// ADVECTION \\ - 
 	// Semi-Lagraginin Advection Step Single Backtrace Step. Overload Based on Grid Type. 
 
 	// Semi Lagrangian (Single Backwards Euler) Advection - 
-	void advect_sl(grid2_scalar *grid_0, grid2_scalar *grid_1);
-	void advect_sl(grid2_vector *grid_0, grid2_vector *grid_1);
+	void advect_sl(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1);
+	void advect_sl(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3<float>> *grid_1);
 
 	// Semi Lagrangian RungeKutta 2 - MidPoint Advection.  
-	void advect_sl_mp(grid2_scalar *grid_0, grid2_scalar *grid_1);
-	void advect_sl_mp(grid2_vector *grid_0, grid2_vector *grid_1);
+	void advect_sl_mp(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1);
+	void advect_sl_mp(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3<float>> *grid_1);
 
 	// Bicubic Interoplation with MP Advection Test -
-	//void advect_sl_mp_bc(grid2_scalar *grid_0, grid2_scalar *grid_1);
+	//void advect_sl_mp_bc(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1);
 
 	// SL MidPoint Advection - BackTrace In Grid Space. 
-	void advect_sl_mp_GS(grid2_scalar *grid_0, grid2_scalar *grid_1);
-	void advect_sl_mp_GS(grid2_vector *grid_0, grid2_vector *grid_1);
+	void advect_sl_mp_GS(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1);
+	void advect_sl_mp_GS(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3<float>> *grid_1);
 
 	// PROJECTION \\ - 
 	// Velocity Field Projection/Pressure Solve - 
@@ -201,14 +203,14 @@ protected:
 	void project_jacobi(int iter); 
 
 	// DISSIPATION \\ - 
-	void dissipate(grid2_scalar *grid, float disp_mult, float dt);
-	void dissipate(grid2_vector *grid, float disp_mult, float dt);
+	void dissipate(grid3_scalar<float> *grid, float disp_mult, float dt);
+	void dissipate(grid3_vector<vec3<float>> *grid, float disp_mult, float dt);
 
 	// MISC \\ - 
 	void vel_force(vec2<float> ff, float dtt);
 
 	// Run Passed Lambda Callback Over Each Vector Grid Cell. 
-	void custom_force(grid2_vector *grid, std::function <vec2<float>(vec2<int> idx)> &force);
+	void custom_force(grid3_vector<vec3<float>> *grid, std::function <vec2<float>(vec2<int> idx)> &force);
 
 	// VORTICITY CONFINEMENT WIP \\ - 
 	void vorticty_confine(float strength);
@@ -241,8 +243,8 @@ protected:
 
 private:
 
-	fluidobj_2d *f2obj; // Contains Pointer to Fluid Object 2D Its Solving/Operation on.
-	float dt; // Delta Time. 
+	fluidobj_3d *f2obj; // Pointer to FluidObject3D this FluidSolver Instance is Solving/Operating on.
+	float dt;
 
 	// Hard Coded on Construction (Constant) Not Paramters - (Get from FluidObj Ideally, Kinda Dont need these do we?)
 	// Size Members, Get from Fluid Object. 
@@ -254,21 +256,19 @@ private:
 	int N_dim; // Size of SINGLE Dimension w/o Edge Cells.
 	int NE_dim; // Size of SINGLE Dimension w/ Edge Cells.
 
-	float spacing; // User Spacing Control (NOT Fluid Spacing, which is always h = 1/N (N_dim)).
-
 	// Input - Mouse Members/Functions - 
 	double xpos_0, ypos_0, xpos_0_N, ypos_0_N, xpos_0_R, ypos_0_R; // Prev_Step Mouse Data
 	double xpos_1, ypos_1, xpos_1_N, ypos_1_N, xpos_1_R, ypos_1_R;  // Cur_step Mouse Data 
 	vec2<float> mouse_vel;
 
 	// Temp/Scratch Grids Ptrs for Solver Use Only (Never Directly Rendered or used back in FluidObj unless copied).
-	grid2_scalar *pressure, *pressure_1;
-	grid2_scalar *divergence;
-	grid2_scalar *vort; // 2D Vort/Curl Grid. 
-	grid2_scalar *spherebounds_sdf; // Grid to hold SphereBounds SDF Value For Cur Step. 
+	grid3_scalar<float> *pressure, *pressure_1;
+	grid3_scalar<float> *divergence;
+	grid3_scalar<float> *vort; // 2D Vort/Curl Grid. 
+	grid3_scalar<float> *spherebounds_sdf; // Grid to hold SphereBounds SDF Value For Cur Step. 
 
 	// Render Members - 
-	renderobject_2D_OGL *render_obj = nullptr; // Uses OGL Not Base Ptr. 
+	renderobject_3d_OGL *render_obj = nullptr; // Uses OGL Not Base Ptr for now, nocast. 
 	GLFWwindow *winptr; // From Render Contex Passed In Window. 
 };
 

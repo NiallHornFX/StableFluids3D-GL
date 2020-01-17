@@ -9,7 +9,7 @@
 
 
 // Forward Decls - 
-class fluidobj_2d; 
+class fluidobj_3d; 
 
 // Render State Enum 
 enum class rend_state
@@ -20,10 +20,10 @@ enum class rend_state
 
 
 // Abstract Base Class Interface for API Specfic Render Object. (2D Fluid)
-class renderobject_2D
+class renderobject_3D
 {
 // FCs
-friend class fluidsolver_2; // Allow Private/Protected Acess of FluidSolver_2. 
+friend class fluidsolver_3; // Allow Private/Protected Acess of FluidSolver_2. 
 
 public:
 	renderobject_2D(const char *api_name, int v_maj, int v_min, int win_x, int win_y, int rmode);
