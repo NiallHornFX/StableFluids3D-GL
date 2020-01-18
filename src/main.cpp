@@ -1,38 +1,36 @@
 /* INFO ---- 
-- An Implementation of Jos Stams's 2D Stable Fluids Paper In an OOP Framework based context. 
-- Niall Horn 
-- github.com/NiallHornFX
+	A Realtime CPU Based 3D Fluid-Solver based on Jos Stams Stable Fluids Paper. Along with Fedkiw and Bridson.
+	With a Basic GPU Realtime RayMarcher For Rendering based in OpenGL. 
 
-- Tested on Windows 7 - VS2017 15.9.16 - MSVC 19.11.25508.2 - OpenGL 4.4 - C++ 14 Standard. 
-- x64. 
-- Depend - {GLEW, GLFW, opengl32.lib(WIN), (Statically Linked). OMP 2.0}
-- Open MP 2.0 
+	- All Grids are currently collacated (Cell Centered) Mac/Staggerd Grids will be added soon (Vel + Pressure). 
 
-- I use raw pointers only throughout this project. 
-Get Rid of Verbose Notes for github push. 
+	- Built and Tested on Windows x64 using MSVC. OpenMP 2.0|GLEW|GLFW. Statically Linked Currently. 
+	- Use of amd64 (Intel x64) SIMD intrinsics, with hardcoded instruction sets SSE3 and AVX currently used. 
+	- Modern OpenGL, Using 4.0+
+	- TO-DO | CMake BuildSystem | Test on Linux 
 ---*/
 
-// Might Be included through Class Headers, But Still Re-Include in main, for clarity. 
+// Std Headers 
 #include <iostream>
 #include <vector>
 #include <memory>
- 
+
+// Vendor Headers
 #define GLEW_STATIC // Static Linking GLEW and GLFW For now. 
 #include <GLEW\glew.h>
 #include <GLFW\glfw3.h>
 
-#include "grids3d.h"
+// Project Headers 
 #include "vec3d.h"
 #include "mat3d.h"
-/*
+#include "grids3d.h"
 #include "fluidobj3d.h"
 #include "fluidsolver3d.h"
 #include "rendercontext3d.h"
 #include "renderobject3d.h"
-*/
+
 
 // Macros - 
-
 #define GLMajor 4
 #define GLMinor 0
 
@@ -43,7 +41,6 @@ Get Rid of Verbose Notes for github push.
 #define SIMD_FORCE_INLINE
 
 // Globals - 
-
 short verbose = 0;
 double const PI = 3.14159265359; 
 
@@ -54,10 +51,12 @@ float const timestep = 1.0f / 60.0f;  // dt = 0.0166f
 
 /*
 -- INFO --
-Fluid Object is created to Allocate Grids and Grid Settings, Which is Passed to Fluid
-Solver for Solving. Render Context setups up Window and Graphics API Context for rendering
-Solver contains embedded RenderObject for rendering solved FluidObj Grids to resulting Framebuffer. 
-Inputs are handled within FluidSolver SolveStep or Embdedded RenderObject (within this solvestep). 
+- Fluid Object is created to Allocate Grids and Grid Settings, Which is Passed to Fluid Solver for Solving. 
+- Render Context setups up Window and Graphics API Context for rendering.
+- Solver contains embedded RenderObject for rendering solved FluidObj Grids to Window Framebuffer (within solvestep). 
+- Inputs are handled within FluidSolver SolveStep or Encapsulated RenderObject (within solvestep). 
+- Plans to Decouple Application/Simulation Loop from Solver And allow user defined App/Sim Loop to Eval Is WIP. 
+-- END --
 */
 
 int main()

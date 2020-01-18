@@ -157,7 +157,7 @@ protected:
 	void edge_bounds(grid3_vector<vec3<float>> *grid);
 
 	// Sphere/sphere Bounds - 
-	void sphere_bounds_set(float radius, float col_iso, const vec2<float> &offset);  // Set SphereBounds SDF Grid. 
+	void sphere_bounds_set(float radius, float col_iso, const vec3<float> &offset);  // Set SphereBounds SDF Grid. 
 	void sphere_bounds_eval(grid3_scalar<float> *grid, float col_iso);
 	void sphere_bounds_eval(grid3_vector<vec3<float>> *grid, float col_iso);
 
@@ -207,7 +207,7 @@ protected:
 	void dissipate(grid3_vector<vec3<float>> *grid, float disp_mult, float dt);
 
 	// MISC \\ - 
-	void vel_force(vec2<float> ff, float dtt);
+	void vel_force(vec3<float> ff, float dtt);
 
 	// Run Passed Lambda Callback Over Each Vector Grid Cell. 
 	void custom_force(grid3_vector<vec3<float>> *grid, std::function <vec2<float>(vec2<int> idx)> &force);
