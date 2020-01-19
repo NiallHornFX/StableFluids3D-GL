@@ -167,7 +167,7 @@ void fluidsolver_3::edge_bounds(grid3_scalar<float> *grid)
 	float c_0N10 = 0.33f * (grid->getdata(1, N_dim + 1, 0) + grid->getdata(0, N_dim, 0) + grid->getdata(0, N_dim + 1, 1));
 	grid->setdata(c_0N10, 0, N_dim + 1, 0); 
 
-
+	//.............
 
 	float p_03 = 0.5 * (grid->getdata(N_dim, N_dim + 1) + grid->getdata(N_dim + 1, N_dim));
 	grid->setdata(p_03, N_dim + 1, N_dim + 1);
@@ -261,17 +261,20 @@ void fluidsolver_3::sphere_bounds_set(float radius, float col_iso, const vec3<fl
 	float h = 1.0f / N_dim; // Grid Spacing, Recoprical of One Dim Size (N). 
 
 	#pragma omp parallel for num_threads(omp_get_max_threads())	
-	for (int j = 1; j <= N_dim; j++)
+	for (int k = 1; k < N_dim; k++)
 	{
-		for (int i = 1; i <= N_dim; i++)
+		for (int j = 1; j <= N_dim; j++)
 		{
-			// Implicit Sphere/sphere Function: x^2 + y^2 - r . >= 0 <= Thresh == Surface. > Thresh = Exterior. < 0 = Interior. Cells. 
-			vec3<float> cell_gridSpace(float((i * h) - offset.x), float((j * h) - offset.y)); // Index to Grid Space 0-1N. 
-			float sphere_func = ((cell_gridSpace.x * cell_gridSpace.x) + (cell_gridSpace.y * cell_gridSpace.y)) - radius; // NoMoreSqrt.
+			for (int i = 1; i <= N_dim; i++)
+			{
+				// Implicit Sphere/sphere Function: x^2 + y^2 + z^2 - r . >= 0 <= Thresh == Surface. > Thresh = Exterior. < 0 = Interior. Cells. 
+				vec3<float> cell_gridSpace(float(i * h) - offset.x, float(j * h) - offset.y, float(k*h) - offset.z); // Index to Grid Space 0-1N. 
+				float sphere_func = ((cell_gridSpace.x * cell_gridSpace.x) + (cell_gridSpace.y * cell_gridSpace.y) + (cell_gridSpace.z * cell_gridSpace.z)) - radius; 
 
-			// Write to  spherebounds_sdf grid for spherebounds_eval() to lookup. 
-			spherebounds_sdf->setdata(0.0f, i, j); // Zero Out Prev SDF Grid Cell Values. 
-			spherebounds_sdf->setdata(sphere_func, i, j); // Set New Cur Step SDF Cell Values. 
+				// Write to  spherebounds_sdf grid for spherebounds_eval() to lookup. 
+				spherebounds_sdf->setdata(0.0f, i, j, k); // Zero Out Prev SDF Grid Cell Values. 
+				spherebounds_sdf->setdata(sphere_func, i, j, k); // Set New Cur Step SDF Cell Values. 
+			}
 		}
 	}
 
@@ -286,46 +289,50 @@ void fluidsolver_3::sphere_bounds_eval(grid3_scalar<float> *grid, float col_iso)
 	float h = 1.0f / N_dim; // Grid Spacing, Recoprical of One Dim Size (N). 
 	
 	#pragma omp parallel for num_threads(omp_get_max_threads())	
-	for (int j = 1; j <= N_dim; j++)
+	for (int k = 1; k < N_dim; k++)
 	{
-		for (int i = 1; i <= N_dim; i++)
+		for (int j = 1; j <= N_dim; j++)
 		{
-			// Lookup Sphere/sphere SDF At CurCell i,j. 
-			float sphere_func = spherebounds_sdf->getdata(i, j);
-			f3obj->col->setdata(0.0f, i, j); // Zero Out Prev Collison Cell Values. 
-
-			/*
-			// Surface - 
-			if (sphere_func >= 0.0f && sphere_func <= col_iso) // func-radis > 0.0f but <= col_iso Cell is on "surface". 
+			for (int i = 1; i <= N_dim; i++)
 			{
-				// On Surface Operations. 
-			}
-			*/
+				// Lookup Sphere/sphere SDF At CurCell i,j. 
+				float sphere_func = spherebounds_sdf->getdata(i, j);
+				f3obj->col->setdata(0.0f, i, j, k); // Zero Out Prev Collison Cell Values. 
 
-			// Inside - 
-			if (sphere_func <= 0.0f)
-			{
-				// Inside Operations. 
-
-				// Inside Operations -  Input Scalar Grid
-				if (Parms.p_spherebounds_killint == true)
+				/*
+				// Surface -
+				if (sphere_func >= 0.0f && sphere_func <= col_iso) // func-radis > 0.0f but <= col_iso Cell is on "surface".
 				{
-					grid->setdata(0.0f, i, j); // Zero ANY Density inside Sphere Interior. 
+					// On Surface Operations.
 				}
-				
-				// Inside Operations - Collision Scalar Grid
-				// Set Collison Grid (HardCoded to pointed f3obj member) (Col Grid, probs should be Boolean Grid no? Evneutally MAC). 
-				f3obj->col->setdata(1.0f, i, j);
+				*/
+
+				// Inside - 
+				if (sphere_func <= 0.0f)
+				{
+					// Inside Operations. 
+
+					// Inside Operations -  Input Scalar Grid
+					if (Parms.p_spherebounds_killint == true)
+					{
+						grid->setdata(0.0f, i, j, k); // Zero ANY Density inside Sphere Interior. 
+					}
+
+					// Inside Operations - Collision Scalar Grid
+					// Set Collison Grid (HardCoded to pointed f3obj member) (Col Grid, probs should be Boolean Grid no? Evneutally MAC). 
+					f3obj->col->setdata(1.0f, i, j, k);
+				}
+
+				/*
+				if (sphere_func > col_iso) // func-radis > 0.0f+col_iso Cell is Outside.
+				{
+					// Outside Operations.
+				}
+				*/
 			}
-			
-			/*
-			if (sphere_func > col_iso) // func-radis > 0.0f+col_iso Cell is Outside.   
-			{
-				// Outside Operations. 
-			}
-			*/
 		}
 	}
+
 }
 
 
@@ -339,73 +346,77 @@ void fluidsolver_3::sphere_bounds_eval(grid3_vector<vec3<float>> *grid, float co
 	float h = 1.0f / N_dim; // Grid Spacing, Recoprical of One Dim Size (N). 
 
 	#pragma omp parallel for num_threads(omp_get_max_threads())
-	for (int j = 1; j <= N_dim; j++)
+	for (int k = 1; k < N_dim; k++)
 	{
-		for (int i = 1; i <= N_dim; i++)
+		for (int j = 1; j <= N_dim; j++)
 		{
-			// Lookup Sphere/sphere SDF At CurCell i,j. 
-			float sphere_func = spherebounds_sdf->getdata(i, j);
-
-			/*
-			// Surface
-			if (sphere_func >= 0.0f && sphere_func <= col_iso) // func-radis > 0.0f but <= col_iso Cell is on "surface". 
+			for (int i = 1; i <= N_dim; i++)
 			{
-				// Surface Operations - 
+				// Lookup Sphere/sphere SDF At CurCell i,j. 
+				float sphere_func = spherebounds_sdf->getdata(i, j, k);
 
-				// Do Sphere Vel Reflection On Surface Cirlce/Sphere Cells - 
-				// Reflect from offset vector (Sphere Center) to CellPos Diriection, oppose to origin^ - 
+				/*
+				// Surface
+				if (sphere_func >= 0.0f && sphere_func <= col_iso) // func-radis > 0.0f but <= col_iso Cell is on "surface".
+				{
+					// Surface Operations -
 
-				//float input_spd = grid->getdata(i, j).length();
-				//vec3 refl_dir = vec3(offset.x, offset.y) - vec3(float(i) * h, float(j) * h);
-				//refl_dir.normalize();
-				//refl_dir *= input_spd * 1.0f;
+					// Do Sphere Vel Reflection On Surface Cirlce/Sphere Cells -
+					// Reflect from offset vector (Sphere Center) to CellPos Diriection, oppose to origin^ -
 
-				// Override Vel With Reflect Dir Vel
-				//grid->setdata(refl_dir, i, j);
-				
+					//float input_spd = grid->getdata(i, j).length();
+					//vec3 refl_dir = vec3(offset.x, offset.y) - vec3(float(i) * h, float(j) * h);
+					//refl_dir.normalize();
+					//refl_dir *= input_spd * 1.0f;
 
-			}
-			*/
+					// Override Vel With Reflect Dir Vel
+					//grid->setdata(refl_dir, i, j);
+				}
+				*/
 
-			// Inside - 
-			if (sphere_func < 0.0f) // func-radius < 0.0f Cell is inside. 
-			{
-				// Inside Operations - 
+				// Inside - 
+				if (sphere_func < 0.0f) // func-radius < 0.0f Cell is inside. 
+				{
+					// Inside Operations - 
 
-				// Do Reflection On Interior Velocites Oppose to Zeroing Them? 
-				/* NOT Used, as Causes Relfection on Interior Cells Causes Advection Issues at Surface. 
-				float input_spd = grid->getdata(i, j).length();
-				vec3 refl_dir = vec3(float(i) * h, float(j) * h) - vec3(offset.x, offset.y) ;
-				refl_dir.normalize();
-				refl_dir *= input_spd * 1.0f;
-				// Override Interior Col Vel With Reflect Dir Vel
-				grid->setdata(refl_dir, i, j); // ISSUES WITH ADDED GRID VELOCITY ? */
+					// Do Reflection On Interior Velocites Oppose to Zeroing Them? 
+					/* NOT Used, as Causes Relfection on Interior Cells Causes Advection Issues at Surface.
+					float input_spd = grid->getdata(i, j).length();
+					vec3 refl_dir = vec3(float(i) * h, float(j) * h) - vec3(offset.x, offset.y) ;
+					refl_dir.normalize();
+					refl_dir *= input_spd * 1.0f;
+					// Override Interior Col Vel With Reflect Dir Vel
+					grid->setdata(refl_dir, i, j); // ISSUES WITH ADDED GRID VELOCITY ? */
 
+					// Simply Zero Out Vector Grid Values In Interior Sphere Cells -   
+					grid->setdata(vec3<float>(0.0f, 0.0f, 0.0f), i, j, k);
+				}
 
-				// Simply Zero Out Vector Grid Values In Interior Sphere Cells -   
-				grid->setdata(vec3<float>(0.0f, 0.0f), i, j);
-			}
+				/*
+				// Outside -
+				if (sphere_func > col_iso) // func-radis > 0.0f+col_iso Cell is Outside.
+				{
+					// Outside Operations.
+				}
+				*/
 
-			/*
-			// Outside -
-			if (sphere_func > col_iso) // func-radis > 0.0f+col_iso Cell is Outside.  
-			{
-				// Outside Operations.
-			}
-			*/
+				// !TODO 3D MOUSE VEL - 
+				/* ADD MOUSE VELOCITY - Also On Surface & Interior Cells -
+				Eventually add this as a Bool Param Option for Sphere_Bounds Vector, and expose Vel Multipler Param.*/
+				if (sphere_func <= col_iso) // func-radius <= col_iso is Ethier Inside or on Surface. 
+				{
+					float mouse_velMult = 1.0f;
 
-			/* ADD MOUSE VELOCITY - Also On Surface & Interior Cells - 
-			Eventually add this as a Bool Param Option for Sphere_Bounds Vector, and expose Vel Multipler Param.*/
-			if (sphere_func <= col_iso) // func-radius <= col_iso is Ethier Inside or on Surface. 
-			{
-				float mouse_velMult = 1.0f; 
+					// Get Stored Current Mouse Vel + to Current Grid Cell Velocity. 
+					//vec2<float> cur_vel = grid->getdata(i, j);
+					//grid->setdata(cur_vel + (mouse_vel *= mouse_velMult), i, j);
 
-				// Get Stored Current Mouse Vel + to Current Grid Cell Velocity. 
-				vec3<float> cur_vel = grid->getdata(i, j);
-				grid->setdata(cur_vel + (mouse_vel *= mouse_velMult), i, j);
+					//grid->setdata(grid->getdata(i, j, k) + (mouse_vel *= mouse_velMult), i, j, k);
+				}
 			}
 		}
 	}
+
 }
 
 
@@ -423,26 +434,29 @@ void fluidsolver_3::diffuse(grid3_scalar<float> *grid_0, grid3_scalar<float> *gr
 	// Scalar Field Diffusion - 
 	for (int l = 0; l < iter; l++)
 	{
-		for (int j = 1; j <= N_dim; j++)
+		for (int k = 1; k <= N_dim; k++)
 		{
-			for (int i = 1; i <= N_dim; i++)
+			for (int j = 1; j <= N_dim; j++)
 			{
-				// Calc New Scalar Val via Diffusion Linear Solver. // x not b...
-				float b_val = (grid_0->getdata(i, j) + a * (grid_1->getdata(i - 1, j)
-				 + grid_1->getdata(i + 1, j) + grid_1->getdata(i, j - 1) + grid_1->getdata(i, j + 1)))
-				 / (1 + 4 * a);
+				for (int i = 1; i <= N_dim; i++)
+				{
+					// Calc New Scalar Val via Diffusion Linear Solver. 
+					float b_val = (grid_0->getdata(i, j, k) + a * 
+						(grid_1->getdata(i - 1, j, k) + grid_1->getdata(i + 1, j, k) 
+						+ grid_1->getdata(i, j - 1, k) + grid_1->getdata(i, j + 1, k)
+						+ grid_1->getdata(i, j, k - 1) + grid_1->getdata(i, j, k + 1))
+						) / (1 + 6 * a);
 
-				// Set New Dens Val.
-				grid_1->setdata(b_val, i, j);
+					// Set New Dens Val.
+					grid_1->setdata(b_val, i, j, k);
+				}
 			}
 		}
 
 		// Call (Re-Inforce Boundary Condtions) Boundary Calc MFs on each Relaxation Iter - 
-		// Only Call BoundaryCondtions on Current Step Grids. 
-		edge_bounds(grid_1); // Generic Func Call, Pass Grid_1. 
+		edge_bounds(grid_1); // Generic Func Call, Pass Grid_1 (n+1). 
 
 		#if dospherebound == 1
-		//sphere_bounds(spherebound_radius, spherebound_coliso, spherebound_offset);
 		sphere_bounds_eval(grid_1, spherebound_coliso);
 		#endif
 	}
@@ -457,28 +471,36 @@ void fluidsolver_3::diffuse(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3
 
 	for (int l = 0; l < iter; l++)
 	{
-		for (int j = 1; j <= N_dim; j++)
+		for (int k = 1; k <= N_dim; k++)
 		{
-			for (int i = 1; i <= N_dim; i++)
+			for (int j = 1; j <= N_dim; j++)
 			{
+				for (int i = 1; i <= N_dim; i++)
+				{
+					// Per Scalar (float) Vector component diffusion - 
+					// U (x)
+					//float U_val = (grid_0->getdata_x(i, j, k) + a * (grid_1->getdata_x(i - 1, j, k);
+					auto foo = grid_0->getdata_x(i, j, k)
+						
+							//+ grid_1->getdata_x(i + 1, j, k)
+							//+ grid_1->getdata_x(i, j - 1, k) + grid_1->getdata_x(i, j + 1, k)
+						//	+ grid_1->getdata_x(i, j, k - 1) + grid_1->getdata_x(i, j, k + 1))
+						//    ) / (1 + 6 * a);
 
-				// Per Scalar (float) Vector component diffusion - 
-				float u_val = (grid_0->getdata_x(i, j) + a * (grid_1->getdata_x(i - 1, j)
-					+ grid_1->getdata_x(i + 1, j) + grid_1->getdata_x(i, j - 1) + grid_1->getdata_x(i, j + 1)))
-					/ (1 + 4 * a);
+					float v_val = (grid_0->getdata_y(i, j) + a * (grid_1->getdata_y(i - 1, j)
+						+ grid_1->getdata_y(i + 1, j) + grid_1->getdata_y(i, j - 1) + grid_1->getdata_y(i, j + 1)))
+						/ (1 + 4 * a);
 
-				float v_val = (grid_0->getdata_y(i, j) + a * (grid_1->getdata_y(i - 1, j)
-					+ grid_1->getdata_y(i + 1, j) + grid_1->getdata_y(i, j - 1) + grid_1->getdata_y(i, j + 1)))
-					/ (1 + 4 * a);
+					float w_val = 
 
-				vec3<float> new_vel(u_val, v_val);
+					vec3<float> new_vel(u_val, v_val, w_val);
 
-				// Set New Vector Val.
-				grid_1->setdata(new_vel, i, j);
+					// Set New Vector Val.
+					grid_1->setdata(new_vel, i, j);
 
+				}
 			}
 		}
-
 		// Call Boundary Calc MFs on each Relaxation Iter - 
 		edge_bounds(grid_1);
 

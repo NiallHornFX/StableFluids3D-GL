@@ -3,6 +3,7 @@
 	With a Basic GPU Realtime RayMarcher For Rendering based in OpenGL. 
 
 	- All Grids are currently collacated (Cell Centered) Mac/Staggerd Grids will be added soon (Vel + Pressure). 
+	- Use of OpenMP for heavy Data Parallism on Solver/Grid Operations where threadsafe. All LockFree. 
 
 	- Built and Tested on Windows x64 using MSVC. OpenMP 2.0|GLEW|GLFW. Statically Linked Currently. 
 	- Use of amd64 (Intel x64) SIMD intrinsics, with hardcoded instruction sets SSE3 and AVX currently used. 
