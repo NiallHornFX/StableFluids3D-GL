@@ -711,104 +711,107 @@ void grid3_vector<T>::printinfo() const
 
 // grid3_vector Specfic, Component Wise Setters/Getters - 
 
+// Vec3 Component Setters -
 // Set X
 template <class T>
-void grid3_vector<T>::setdata_x(T xx, int i)
+void grid3_vector<T>::setdata_x(float xx, int i)
 {
 	(*(this->grid_data))[i].x = xx;
 }
 template <class T>
-void grid3_vector<T>::setdata_x(T xx, int i, int j, int k)
+void grid3_vector<T>::setdata_x(float xx, int i, int j, int k)
 {
 	(*(this->grid_data))[this->idx_3Dto1D(i, j, k)].x = xx;
 }
 // Set Y
 template <class T>
-void grid3_vector<T>::setdata_y(T yy, int i)
+void grid3_vector<T>::setdata_y(float yy, int i)
 {
 	(*(this->grid_data))[i].y = yy;
 }
 template <class T>
-void grid3_vector<T>::setdata_y(T yy, int i, int j, int k)
+void grid3_vector<T>::setdata_y(float yy, int i, int j, int k)
 {
 	(*(this->grid_data))[this->idx_3Dto1D(i, j, k)].y = yy;
 }
 // Set Z
 template <class T>
-void grid3_vector<T>::setdata_z(T zz, int i)
+void grid3_vector<T>::setdata_z(float zz, int i)
 {
 	(*(this->grid_data))[i].z = zz;
 }
 template <class T>
-void grid3_vector<T>::setdata_z(T zz, int i, int j, int k)
+void grid3_vector<T>::setdata_z(float zz, int i, int j, int k)
 {
 	(*(this->grid_data))[this->idx_3Dto1D(i, j, k)].z = zz;
 }
 
+// Vec3 Component Adders-
 // Add X
 template <class T>
-void grid3_vector<T>::adddata_x(T data, int i)
+void grid3_vector<T>::adddata_x(float data, int i)
 {
 	(*(this->grid_data))[i].x += data;
 }
 template <class T>
-void grid3_vector<T>::adddata_x(T data, int i, int j, int k)
+void grid3_vector<T>::adddata_x(float data, int i, int j, int k)
 {
 	(*(this->grid_data))[this->idx_3Dto1D(i,j,k)].x += data;
 }
 // Add Y
 template <class T>
-void grid3_vector<T>::adddata_y(T data, int i)
+void grid3_vector<T>::adddata_y(float data, int i)
 {
 	(*(this->grid_data))[i].y += data;
 }
 template <class T>
-void grid3_vector<T>::adddata_y(T data, int i, int j, int k)
+void grid3_vector<T>::adddata_y(float data, int i, int j, int k)
 {
 	(*(this->grid_data))[this->idx_3Dto1D(i, j, k)].y += data;
 }
 // Add Z
 template <class T>
-void grid3_vector<T>::adddata_z(T data, int i)
+void grid3_vector<T>::adddata_z(float data, int i)
 {
 	(*(this->grid_data))[i].z += data;
 }
 template <class T>
-void grid3_vector<T>::adddata_z(T data, int i, int j, int k)
+void grid3_vector<T>::adddata_z(float data, int i, int j, int k)
 {
 	(*(this->grid_data))[this->idx_3Dto1D(i, j, k)].z += data;
 }
 
+// Vec3 Component Getters -
 // Get X
 template <class T>
-T grid3_vector<T>::getdata_x(int i) const
+float grid3_vector<T>::getdata_x(int i) const
 {
 	return (*(this->grid_data))[i].x;
 }
 template <class T>
-T grid3_vector<T>::getdata_x(int i, int j, int k) const
+float grid3_vector<T>::getdata_x(int i, int j, int k) const
 {
 	return (*(this->grid_data))[this->idx_3Dto1D(i, j, k)].x;
 }
 // Get Y
 template <class T>
-T grid3_vector<T>::getdata_y(int i) const
+float grid3_vector<T>::getdata_y(int i) const
 {
 	return (*(this->grid_data))[i].y;
 }
 template <class T>
-T grid3_vector<T>::getdata_y(int i, int j, int k) const
+float grid3_vector<T>::getdata_y(int i, int j, int k) const
 {
 	return (*(this->grid_data))[this->idx_3Dto1D(i, j, k)].y;
 }
 // Get X
 template <class T>
-T grid3_vector<T>::getdata_z(int i) const
+float grid3_vector<T>::getdata_z(int i) const
 {
 	return (*(this->grid_data))[i].z;
 }
 template <class T>
-T grid3_vector<T>::getdata_z(int i, int j, int k) const
+float grid3_vector<T>::getdata_z(int i, int j, int k) const
 {
 	return (*(this->grid_data))[this->idx_3Dto1D(i, j, k)].z;
 }

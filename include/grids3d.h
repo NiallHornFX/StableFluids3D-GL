@@ -83,26 +83,26 @@ public:
 	virtual ~grid3_vector() override;
 
 	// Data Acess (1D, 3D) -
-	void setdata_x(T xx, int i);
-	void setdata_x(T xx, int i, int j, int k); 
-	void setdata_y(T yy, int i);
-	void setdata_y(T yy, int i, int j, int k); 
-	void setdata_z(T zz, int i);
-	void setdata_z(T zz, int i, int j, int k);
+	void setdata_x(float xx, int i);
+	void setdata_x(float xx, int i, int j, int k); 
+	void setdata_y(float yy, int i);
+	void setdata_y(float yy, int i, int j, int k);
+	void setdata_z(float zz, int i);
+	void setdata_z(float zz, int i, int j, int k);
 
-	void adddata_x(T xx, int i);
-	void adddata_x(T xx, int i, int j, int k);
-	void adddata_y(T yy, int i);
-	void adddata_y(T yy, int i, int j, int k);
-	void adddata_z(T zz, int i);
-	void adddata_z(T zz, int i, int j, int k);
+	void adddata_x(float xx, int i);
+	void adddata_x(float xx, int i, int j, int k);
+	void adddata_y(float yy, int i);
+	void adddata_y(float yy, int i, int j, int k);
+	void adddata_z(float zz, int i);
+	void adddata_z(float zz, int i, int j, int k);
 
-	T getdata_x(int i) const;
-	T getdata_x(int i, int j, int k) const; 
-	T getdata_y(int i) const;
-	T getdata_y(int i, int j, int k) const; 
-	T getdata_z(int i) const;
-	T getdata_z(int i, int j, int k) const;
+	float getdata_x(int i) const;
+	float getdata_x(int i, int j, int k) const; 
+	float getdata_y(int i) const;
+	float getdata_y(int i, int j, int k) const; 
+	float getdata_z(int i) const;
+	float getdata_z(int i, int j, int k) const;
 
 	virtual void clear() override;
 	virtual void printinfo() const override;
