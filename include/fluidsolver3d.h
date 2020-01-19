@@ -164,13 +164,9 @@ protected:
 	// DIFFUSION \\ - 
 	// Gauss-Seidel Relaxation Diffusion Based on Grid Neighbours 
 
-	// ! Generic Diffusion MFuncs- 	
+	// ! Gauss-Seidel Relaxation - Diffusion - 
 	void diffuse(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1, float diff, ushort iter);
 	void diffuse(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3<float>> *grid_1, float diff, ushort iter);
-
-	// Unstable standard FDM Diffusion - 
-	void diffuse_FDM(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1, float diff);
-	//void diffuse_FDM(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3<float>> *grid_1);
 
 	// ADVECTION \\ - 
 	// Semi-Lagraginin Advection Step Single Backtrace Step. Overload Based on Grid Type. 

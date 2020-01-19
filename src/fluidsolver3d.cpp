@@ -478,25 +478,32 @@ void fluidsolver_3::diffuse(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3
 				for (int i = 1; i <= N_dim; i++)
 				{
 					// Per Scalar (float) Vector component diffusion - 
+
 					// U (x)
-					//float U_val = (grid_0->getdata_x(i, j, k) + a * (grid_1->getdata_x(i - 1, j, k);
-					auto foo = grid_0->getdata_x(i, j, k)
-						
-							//+ grid_1->getdata_x(i + 1, j, k)
-							//+ grid_1->getdata_x(i, j - 1, k) + grid_1->getdata_x(i, j + 1, k)
-						//	+ grid_1->getdata_x(i, j, k - 1) + grid_1->getdata_x(i, j, k + 1))
-						//    ) / (1 + 6 * a);
+					float U_val = (grid_0->getdata_x(i, j, k) + a * 
+					(grid_1->getdata_x(i - 1, j, k) + grid_1->getdata_x(i + 1, j, k)
+					+ grid_1->getdata_x(i, j - 1, k) + grid_1->getdata_x(i, j + 1, k)
+					+ grid_1->getdata_x(i, j, k - 1) + grid_1->getdata_x(i, j, k + 1))
+					 ) / (1 + 6 * a);
 
-					float v_val = (grid_0->getdata_y(i, j) + a * (grid_1->getdata_y(i - 1, j)
-						+ grid_1->getdata_y(i + 1, j) + grid_1->getdata_y(i, j - 1) + grid_1->getdata_y(i, j + 1)))
-						/ (1 + 4 * a);
+					// V (y)
+					float V_val = (grid_0->getdata_y(i, j, k) + a *
+					(grid_1->getdata_y(i - 1, j, k) + grid_1->getdata_y(i + 1, j, k)
+					+ grid_1->getdata_y(i, j - 1, k) + grid_1->getdata_y(i, j + 1, k)
+					+ grid_1->getdata_y(i, j, k - 1) + grid_1->getdata_y(i, j, k + 1))
+					) / (1 + 6 * a);
 
-					float w_val = 
+					// W (z)
+					float W_val = (grid_0->getdata_z(i, j, k) + a *
+					(grid_1->getdata_z(i - 1, j, k) + grid_1->getdata_z(i + 1, j, k)
+					+ grid_1->getdata_z(i, j - 1, k) + grid_1->getdata_z(i, j + 1, k)
+					+ grid_1->getdata_z(i, j, k - 1) + grid_1->getdata_z(i, j, k + 1))
+					) / (1 + 6 * a);
 
-					vec3<float> new_vel(u_val, v_val, w_val);
+					vec3<float> new_vec(U_val, V_val, W_val);
 
 					// Set New Vector Val.
-					grid_1->setdata(new_vel, i, j);
+					grid_1->setdata(new_vec, i, j, k);
 
 				}
 			}
@@ -509,38 +516,6 @@ void fluidsolver_3::diffuse(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3
 		#endif
 	}
 }
-
-// ** DIFFUSION-SCALAR-FIELD-FDM IMPLEMENTATION ** \\ - 
-
-void fluidsolver_3::diffuse_FDM(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1, float diff)
-{
-	float a = dt * diff * powf(N_dim, 2.0f);
-	a *= 0.001f; // Mult a down allows stablilty of diffusion, without fast propogation of density. But Hacky ofc. 
-	
-	#pragma omp parallel for num_threads(omp_get_max_threads())
-	for (int j = 1; j <= N_dim; j++)
-	{
-		for (int i = 1; i <= N_dim; i++)
-		{
-			float dd = grid_0->getdata(i, j) + a*(grid_0->getdata(i - 1, j) + grid_0->getdata(i + 1, j)
-				+ grid_0->getdata(i, j - 1) + grid_0->getdata(i, j + 1) - 4 * grid_0->getdata(i, j));
-
-			grid_1->setdata(dd, i, j);
-		}
-	}
-
-	// Call Boundary Calc MFs on each Relaxation Iter - 
-	edge_bounds(grid_1);
-
-	#if dospherebound == 1
-	sphere_bounds_eval(grid_1, spherebound_coliso);
-	#endif
-}
-
-
-// ** DIFFUSION-VECTOR-FIELD-FDM IMPLEMENTATION ** \\ - 
-// Wont be used so leaving out for now. 
-
 
 /* ====================================================
 	ADVECTION
