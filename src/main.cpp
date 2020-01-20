@@ -2,6 +2,7 @@
 	A Realtime CPU Based 3D Fluid-Solver based on Jos Stams Stable Fluids Paper. Along with Fedkiw and Bridson.
 	With a Basic GPU Realtime RayMarcher For Rendering based in OpenGL. 
 
+	- Support for Cubed/Uniform Grids Only for now. 
 	- All Grids are currently collacated (Cell Centered) Mac/Staggerd Grids will be added soon (Vel + Pressure). 
 	- Use of OpenMP for heavy Data Parallism on Solver/Grid Operations where threadsafe. All LockFree. 
 

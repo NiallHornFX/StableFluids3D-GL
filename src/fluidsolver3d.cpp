@@ -527,7 +527,8 @@ void fluidsolver_3::diffuse(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3
 
 // ** ADVECT_SL(Semi-Lagragagin)_Scalar Overload ** \\ - 
 // Assume ALL Advection is done using Main Vel Field. (Not using Input VelGrid Params). 
-// Advection Done along Scaled Index Space - 
+// BackTrace Done in Index Space
+// Dt Scaled to Index Space Dim Size - 
 
 void fluidsolver_3::advect_sl(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1)
 {
@@ -536,61 +537,85 @@ void fluidsolver_3::advect_sl(grid3_scalar<float> *grid_0, grid3_scalar<float> *
 
 	// Density (Scalar Field Advection) - 
 
-	#pragma omp parallel for num_threads(omp_get_max_threads()) 
-	for (int j = 1; j <= N_dim; j++)
+	//#pragma omp parallel for num_threads(omp_get_max_threads()) 
+
+	for (int k = 1; k <= N_dim; k++)
 	{
-		for (int i = 1; i <= N_dim; i++)
+		for (int j = 1; j <= N_dim; j++)
 		{
-			// Bind Vel Components Of CurCell to Vars to save multiple acess. 
-			float u = f3obj->vel->getdata_x(i, j);
-			float v = f3obj->vel->getdata_y(i, j);
-
-			// X i 
-			float x = i - dt0*u;
-			if (x < 0.5) x = 0.5;
-			if (x > N_dim + 0.5) x = N_dim + 0.5;
-
-			// Interp Indices i 
-			int i0 = int(x); int i1 = i0 + 1;
-
-			// Y j 
-			float y = j - dt0*v;
-			if (y < 0.5) y = 0.5;
-			if (y > N_dim + 0.5) y = N_dim + 0.5;
-
-			// Interp Indices j 
-			int j0 = int(y); int j1 = j0 + 1;
-
-			float s1 = x - i0; float s0 = 1 - s1;
-			float t1 = y - j0; float t0 = 1 - t1;
-
-			// Calc New Density from BackTrace Advection Neighbours Interoplation Of PrevFrame Grid - 
-			float new_dens; 
-
-			if (Parms.p_InteroplationType == Parms.Interoplation_Linear)
+			for (int i = 1; i <= N_dim; i++)
 			{
-				// BiLinear Interoplation - 
+				float u = f3obj->vel->getdata_x(i, j, k);
+				float v = f3obj->vel->getdata_y(i, j, k);
+				float w = f3obj->vel->getdata_z(i, j, k);
 
-				//new_dens = s0 * (t0*grid_0->getdata(i0, j0) + t1 * grid_0->getdata(i0, j1))
-				//+ s1 * (t0 * grid_0->getdata(i1, j0) + t1 * grid_0->getdata(i1, j1));
+				// BackTrace Along U Component for X i 
+				float x = i - dt0 * u;
+				if (x < 0.5) x = 0.5;
+				if (x > N_dim + 0.5) x = N_dim + 0.5;
+				// Interp Indices i 
+				int i0 = int(x); int i1 = i0 + 1;
 
-				float lerpi_A = solver_utils::lerp(grid_0->getdata(i0, j0), grid_0->getdata(i0, j1), t1);
-				float lerpi_B = solver_utils::lerp(grid_0->getdata(i1, j0), grid_0->getdata(i1, j1), t1);
-				new_dens = solver_utils::lerp(lerpi_A, lerpi_B, s1);
+				// BackTrace Along V Component for Y j 
+				float y = j - dt0 * v;
+				if (y < 0.5) y = 0.5;
+				if (y > N_dim + 0.5) y = N_dim + 0.5;
+				// Interp Indices j 
+				int j0 = int(y); int j1 = j0 + 1;
+
+				// BackTrace Along W Component for Z k
+				float z = k - dt0 * w;
+				if (z < 0.5) z = 0.5;
+				if (z > N_dim + 0.5) z = N_dim + 0.5;
+				// Interp Indices K
+				int k0 = int(z); int k1 = j0 + 1;
+
+				// Interoplation Coefficents - 
+				float r1 = x - i0; float r0 = 1 - r1;
+				float s1 = y - j0; float s0 = 1 - s1;
+				float t1 = z - j0; float t0 = 1 - t1;
+
+				/* //!TODO - Implement Cosine / LERP Switces -
+				// Calc New Density from BackTrace Advection Neighbours Interoplation Of PrevFrame Grid - 
+				float new_dens;
+
+				if (Parms.p_InteroplationType == Parms.Interoplation_Linear)
+				{
+					// BiLinear Interoplation - 
+
+					//new_dens = s0 * (t0*grid_0->getdata(i0, j0) + t1 * grid_0->getdata(i0, j1))
+					//+ s1 * (t0 * grid_0->getdata(i1, j0) + t1 * grid_0->getdata(i1, j1));
+
+					float lerpi_A = solver_utils::lerp(grid_0->getdata(i0, j0), grid_0->getdata(i0, j1), t1);
+					float lerpi_B = solver_utils::lerp(grid_0->getdata(i1, j0), grid_0->getdata(i1, j1), t1);
+					new_dens = solver_utils::lerp(lerpi_A, lerpi_B, s1);
+				}
+				else if (Parms.p_InteroplationType == Parms.Interoplation_Cosine)
+				{
+					// Cosine Interoplation - 
+
+					float cosi_A = solver_utils::cosinterp(grid_0->getdata(i0, j0), grid_0->getdata(i0, j1), t1);
+					float cosi_B = solver_utils::cosinterp(grid_0->getdata(i1, j0), grid_0->getdata(i1, j1), t1);
+					float cosi_C = solver_utils::cosinterp(cosi_A, cosi_B, s1); // Interp Between Interp A,B.
+					new_dens = cosi_C;
+				}
+				*/
+
+				// TriLinear Interoplation Of Sampled Scalar Field Neighbours at BackTraced Postion - 
+
+				float L_000_001_t = solver_utils::lerp(grid_0->getdata(i0, j0, k0), grid_0->getdata(i0, j0, k1), t1);
+				float L_010_011_t = solver_utils::lerp(grid_0->getdata(i0, j1, k0), grid_0->getdata(i0, j1, k1), t1);
+				float L_100_101_s = solver_utils::lerp(grid_0->getdata(i1, j0, k0), grid_0->getdata(i1, j0, k1), s1);
+				float L_110_111_t = solver_utils::lerp(grid_0->getdata(i1, j1, k0), grid_0->getdata(i1, j1, k1), t1);
+				float L_A = solver_utils::lerp(L_000_001_t, L_010_011_t, s1);
+				float L_B = solver_utils::lerp(L_100_101_s, L_110_111_t, s1);
+				float L_F = solver_utils::lerp(L_A, L_B, r1);
+				float new_dens = L_F; 
+
+				// Set New Cur Density to Current Frame Density Grid cell value - 
+				grid_1->setdata(new_dens, i, j, k);
+
 			}
-			else if (Parms.p_InteroplationType == Parms.Interoplation_Cosine)
-			{
-				// Cosine Interoplation - 
-
-				float cosi_A = solver_utils::cosinterp(grid_0->getdata(i0, j0), grid_0->getdata(i0, j1), t1);
-				float cosi_B = solver_utils::cosinterp(grid_0->getdata(i1, j0), grid_0->getdata(i1, j1), t1);
-				float cosi_C = solver_utils::cosinterp(cosi_A, cosi_B, s1); // Interp Between Interp A,B.
-				new_dens = cosi_C; 
-			}
-
-			// Set New Cur Density to Current Frame Density Grid cell value - 
-			grid_1->setdata(new_dens, i, j);
-
 		}
 	}
 
@@ -600,98 +625,145 @@ void fluidsolver_3::advect_sl(grid3_scalar<float> *grid_0, grid3_scalar<float> *
 	#if dospherebound == 1
 	sphere_bounds_eval(grid_1, spherebound_coliso); 
 	#endif
-
 }
 
 // ** ADVECT_SL(Semi-Lagragagin)_Vector Overload ** \\ - 
 // Assume ALL Advection is done using Main Vel Field. (Not using Input VelGrid Params). 
+// Backtrace Along Grid_1 (Cur), Sample Grid_0 (prev), Set New Grid_1 (Cur). 
 
 void fluidsolver_3::advect_sl(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3<float>> *grid_1)
 {
 	float dt0 = dt*N_dim; // Step Distance (Velocity Scaling) of DeltaTime * Grid Length, Hence GridSpace Dt Coeff (dt0). 
 
-	#pragma omp parallel for num_threads(omp_get_max_threads())
-	for (int j = 1; j <= N_dim; j++)
+	//#pragma omp parallel for num_threads(omp_get_max_threads())
+
+	for (int k = 1; k <= N_dim; k++)
 	{
-		for (int i = 1; i <= N_dim; i++)
+		for (int j = 1; j <= N_dim; j++)
 		{
-			// Bind Vel Components Of CurCell to Vars to save multiple acess. 
-			float u = f3obj->vel->getdata_x(i, j);
-			float u0 = f3obj->prev_vel->getdata_x(i, j);
-			float v = f3obj->vel->getdata_y(i, j);
-			float v0 = f3obj->prev_vel->getdata_y(i, j);
-
-			// Calc Advection Vars - (Not Grid Specfic) - 
-			float x = i - dt0*u;
-
-			if (x < 0.5f) x = 0.5f;
-			if (x > N_dim + 0.5f) x = N_dim + 0.5f;
-			int i0 = int(x); int i1 = i0 + 1;
-
-			float y = j - dt0*v;
-
-			if (y < 0.5f) y = 0.5f;
-			if (y > N_dim + 0.5f) y = N_dim + 0.5f;
-			int j0 = int(y); int j1 = j0 + 1;
-
-			float s1 = x - i0; float s0 = 1 - s1;
-			float t1 = y - j0; float t0 = 1 - t1;
-
-			// Interoplate Velocity U,V Components.  
-			float new_u, new_v; 
-			if (Parms.p_InteroplationType == Parms.Interoplation_Linear)
+			for (int i = 1; i <= N_dim; i++)
 			{
- 
-				/*new_u = s0 * (t0*grid_0->getdata_x(i0, j0) + t1 * grid_0->getdata_x(i0, j1))
-					+ s1 * (t0 * grid_0->getdata_x(i1, j0) + t1 * grid_0->getdata_x(i1, j1));
-				new_v = s0*(t0*grid_0->getdata_y(i0, j0) + t1 * grid_0->getdata_y(i0, j1))
-					+ s1 * (t0 * grid_0->getdata_y(i1, j0) + t1 * grid_0->getdata_y(i1, j1));*/
+				float u0 = f3obj->prev_vel->getdata_x(i, j, k);
+				float u = f3obj->vel->getdata_x(i, j, k);
+				float v0 = f3obj->prev_vel->getdata_y(i, j, k);
+				float v = f3obj->vel->getdata_y(i, j, k);
+				float w0 = f3obj->prev_vel->getdata_z(i, j, k);
+				float w = f3obj->vel->getdata_z(i, j, k);
 
-				// Bilinear Interp (U/x Component)
-				float U_lerpi_A = solver_utils::lerp(grid_0->getdata_x(i0, j0), grid_0->getdata_x(i0, j1), t1);
-				float U_lerpi_B = solver_utils::lerp(grid_0->getdata_x(i1, j0), grid_0->getdata_x(i1, j1), t1);
-				new_u = solver_utils::lerp(U_lerpi_A, U_lerpi_B, s1);
+				// BackTrace Along U Component for X i 
+				float x = i - dt0 * u;
+				if (x < 0.5) x = 0.5;
+				if (x > N_dim + 0.5) x = N_dim + 0.5;
+				// Interp Indices i 
+				int i0 = int(x); int i1 = i0 + 1;
 
-				// Bilinear Interp (V/y Component)
-				float V_lerpi_A = solver_utils::lerp(grid_0->getdata_y(i0, j0), grid_0->getdata_y(i0, j1), t1);
-				float V_lerpi_B = solver_utils::lerp(grid_0->getdata_y(i1, j0), grid_0->getdata_y(i1, j1), t1);
-				new_v = solver_utils::lerp(V_lerpi_A, V_lerpi_B, s1);
+				// BackTrace Along V Component for Y j 
+				float y = j - dt0 * v;
+				if (y < 0.5) y = 0.5;
+				if (y > N_dim + 0.5) y = N_dim + 0.5;
+				// Interp Indices j 
+				int j0 = int(y); int j1 = j0 + 1;
+
+				// BackTrace Along W Component for Z k
+				float z = k - dt0 * w;
+				if (z < 0.5) z = 0.5;
+				if (z > N_dim + 0.5) z = N_dim + 0.5;
+				// Interp Indices K
+				int k0 = int(z); int k1 = j0 + 1;
+
+				// Interoplation Coefficents - 
+				float r1 = x - i0; float r0 = 1 - r1;
+				float s1 = y - j0; float s0 = 1 - s1;
+				float t1 = z - j0; float t0 = 1 - t1;
+
+				/*
+				// Interoplate Velocity U,V Components.  
+				float new_u, new_v;
+				if (Parms.p_InteroplationType == Parms.Interoplation_Linear)
+				{
+
+					//new_u = s0 * (t0*grid_0->getdata_x(i0, j0) + t1 * grid_0->getdata_x(i0, j1))
+					//	+ s1 * (t0 * grid_0->getdata_x(i1, j0) + t1 * grid_0->getdata_x(i1, j1));
+					//new_v = s0*(t0*grid_0->getdata_y(i0, j0) + t1 * grid_0->getdata_y(i0, j1))
+					//	+ s1 * (t0 * grid_0->getdata_y(i1, j0) + t1 * grid_0->getdata_y(i1, j1));
+
+					// Bilinear Interp (U/x Component)
+					float U_lerpi_A = solver_utils::lerp(grid_0->getdata_x(i0, j0), grid_0->getdata_x(i0, j1), t1);
+					float U_lerpi_B = solver_utils::lerp(grid_0->getdata_x(i1, j0), grid_0->getdata_x(i1, j1), t1);
+					new_u = solver_utils::lerp(U_lerpi_A, U_lerpi_B, s1);
+
+					// Bilinear Interp (V/y Component)
+					float V_lerpi_A = solver_utils::lerp(grid_0->getdata_y(i0, j0), grid_0->getdata_y(i0, j1), t1);
+					float V_lerpi_B = solver_utils::lerp(grid_0->getdata_y(i1, j0), grid_0->getdata_y(i1, j1), t1);
+					new_v = solver_utils::lerp(V_lerpi_A, V_lerpi_B, s1);
+				}
+				else if (Parms.p_InteroplationType == Parms.Interoplation_Cosine)
+				{
+					// BiCosine Interp (U/x Component)
+					float U_cosi_A = solver_utils::cosinterp(grid_0->getdata_x(i0, j0), grid_0->getdata_x(i0, j1), t1);
+					float U_cosi_B = solver_utils::cosinterp(grid_0->getdata_x(i1, j0), grid_0->getdata_x(i1, j1), t1);
+					new_u = solver_utils::cosinterp(U_cosi_A, U_cosi_B, s1);
+
+					// BiCosine Interp (V/y Component)
+					float V_cosi_A = solver_utils::cosinterp(grid_0->getdata_y(i0, j0), grid_0->getdata_y(i0, j1), t1);
+					float V_cosi_B = solver_utils::cosinterp(grid_0->getdata_y(i1, j0), grid_0->getdata_y(i1, j1), t1);
+					new_v = solver_utils::cosinterp(V_cosi_A, V_cosi_B, s1);
+
+				}
+
+				// Set New Cur vel vec3 to Velocity Grid cell value - 
+				vec3<float> new_vec(new_u, new_v);
+				grid_1->setdata(new_vec, i, j);
+				*/
+
+				// Interoplate Neighbours - for Velocity comp (U/x). 
+				float U_000_001_t = solver_utils::lerp(grid_0->getdata_x(i0, j0, k0), grid_0->getdata_x(i0, j0, k1), t1);
+				float U_010_011_t = solver_utils::lerp(grid_0->getdata_x(i0, j1, k0), grid_0->getdata_x(i0, j1, k1), t1);
+				float U_100_101_s = solver_utils::lerp(grid_0->getdata_x(i1, j0, k0), grid_0->getdata_x(i1, j0, k1), s1);
+				float U_110_111_t = solver_utils::lerp(grid_0->getdata_x(i1, j1, k0), grid_0->getdata_x(i1, j1, k1), t1);
+				float U_A = solver_utils::lerp(U_000_001_t, U_010_011_t, s1);
+				float U_B = solver_utils::lerp(U_100_101_s, U_110_111_t, s1);
+				float U_F = solver_utils::lerp(U_A, U_B, r1);
+
+				// Interoplate Neighbours - for Velocity comp (V/y). 
+				float V_000_001_t = solver_utils::lerp(grid_0->getdata_y(i0, j0, k0), grid_0->getdata_y(i0, j0, k1), t1);
+				float V_010_011_t = solver_utils::lerp(grid_0->getdata_y(i0, j1, k0), grid_0->getdata_y(i0, j1, k1), t1);
+				float V_100_101_s = solver_utils::lerp(grid_0->getdata_y(i1, j0, k0), grid_0->getdata_y(i1, j0, k1), s1);
+				float V_110_111_t = solver_utils::lerp(grid_0->getdata_y(i1, j1, k0), grid_0->getdata_y(i1, j1, k1), t1);
+				float V_A = solver_utils::lerp(V_000_001_t, V_010_011_t, s1);
+				float V_B = solver_utils::lerp(V_100_101_s, V_110_111_t, s1);
+				float V_F = solver_utils::lerp(V_A, V_B, r1);
+
+				// Interoplate Neighbours - for Velocity comp (W/z). 
+				float W_000_001_t = solver_utils::lerp(grid_0->getdata_z(i0, j0, k0), grid_0->getdata_z(i0, j0, k1), t1);
+				float W_010_011_t = solver_utils::lerp(grid_0->getdata_z(i0, j1, k0), grid_0->getdata_z(i0, j1, k1), t1);
+				float W_100_101_s = solver_utils::lerp(grid_0->getdata_z(i1, j0, k0), grid_0->getdata_z(i1, j0, k1), s1);
+				float W_110_111_t = solver_utils::lerp(grid_0->getdata_z(i1, j1, k0), grid_0->getdata_z(i1, j1, k1), t1);
+				float W_A = solver_utils::lerp(W_000_001_t, W_010_011_t, s1);
+				float W_B = solver_utils::lerp(W_100_101_s, W_110_111_t, s1);
+				float W_F = solver_utils::lerp(W_A, W_B, r1);
+
+				// Set New Cur Velocity (grid_1) - 
+				grid_1->setdata(vec3<float>(U_F, V_F, W_F), i, j, k);
 			}
-			else if (Parms.p_InteroplationType == Parms.Interoplation_Cosine)
-			{
-				// BiCosine Interp (U/x Component)
-				float U_cosi_A = solver_utils::cosinterp(grid_0->getdata_x(i0, j0), grid_0->getdata_x(i0, j1), t1);
-				float U_cosi_B = solver_utils::cosinterp(grid_0->getdata_x(i1, j0), grid_0->getdata_x(i1, j1), t1);
-				new_u = solver_utils::cosinterp(U_cosi_A, U_cosi_B, s1);
-				
-				// BiCosine Interp (V/y Component)
-				float V_cosi_A = solver_utils::cosinterp(grid_0->getdata_y(i0, j0), grid_0->getdata_y(i0, j1), t1);
-				float V_cosi_B = solver_utils::cosinterp(grid_0->getdata_y(i1, j0), grid_0->getdata_y(i1, j1), t1);
-				new_v = solver_utils::cosinterp(V_cosi_A, V_cosi_B, s1);
-				
-			}
-
-			// Set New Cur vel vec3 to Velocity Grid cell value - 
-			vec3<float> new_vec(new_u, new_v);
-			grid_1->setdata(new_vec, i, j);
-
 		}
 	}
 
-		// Call Boundary Condtions Post Advection (Density)- 
-		edge_bounds(grid_1);
+	// Call Boundary Condtions Post Advection (Density)- 
+	edge_bounds(grid_1);
 
-		#if dospherebound == 1
-		sphere_bounds_eval(grid_1, spherebound_coliso);
-		#endif
+	#if dospherebound == 1
+	sphere_bounds_eval(grid_1, spherebound_coliso);
+	#endif
 }
 
-// MID POINT ADVECTION (RK2) WIP - 
-// BackTrace to MidPoint, Sample (interoplate) Velocity at MidPoint, Then BackTrace from Cell using MidPoint Vel,
-// to sample (interoplate) Final BackTraced Advection Quanitiy
-
-// Advection in Grid Index Space. Dt Scaled to N_Dim size.
-// Velocity Components split for Advection Sampling and Interoplation.
+/* MID POINT ADVECTION (RK2) WIP - 
+BackTrace to MidPoint, Sample (interoplate) Velocity at MidPoint, Then BackTrace from Cell using MidPoint Vel, 
+to sample (interoplate) Final BackTraced Advection Quanitiy
+--
+Advection in Grid Index Space. Dt Scaled to N_Dim size.
+Velocity Components split for Advection Sampling and Interoplation.
+*/
 
 // ** ADVECT_SL_RK2(Semi-Lagragagin_MidPoint)_Scalar Overload ** \\ - 
 void fluidsolver_3::advect_sl_mp(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1)
@@ -700,59 +772,98 @@ void fluidsolver_3::advect_sl_mp(grid3_scalar<float> *grid_0, grid3_scalar<float
 
 	// Density (Scalar Field Advection) - 
 
-	#pragma omp parallel for num_threads(omp_get_max_threads()) 
-	for (int j = 1; j <= N_dim; j++)
+	//#pragma omp parallel for num_threads(omp_get_max_threads()) 
+
+	for (int k = 1; k <= N_dim; k++)
 	{
-		for (int i = 1; i <= N_dim; i++)
+		for (int j = 1; j <= N_dim; j++)
 		{
-			// Vel At Cur Cell Postion. 
-			float u_P = f3obj->vel->getdata_x(i, j);
-			float v_P = f3obj->vel->getdata_y(i, j);
+			for (int i = 1; i <= N_dim; i++)
+			{
+				// Vel at Cur Cell Postion. 
+				float u_P = f3obj->vel->getdata_x(i, j, k);
+				float v_P = f3obj->vel->getdata_y(i, j, k);
+				float w_P = f3obj->vel->getdata_z(i, j, k);
 
-			// BackTrace Along Negative CurCell Vel - XG - dt0 * u(CurCell)
-			// XG -> Midpoint = XG - dt0 * u(XG)
-			float xxm = i - (0.5 * dt0) * u_P; float yym = j - (0.5 * dt0) * v_P; // BackTrace U,V to Midpoint.
-			if (xxm < 0.5) xxm = 0.5; if (xxm > N_dim + 0.5) xxm = N_dim + 0.5; // Clamp
-			if (yym < 0.5) yym = 0.5; if (yym > N_dim + 0.5) yym = N_dim + 0.5;
-			
-			// MidPoint - Mid Indices 
-			int i_mid = int(xxm); int i_mid_1 = i_mid + 1; int j_mid = int(yym); int j_mid_1 = j_mid + 1;
-			// MidPoint - Mid Interp Coefficents - 
-			float sm1 = xxm - i_mid; float sm = 1 - sm1;
-			float tm1 = yym - j_mid; float tm = 1 - tm1;
+				// BackTrace Along Negative CurCell Vel - XG - dt0 * u(CurCell)
+				// XG -> Midpoint = XG - dt0 * u(XG)
+				// BackTrace U,V,W Velocity Components to Midpoint.
+				float xxm = i - (0.5 * dt0) * u_P; 
+				float yym = j - (0.5 * dt0) * v_P; 
+				float zzm = k - (0.5 * dt0) * w_P; 
+				if (xxm < 0.5) xxm = 0.5; if (xxm > N_dim + 0.5) xxm = N_dim + 0.5;
+				if (yym < 0.5) yym = 0.5; if (yym > N_dim + 0.5) yym = N_dim + 0.5;
+				if (zzm < 0.5) zzm = 0.5; if (zzm > N_dim + 0.5) zzm = N_dim + 0.5;
 
-			/* Get Mid Point Velocity (Average Neighbours).
-			float u_mid = (f3obj->vel->getdata_x(i_mid, j_mid) + f3obj->vel->getdata_x(i_mid_1, j_mid_1)) / 2.0f;
-			float v_mid = (f3obj->vel->getdata_y(i_mid, j_mid) + f3obj->vel->getdata_y(i_mid_1, j_mid_1)) / 2.0f;
-			*/
+				// MidPoint - Mid Indices 
+				int i_mid = int(xxm); int i_mid_1 = i_mid + 1; 
+				int j_mid = int(yym); int j_mid_1 = j_mid + 1;
+				int k_mid = int(zzm); int k_mid_1 = k_mid + 1;
 
-			// Get Mid Point Velocity (Bilinear) - 
-			float u_mid = sm * (tm*f3obj->vel->getdata_x(i_mid, j_mid) + tm1 * f3obj->vel->getdata_x(i_mid, j_mid_1))
-				+ sm1 * (tm * f3obj->vel->getdata_x(i_mid_1, j_mid) + tm1 * f3obj->vel->getdata_x(i_mid_1, j_mid_1));
+				// MidPoint - Mid Interp Coefficents - 
+				float rm1 = xxm - i_mid; float rm = 1 - rm1;
+				float sm1 = yym - j_mid; float sm = 1 - sm1;
+				float tm1 = yym - j_mid; float tm = 1 - tm1;
 
-			float v_mid = sm * (tm*f3obj->vel->getdata_y(i_mid, j_mid) + tm1 * f3obj->vel->getdata_y(i_mid, j_mid_1))
-				+ sm1 * (tm * f3obj->vel->getdata_y(i_mid_1, j_mid) + tm1 * f3obj->vel->getdata_y(i_mid_1, j_mid_1));
+				// Get Mid Point Velocity (Trilinear Interoplation of Velocity Components u,v,w At Midpoint Postion) - 
+				// Interoplate Neighbours - for Velocity comp (U/x). 
+				float Um_000_001_t = solver_utils::lerp(f3obj->vel->getdata_x(i_mid, j_mid, k_mid), f3obj->vel->getdata_x(i_mid, j_mid, k_mid_1), tm1);
+				float Um_010_011_t = solver_utils::lerp(f3obj->vel->getdata_x(i_mid, j_mid_1, k_mid), f3obj->vel->getdata_x(i_mid, j_mid_1, k_mid), tm1);
+				float Um_100_101_s = solver_utils::lerp(f3obj->vel->getdata_x(i_mid_1, j_mid, k_mid), f3obj->vel->getdata_x(i_mid_1, j_mid, k_mid_1), sm1);
+				float Um_110_111_t = solver_utils::lerp(f3obj->vel->getdata_x(i_mid_1, j_mid_1, k_mid), f3obj->vel->getdata_x(i_mid_1, j_mid_1, k_mid_1), tm1);
+				float Um_A = solver_utils::lerp(Um_000_001_t, Um_010_011_t, sm1);
+				float Um_B = solver_utils::lerp(Um_100_101_s, Um_110_111_t, sm1);
+				// Interoplate Neighbours - for Velocity comp (V/y). 
+				float Vm_000_001_t = solver_utils::lerp(f3obj->vel->getdata_y(i_mid, j_mid, k_mid), f3obj->vel->getdata_y(i_mid, j_mid, k_mid_1), tm1);
+				float Vm_010_011_t = solver_utils::lerp(f3obj->vel->getdata_y(i_mid, j_mid_1, k_mid), f3obj->vel->getdata_y(i_mid, j_mid_1, k_mid_1), tm1);
+				float Vm_100_101_s = solver_utils::lerp(f3obj->vel->getdata_y(i_mid_1, j_mid, k_mid), f3obj->vel->getdata_y(i_mid_1, j_mid, k_mid_1), sm1);
+				float Vm_110_111_t = solver_utils::lerp(f3obj->vel->getdata_y(i_mid_1, j_mid_1, k_mid), f3obj->vel->getdata_y(i_mid_1, j_mid_1, k_mid_1), tm1);
+				float Vm_A = solver_utils::lerp(Vm_000_001_t, Vm_010_011_t, sm1);
+				float Vm_B = solver_utils::lerp(Vm_100_101_s, Vm_110_111_t, sm1);
+				// Interoplate Neighbours - for Velocity comp (W/z). 
+				float W_000_001_t = solver_utils::lerp(f3obj->vel->getdata_z(i_mid, j_mid, k_mid), f3obj->vel->getdata_z(i_mid, j_mid, k_mid_1), tm1);
+				float W_010_011_t = solver_utils::lerp(f3obj->vel->getdata_z(i_mid, j_mid_1, k_mid), f3obj->vel->getdata_z(i_mid, j_mid_1, k_mid_1), tm1);
+				float W_100_101_s = solver_utils::lerp(f3obj->vel->getdata_z(i_mid_1, j_mid, k_mid), f3obj->vel->getdata_z(i_mid_1, j_mid, k_mid_1), sm1);
+				float W_110_111_t = solver_utils::lerp(f3obj->vel->getdata_z(i_mid_1, j_mid_1, k_mid), f3obj->vel->getdata_z(i_mid_1, j_mid_1, k_mid_1), tm1);
+				float W_A = solver_utils::lerp(W_000_001_t, W_010_011_t, sm1);
+				float W_B = solver_utils::lerp(W_100_101_s, W_110_111_t, sm1);
+				
+				// Interoplated Mid Point Velocity -
+				float u_mid = solver_utils::lerp(Um_A, Um_B, rm1);
+				float v_mid = solver_utils::lerp(Vm_A, Vm_B, rm1);
+				float w_mid = solver_utils::lerp(W_A, W_B, rm1);
 
-			// BackTrace Along Negative Midpoint Vel - XG - dt0 * u(midpoint)
-			float xxp = i - dt0 * u_mid; float yyp = j - dt0 * v_mid;
-			if (xxp < 0.5) xxp = 0.5; if (xxp > N_dim + 0.5) xxp = N_dim + 0.5;
-			if (yyp < 0.5) yyp = 0.5; if (yyp > N_dim + 0.5) yyp = N_dim + 0.5;
+				// BackTrace Along Negative Midpoint Vel - XG - dt0 * u(midpoint)
+				float xxp = i - dt0 * u_mid; 
+				float yyp = j - dt0 * v_mid;
+				float zzp = k - dt0 * v_mid;
+				if (xxp < 0.5) xxp = 0.5; if (xxp > N_dim + 0.5) xxp = N_dim + 0.5;
+				if (yyp < 0.5) yyp = 0.5; if (yyp > N_dim + 0.5) yyp = N_dim + 0.5;
+				if (zzp < 0.5) zzp = 0.5; if (zzp > N_dim + 0.5) zzp = N_dim + 0.5;
 
-			// MidPoint - BackTrace Indices Test - 
-			int i0 = int(xxp); int i1 = i0 + 1;
-			int j0 = int(yyp); int j1 = j0 + 1;
-			//
-			// MidPoint - BackTrace Coefficents. 
-			float s1 = xxp - i0; float s0 = 1 - s1;
-			float t1 = yyp - j0; float t0 = 1 - t1;
+				// MidPoint - Mid Indices 
+				int i_f = int(xxp); int i_f_1 = i_f + 1;
+				int j_f = int(yyp); int j_f_1 = j_f + 1;
+				int k_f = int(zzp); int k_f_1 = k_f + 1;
 
-			// Bilinearlly Sample Density at backtraced postion (via MidPoint vel). 
-			float new_dens = s0 * (t0*grid_0->getdata(i0, j0) + t1 * grid_0->getdata(i0, j1))
-				+ s1 * (t0 * grid_0->getdata(i1, j0) + t1 * grid_0->getdata(i1, j1));
+				// MidPoint - Mid Interp Coefficents  
+				float rf1 = xxm - i_mid; float rf = 1 - rf1;
+				float sf1 = yym - j_mid; float sf = 1 - sf1;
+				float tf1 = yym - j_mid; float tf = 1 - tf1;
 
-			// Set New CurFrame Grid Density to Current Frame Density Grid cell value - 
-			grid_1->setdata(new_dens, i, j);
+				// Trilinearly Sample Scalar Field at backtraced postion (via MidPoint vel) -
+				float L_000_001_t = solver_utils::lerp(grid_0->getdata(i_f, j_f, k_f), grid_0->getdata(i_f, j_f, k_f_1), tf1);
+				float L_010_011_t = solver_utils::lerp(grid_0->getdata(i_f, j_f_1, k_f), grid_0->getdata(i_f, j_f_1, k_f_1), tf1);
+				float L_100_101_s = solver_utils::lerp(grid_0->getdata(i_f_1, j_f, k_f), grid_0->getdata(i_f_1, j_f, k_f_1), sf1);
+				float L_110_111_t = solver_utils::lerp(grid_0->getdata(i_f_1, j_f_1, k_f), grid_0->getdata(i_f_1, j_f_1, k_f_1), tf1);
+				float L_A = solver_utils::lerp(L_000_001_t, L_010_011_t, sf1);
+				float L_B = solver_utils::lerp(L_100_101_s, L_110_111_t, sf1);
+				float L_F = solver_utils::lerp(L_A, L_B, rf1);
 
+				// Set Backtraced Scalar Value to Cur Cell in grid_1 -
+				grid_1->setdata(L_F, i, j, k);
+
+			}
 		}
 	}
 
@@ -762,16 +873,13 @@ void fluidsolver_3::advect_sl_mp(grid3_scalar<float> *grid_0, grid3_scalar<float
 	#if dospherebound == 1
 	sphere_bounds_eval(grid_1, spherebound_coliso);
 	#endif
-
 }
 
 // ** ADVECT_SL_RK2(Semi-Lagragagin_MidPoint)_Vector Overload ** \\ - 
 void fluidsolver_3::advect_sl_mp(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3<float>> *grid_1)
 {
 	float dt0 = dt * N_dim; // Scale DeltaTime to Grid Dimension Size. 
-
-	// Density (Scalar Field Advection) - 
-
+ 
 	#pragma omp parallel for num_threads(omp_get_max_threads()) 
 	for (int j = 1; j <= N_dim; j++)
 	{
@@ -793,10 +901,6 @@ void fluidsolver_3::advect_sl_mp(grid3_vector<vec3<float>> *grid_0, grid3_vector
 			float sm1 = xxm - i_mid; float sm = 1 - sm1;
 			float tm1 = yym - j_mid; float tm = 1 - tm1;
 
-			/* Get Mid Point Velocity (Average Neighbours).
-			float u_mid = (f3obj->vel->getdata_x(i_mid, j_mid) + f3obj->vel->getdata_x(i_mid_1, j_mid_1)) / 2.0f;
-			float v_mid = (f3obj->vel->getdata_y(i_mid, j_mid) + f3obj->vel->getdata_y(i_mid_1, j_mid_1)) / 2.0f;
-			*/
 
 			// Get Mid Point Velocity (Bilinear) - 
 			float u_mid = sm * (tm*f3obj->vel->getdata_x(i_mid, j_mid) + tm1 * f3obj->vel->getdata_x(i_mid, j_mid_1))
@@ -841,277 +945,6 @@ void fluidsolver_3::advect_sl_mp(grid3_vector<vec3<float>> *grid_0, grid3_vector
 
 }
 
-// ADVECTION - BackTracing in Grid Space - 
-
-// ** ADVECT_SL_RK2(Semi-Lagragagin_MidPoint)_GRIDSPACE(GS) Scalar Overload ** \\ -
-// Grid Space (oppose to Index Space) Backtrcing. 
-void fluidsolver_3::advect_sl_mp_GS(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1)
-{
-	// Index-Grid-Index Space Lambdas - 
-	auto idx_indexToGrid = [&](int i, int j) -> vec3<float>
-	{
-		return vec3<float>((float)i / (float)N_dim, (float)j / (float)N_dim);
-	};
-
-	auto idx_gridToIndex = [&](auto x, auto y) -> vec3<int>
-	{
-		return vec3<int>((int) x * N_dim, (int) y * N_dim);
-	};
-
-	// Density (Scalar Field Advection) - 
-
-	#pragma omp parallel for num_threads(omp_get_max_threads()) 
-	for (int j = 1; j <= N_dim; j++)
-	{
-		for (int i = 1; i <= N_dim; i++)
-		{
-			// Cur Cell Index to Grid Space - 
-			vec3<float> gsIDX = idx_indexToGrid(i, j);
-
-			// Vel At Cur Cell Index. 
-			float u_P = f3obj->vel->getdata_x(i, j);
-			float v_P = f3obj->vel->getdata_y(i, j);
-
-			// Back Trace in Grid Space. 
-			// BackTrace Along Negative CurCell Vel - XG - dt0 * u(CurCell)
-			// XG -> Midpoint = XG - dt0 * u(XG)
-			float xxm_gs = gsIDX.x - (0.5 * dt) * u_P; float yym_gs = gsIDX.y - (0.5 * dt) * v_P; // BackTrace U,V to Midpoint Postion.
-
-			// Clamp To 0-1 Grid Space to avoid out of bounds - 
-			xxm_gs = solver_utils::clamp(xxm_gs, 0.0f, 1.0f); yym_gs = solver_utils::clamp(yym_gs, 0.0f, 1.0);
-
-			// MidPoint Postion to Index Space - 
-			vec3<int> mpIDX = idx_gridToIndex(xxm_gs, yym_gs);  // Ideally vec3 would return ints via Templated Types avoid float-int casting. 
-
-			// Get Midpoint i,j indices
-			int mpidx_i = (int) mpIDX.x; int mpidx_i1 = mpidx_i + 1;
-			int mpidx_j = (int) mpIDX.y; int mpidx_j1 = mpidx_j + 1;
-
-			// MidPoint - Mid Interp Coefficents - (Scalar (Grid->Index) - Integer (Grid->Index)). 
-			float sm1 = mpIDX.x - mpidx_i; float sm = 1 - sm1;
-			float tm1 = mpIDX.y - mpidx_j; float tm = 1 - tm1;
-
-			// Sample Mid Point Velocity Components (Bilinear) - 
-			float u_mid = sm * (tm*f3obj->vel->getdata_x(mpidx_i, mpidx_j) + tm1 * f3obj->vel->getdata_x(mpidx_i, mpidx_j1))
-				+ sm1 * (tm * f3obj->vel->getdata_x(mpidx_i1, mpidx_j) + tm1 * f3obj->vel->getdata_x(mpidx_i1, mpidx_j1));
-
-			float v_mid = sm * (tm*f3obj->vel->getdata_y(mpidx_i, mpidx_j) + tm1 * f3obj->vel->getdata_y(mpidx_i, mpidx_j1))
-				+ sm1 * (tm * f3obj->vel->getdata_y(mpidx_i1, mpidx_j) + tm1 * f3obj->vel->getdata_y(mpidx_i1, mpidx_j1));
-
-			// BackTrace Along Negative Midpoint Vel - XG - dt0 * u(midpoint)
-			float xxp_gs = gsIDX.x - dt * u_mid; float yyp_gs = gsIDX.y - dt * v_mid;
-
-			// Clamp To 0-1 Grid Space to avoid out of bounds - 
-			xxp_gs = solver_utils::clamp(xxp_gs, 0.0f, 1.0f); yyp_gs = solver_utils::clamp(yyp_gs, 0.0f, 1.0);
-
-			// BackTraced Postion to Index Space - 
-			vec3<int> btIDX = idx_gridToIndex(xxp_gs, yyp_gs);
-			// Get BackTraced i,j indices -
-			int btidx_i = (int) btIDX.x; int btidx_i1 = btidx_i + 1;
-			int btidx_j = (int) btIDX.y; int btidx_j1 = btidx_j + 1;
-
-			// BackTrace Coefficents - (Scalar (Grid->Index) - Integer (Grid->Index)). 
-			float s1 = btIDX.x - btidx_i; float s0 = 1 - s1;
-			float t1 = btIDX.y - btidx_j; float t0 = 1 - t1;
-
-			// Bilinearlly Sample Density at backtraced postion (via MidPoint vel). 
-			float new_dens = s0 * (t0*grid_0->getdata(btidx_i, btidx_j) + t1 * grid_0->getdata(btidx_i, btidx_j1))
-				+ s1 * (t0 * grid_0->getdata(btidx_i1, btidx_j) + t1 * grid_0->getdata(btidx_i1, btidx_j1));
-
-			// Set New CurFrame Grid Density to Current Frame Density Grid cell value - 
-			grid_1->setdata(new_dens, i, j);
-
-		}
-	}
-
-	// Call Boundary Condtions Post Advection (Scalar)- 
-	edge_bounds(grid_1);
-
-	#if dospherebound == 1
-	sphere_bounds_eval(grid_1, spherebound_coliso);
-	#endif
-}
-
-// ** ADVECT_SL_RK2(Semi-Lagragagin_MidPoint)_GRIDSPACE(GS) Vector Overload ** \\ -
-// Grid Space (oppose to Index Space) Backtrcing. 
-
-void fluidsolver_3::advect_sl_mp_GS(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3<float>> *grid_1)
-{
-	// Index-Grid-Index Space Lambdas - 
-	auto idx_indexToGrid = [&](int i, int j) -> vec3<float>
-	{
-		return vec3<float>((float)i / (float)N_dim, (float)j / (float)N_dim);
-	};
-
-	auto idx_gridToIndex = [&](auto x, auto y) -> vec3<int>
-	{
-		return vec3<int>(x * N_dim, y * N_dim);
-	};
-
-	// Density (Scalar Field Advection) - 
-
-	#pragma omp parallel for num_threads(omp_get_max_threads()) 
-	for (int j = 1; j <= N_dim; j++)
-	{
-		for (int i = 1; i <= N_dim; i++)
-		{
-			// Cur Cell Index to Grid Space - 
-			vec3<float> gsIDX = idx_indexToGrid(i, j);
-
-			// Vel At Cur Cell Index. 
-			float u_P = f3obj->vel->getdata_x(i, j);
-			float v_P = f3obj->vel->getdata_y(i, j);
-
-			// Back Trace in Grid Space. 
-			// BackTrace Along Negative CurCell Vel - XG - dt0 * u(CurCell)
-			// XG -> Midpoint = XG - dt0 * u(XG)
-			float xxm_gs = gsIDX.x - (0.5 * dt) * u_P; float yym_gs = gsIDX.y - (0.5 * dt) * v_P; // BackTrace U,V to Midpoint Postion.
-
-			// Clamp To 0-1 Grid Space to avoid out of bounds - 
-			xxm_gs = solver_utils::clamp(xxm_gs, 0.0f, 1.0f); yym_gs = solver_utils::clamp(yym_gs, 0.0f, 1.0);
-
-			// MidPoint Postion to Index Space - 
-			vec3<int> mpIDX = idx_gridToIndex(xxm_gs, yym_gs);  // Ideally vec3 would return ints via Templated Types avoid float-int casting. 
-			// Get Midpoint i,j indices
-			int mpidx_i = (int)mpIDX.x; int mpidx_i1 = mpidx_i + 1;
-			int mpidx_j = (int)mpIDX.y; int mpidx_j1 = mpidx_j + 1;
-
-			// MidPoint Interp Coefficents - (Scalar (Grid->Index) - Integer (Grid->Index)).  
-			float sm1 = mpIDX.x - mpidx_i; float sm = 1 - sm1;
-			float tm1 = mpIDX.y - mpidx_j; float tm = 1 - tm1;
-
-			// Sample Mid Point Velocity Components (Bilinear) - 
-			float u_mid = sm * (tm*f3obj->vel->getdata_x(mpidx_i, mpidx_j) + tm1 * f3obj->vel->getdata_x(mpidx_i, mpidx_j1))
-				+ sm1 * (tm * f3obj->vel->getdata_x(mpidx_i1, mpidx_j) + tm1 * f3obj->vel->getdata_x(mpidx_i1, mpidx_j1));
-
-			float v_mid = sm * (tm*f3obj->vel->getdata_y(mpidx_i, mpidx_j) + tm1 * f3obj->vel->getdata_y(mpidx_i, mpidx_j1))
-				+ sm1 * (tm * f3obj->vel->getdata_y(mpidx_i1, mpidx_j) + tm1 * f3obj->vel->getdata_y(mpidx_i1, mpidx_j1));
-
-			u_mid = f3obj->vel->getdata_x(mpidx_i, mpidx_j);
-			v_mid = f3obj->vel->getdata_y(mpidx_i, mpidx_j);
-
-			// BackTrace Along Negative Midpoint Vel - XG - dt0 * u(midpoint)
-			float xxp_gs = gsIDX.x - dt * u_mid; float yyp_gs = gsIDX.y - dt * v_mid;
-
-			// Clamp To 0-1 Grid Space to avoid out of bounds - 
-			xxp_gs = solver_utils::clamp(xxp_gs, 0.0f, 1.0f); yyp_gs = solver_utils::clamp(yyp_gs, 0.0f, 1.0);
-
-			// BackTraced Postion to Index Space - 
-			vec3<int> btIDX = idx_gridToIndex(xxp_gs, yyp_gs);
-			// Get BackTraced i,j indices -
-			int btidx_i = (int)btIDX.x; int btidx_i1 = btidx_i + 1;
-			int btidx_j = (int)btIDX.y; int btidx_j1 = btidx_j + 1;
-
-			// BackTrace Coefficents - (Scalar (Grid->Index) - Integer (Grid->Index)). 
-			float s1 = gsIDX.x - btidx_i; float s0 = 1 - s1;
-			float t1 = gsIDX.y - btidx_j; float t0 = 1 - t1;
-
-			// Bilinearly Sample Velocity Components at Backtraced postion (via MidPoint Vel). 
-			float new_u = s0 * (t0*grid_0->getdata_x(btidx_i, btidx_j) + t1 * grid_0->getdata_x(btidx_i, btidx_j1))
-				+ s1 * (t0 * grid_0->getdata_x(btidx_i1, btidx_j) + t1 * grid_0->getdata_x(btidx_i1, btidx_j1));
-
-			float new_v = s0 * (t0*grid_0->getdata_y(btidx_i, btidx_j) + t1 * grid_0->getdata_y(btidx_i, btidx_j1))
-				+ s1 * (t0 * grid_0->getdata_y(btidx_i1, btidx_j) + t1 * grid_0->getdata_y(btidx_i1, btidx_j1));
-
-			new_u = grid_0->getdata_x(btidx_i, btidx_j);
-			new_v = grid_0->getdata_y(btidx_i, btidx_j);
-
-			vec3<float> new_vec(new_u, new_v);
-
-			// Set New Cur vel vec3 to Velocity Grid cell value - 
-			grid_1->setdata(new_vec, i, j);
-
-
-		}
-	}
-
-	// Call Boundary Condtions Post Advection (Scalar)- 
-	edge_bounds(grid_1);
-
-	#if dospherebound == 1
-	sphere_bounds_eval(grid_1, spherebound_coliso);
-	#endif
-}
-
-
-/*
-//  ADVECT_SL_RK2(Semi-Lagragagin_MidPoint)_Scalar Overload \\ - 
-// WITH BICUBIC INTEROPLATION - WIP
-void fluidsolver_3::advect_sl_mp_bc(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1)
-{
-	float dt0 = dt * N_dim; // Scale DeltaTime to Grid Dimension Size. 
-
-	// Density (Scalar Field Advection) - 
-#pragma omp parallel for num_threads(omp_get_max_threads()) 
-	for (int j = 1; j <= N_dim; j++)
-	{
-		for (int i = 1; i <= N_dim; i++)
-		{
-			// Vel At Cur Cell Postion. 
-			float u_P = f3obj->vel->getdata_x(i, j);
-			float v_P = f3obj->vel->getdata_y(i, j);
-
-			// BackTrace Along Negative CurCell Vel - XG - dt0 * u(CurCell)
-			// XG -> Midpoint = XG - dt0 * u(XG)
-			float xxm = i - (0.5 * dt0) * u_P; float yym = j - (0.5 * dt0) * v_P; // BackTrace U,V to Midpoint.
-			if (xxm < 0.5) xxm = 0.5; if (xxm > N_dim + 0.5) xxm = N_dim + 0.5; // Clamp
-			if (yym < 0.5) yym = 0.5; if (yym > N_dim + 0.5) yym = N_dim + 0.5;
-
-			// MidPoint - Mid Indices 
-			int i_mid = int(xxm); int i_mid_1 = i_mid + 1; int j_mid = int(yym); int j_mid_1 = j_mid + 1;
-			// MidPoint - Mid Interp Coefficents - 
-			float sm1 = xxm - i_mid; float sm = 1 - sm1;
-			float tm1 = yym - j_mid; float tm = 1 - tm1;
-
-			/* Get Mid Point Velocity (Average Neighbours).
-			float u_mid = (f3obj->vel->getdata_x(i_mid, j_mid) + f3obj->vel->getdata_x(i_mid_1, j_mid_1)) / 2.0f;
-			float v_mid = (f3obj->vel->getdata_y(i_mid, j_mid) + f3obj->vel->getdata_y(i_mid_1, j_mid_1)) / 2.0f;
-			*/
-
-/*
-			// Get Mid Point Velocity (Bilinear) - 
-			//float u_mid = sm * (tm*f3obj->vel->getdata_x(i_mid, j_mid) + tm1 * f3obj->vel->getdata_x(i_mid, j_mid_1))
-				//+ sm1 * (tm * f3obj->vel->getdata_x(i_mid_1, j_mid) + tm1 * f3obj->vel->getdata_x(i_mid_1, j_mid_1));
-			//float v_mid = sm * (tm*f3obj->vel->getdata_y(i_mid, j_mid) + tm1 * f3obj->vel->getdata_y(i_mid, j_mid_1))
-			//	+ sm1 * (tm * f3obj->vel->getdata_y(i_mid_1, j_mid) + tm1 * f3obj->vel->getdata_y(i_mid_1, j_mid_1));
-
-			float u_mid = solver_utils::bicubic_V(f3obj->vel, sm, sm1, tm, tm1, i, j, 0);
-			float v_mid = solver_utils::bicubic_V(f3obj->vel, sm, sm1, tm, tm1, i, j, 1);
-
-			// BackTrace Along Negative Midpoint Vel - XG - dt0 * u(midpoint)
-			float xxp = i - dt0 * u_mid; float yyp = j - dt0 * v_mid;
-			if (xxp < 0.5) xxp = 0.5; if (xxp > N_dim + 0.5) xxp = N_dim + 0.5;
-			if (yyp < 0.5) yyp = 0.5; if (yyp > N_dim + 0.5) yyp = N_dim + 0.5;
-
-			// MidPoint - BackTrace Indices Test - 
-			int i0 = int(xxp); int i1 = i0 + 1;
-			int j0 = int(yyp); int j1 = j0 + 1;
-			//
-			// MidPoint - BackTrace Coefficents. 
-			float s1 = xxp - i0; float s0 = 1 - s1;
-			float t1 = yyp - j0; float t0 = 1 - t1;
-
-			// Bilinearlly Sample Density at backtraced postion (via MidPoint vel). 
-			//float new_dens = s0 * (t0*grid_0->getdata(i0, j0) + t1 * grid_0->getdata(i0, j1))
-				//+ s1 * (t0 * grid_0->getdata(i1, j0) + t1 * grid_0->getdata(i1, j1));
-
-			float new_dens = solver_utils::bicubic_S(grid_0, sm, sm1, tm, tm1, i, j);
-
-			// Set New CurFrame Grid Density to Current Frame Density Grid cell value - 
-			grid_1->setdata(new_dens, i, j);
-
-		}
-	}
-
-	// Call Boundary Condtions Post Advection (Scalar)- 
-	edge_bounds(grid_1);
-
-#if dospherebound == 1
-	sphere_bounds(grid_1, spherebound_radius, spherebound_coliso, spherebound_offset);
-#endif
-
-}
-*/
 
 /* ====================================================
 				FORCES AND MISC - 
