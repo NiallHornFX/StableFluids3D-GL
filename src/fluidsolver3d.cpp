@@ -821,17 +821,17 @@ void fluidsolver_3::advect_sl_mp(grid3_scalar<float> *grid_0, grid3_scalar<float
 				float Vm_A = solver_utils::lerp(Vm_000_001_t, Vm_010_011_t, sm1);
 				float Vm_B = solver_utils::lerp(Vm_100_101_s, Vm_110_111_t, sm1);
 				// Interoplate Neighbours - for Velocity comp (W/z). 
-				float W_000_001_t = solver_utils::lerp(f3obj->vel->getdata_z(i_mid, j_mid, k_mid), f3obj->vel->getdata_z(i_mid, j_mid, k_mid_1), tm1);
-				float W_010_011_t = solver_utils::lerp(f3obj->vel->getdata_z(i_mid, j_mid_1, k_mid), f3obj->vel->getdata_z(i_mid, j_mid_1, k_mid_1), tm1);
-				float W_100_101_s = solver_utils::lerp(f3obj->vel->getdata_z(i_mid_1, j_mid, k_mid), f3obj->vel->getdata_z(i_mid_1, j_mid, k_mid_1), sm1);
-				float W_110_111_t = solver_utils::lerp(f3obj->vel->getdata_z(i_mid_1, j_mid_1, k_mid), f3obj->vel->getdata_z(i_mid_1, j_mid_1, k_mid_1), tm1);
-				float W_A = solver_utils::lerp(W_000_001_t, W_010_011_t, sm1);
-				float W_B = solver_utils::lerp(W_100_101_s, W_110_111_t, sm1);
+				float Wm_000_001_t = solver_utils::lerp(f3obj->vel->getdata_z(i_mid, j_mid, k_mid), f3obj->vel->getdata_z(i_mid, j_mid, k_mid_1), tm1);
+				float Wm_010_011_t = solver_utils::lerp(f3obj->vel->getdata_z(i_mid, j_mid_1, k_mid), f3obj->vel->getdata_z(i_mid, j_mid_1, k_mid_1), tm1);
+				float Wm_100_101_s = solver_utils::lerp(f3obj->vel->getdata_z(i_mid_1, j_mid, k_mid), f3obj->vel->getdata_z(i_mid_1, j_mid, k_mid_1), sm1);
+				float Wm_110_111_t = solver_utils::lerp(f3obj->vel->getdata_z(i_mid_1, j_mid_1, k_mid), f3obj->vel->getdata_z(i_mid_1, j_mid_1, k_mid_1), tm1);
+				float Wm_A = solver_utils::lerp(Wm_000_001_t, Wm_010_011_t, sm1);
+				float Wm_B = solver_utils::lerp(Wm_100_101_s, Wm_110_111_t, sm1);
 				
 				// Interoplated Mid Point Velocity -
 				float u_mid = solver_utils::lerp(Um_A, Um_B, rm1);
 				float v_mid = solver_utils::lerp(Vm_A, Vm_B, rm1);
-				float w_mid = solver_utils::lerp(W_A, W_B, rm1);
+				float w_mid = solver_utils::lerp(Wm_A, Wm_B, rm1);
 
 				// BackTrace Along Negative Midpoint Vel - XG - dt0 * u(midpoint)
 				float xxp = i - dt0 * u_mid; 
@@ -879,60 +879,117 @@ void fluidsolver_3::advect_sl_mp(grid3_scalar<float> *grid_0, grid3_scalar<float
 void fluidsolver_3::advect_sl_mp(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3<float>> *grid_1)
 {
 	float dt0 = dt * N_dim; // Scale DeltaTime to Grid Dimension Size. 
- 
-	#pragma omp parallel for num_threads(omp_get_max_threads()) 
-	for (int j = 1; j <= N_dim; j++)
+
+	//#pragma omp parallel for num_threads(omp_get_max_threads()) 
+
+	for (int k = 1; k <= N_dim; k++)
 	{
-		for (int i = 1; i <= N_dim; i++)
+		for (int j = 1; j <= N_dim; j++)
 		{
-			// Vel At Cur Cell Postion. 
-			float u_P = f3obj->vel->getdata_x(i, j);
-			float v_P = f3obj->vel->getdata_y(i, j);
+			for (int i = 1; i <= N_dim; i++)
+			{
+				// Vel at Cur Cell Postion. 
+				float u_P = f3obj->vel->getdata_x(i, j, k);
+				float v_P = f3obj->vel->getdata_y(i, j, k);
+				float w_P = f3obj->vel->getdata_z(i, j, k);
 
-			// BackTrace Along Negative CurCell Vel - XG - dt0 * u(CurCell)
-			// XG -> Midpoint = XG - dt0 * u(XG)
-			float xxm = i - (0.5 * dt0) * u_P; float yym = j - (0.5 * dt0) * v_P; // BackTrace U,V to Midpoint.
-			if (xxm < 0.5) xxm = 0.5; if (xxm > N_dim + 0.5) xxm = N_dim + 0.5; // Clamp
-			if (yym < 0.5) yym = 0.5; if (yym > N_dim + 0.5) yym = N_dim + 0.5;
+				// BackTrace Along Negative CurCell Vel - XG - dt0 * u(CurCell)
+				// XG -> Midpoint = XG - dt0 * u(XG)
+				// BackTrace U,V,W Velocity Components to Midpoint.
+				float xxm = i - (0.5 * dt0) * u_P;
+				float yym = j - (0.5 * dt0) * v_P;
+				float zzm = k - (0.5 * dt0) * w_P;
+				if (xxm < 0.5) xxm = 0.5; if (xxm > N_dim + 0.5) xxm = N_dim + 0.5;
+				if (yym < 0.5) yym = 0.5; if (yym > N_dim + 0.5) yym = N_dim + 0.5;
+				if (zzm < 0.5) zzm = 0.5; if (zzm > N_dim + 0.5) zzm = N_dim + 0.5;
 
-			// MidPoint - Mid Indices 
-			int i_mid = int(xxm); int i_mid_1 = i_mid + 1; int j_mid = int(yym); int j_mid_1 = j_mid + 1;
-			// MidPoint - Mid Interp Coefficents - 
-			float sm1 = xxm - i_mid; float sm = 1 - sm1;
-			float tm1 = yym - j_mid; float tm = 1 - tm1;
+				// MidPoint - Mid Indices 
+				int i_mid = int(xxm); int i_mid_1 = i_mid + 1;
+				int j_mid = int(yym); int j_mid_1 = j_mid + 1;
+				int k_mid = int(zzm); int k_mid_1 = k_mid + 1;
 
+				// MidPoint - Mid Interp Coefficents - 
+				float rm1 = xxm - i_mid; float rm = 1 - rm1;
+				float sm1 = yym - j_mid; float sm = 1 - sm1;
+				float tm1 = yym - j_mid; float tm = 1 - tm1;
 
-			// Get Mid Point Velocity (Bilinear) - 
-			float u_mid = sm * (tm*f3obj->vel->getdata_x(i_mid, j_mid) + tm1 * f3obj->vel->getdata_x(i_mid, j_mid_1))
-				+ sm1 * (tm * f3obj->vel->getdata_x(i_mid_1, j_mid) + tm1 * f3obj->vel->getdata_x(i_mid_1, j_mid_1));
-			float v_mid = sm * (tm*f3obj->vel->getdata_y(i_mid, j_mid) + tm1 * f3obj->vel->getdata_y(i_mid, j_mid_1))
-				+ sm1 * (tm * f3obj->vel->getdata_y(i_mid_1, j_mid) + tm1 * f3obj->vel->getdata_y(i_mid_1, j_mid_1));
+				// Get Mid Point Velocity (Trilinear Interoplation of Velocity Components u,v,w At Midpoint Postion (m)) - 
+				// Interoplate Neighbours - for Velocity comp (U/x). 
+				float Um_000_001_t = solver_utils::lerp(f3obj->vel->getdata_x(i_mid, j_mid, k_mid), f3obj->vel->getdata_x(i_mid, j_mid, k_mid_1), tm1);
+				float Um_010_011_t = solver_utils::lerp(f3obj->vel->getdata_x(i_mid, j_mid_1, k_mid), f3obj->vel->getdata_x(i_mid, j_mid_1, k_mid), tm1);
+				float Um_100_101_s = solver_utils::lerp(f3obj->vel->getdata_x(i_mid_1, j_mid, k_mid), f3obj->vel->getdata_x(i_mid_1, j_mid, k_mid_1), sm1);
+				float Um_110_111_t = solver_utils::lerp(f3obj->vel->getdata_x(i_mid_1, j_mid_1, k_mid), f3obj->vel->getdata_x(i_mid_1, j_mid_1, k_mid_1), tm1);
+				float Um_A = solver_utils::lerp(Um_000_001_t, Um_010_011_t, sm1);
+				float Um_B = solver_utils::lerp(Um_100_101_s, Um_110_111_t, sm1);
+				// Interoplate Neighbours - for Velocity comp (V/y). 
+				float Vm_000_001_t = solver_utils::lerp(f3obj->vel->getdata_y(i_mid, j_mid, k_mid), f3obj->vel->getdata_y(i_mid, j_mid, k_mid_1), tm1);
+				float Vm_010_011_t = solver_utils::lerp(f3obj->vel->getdata_y(i_mid, j_mid_1, k_mid), f3obj->vel->getdata_y(i_mid, j_mid_1, k_mid_1), tm1);
+				float Vm_100_101_s = solver_utils::lerp(f3obj->vel->getdata_y(i_mid_1, j_mid, k_mid), f3obj->vel->getdata_y(i_mid_1, j_mid, k_mid_1), sm1);
+				float Vm_110_111_t = solver_utils::lerp(f3obj->vel->getdata_y(i_mid_1, j_mid_1, k_mid), f3obj->vel->getdata_y(i_mid_1, j_mid_1, k_mid_1), tm1);
+				float Vm_A = solver_utils::lerp(Vm_000_001_t, Vm_010_011_t, sm1);
+				float Vm_B = solver_utils::lerp(Vm_100_101_s, Vm_110_111_t, sm1);
+				// Interoplate Neighbours - for Velocity comp (W/z). 
+				float Wm_000_001_t = solver_utils::lerp(f3obj->vel->getdata_z(i_mid, j_mid, k_mid), f3obj->vel->getdata_z(i_mid, j_mid, k_mid_1), tm1);
+				float Wm_010_011_t = solver_utils::lerp(f3obj->vel->getdata_z(i_mid, j_mid_1, k_mid), f3obj->vel->getdata_z(i_mid, j_mid_1, k_mid_1), tm1);
+				float Wm_100_101_s = solver_utils::lerp(f3obj->vel->getdata_z(i_mid_1, j_mid, k_mid), f3obj->vel->getdata_z(i_mid_1, j_mid, k_mid_1), sm1);
+				float Wm_110_111_t = solver_utils::lerp(f3obj->vel->getdata_z(i_mid_1, j_mid_1, k_mid), f3obj->vel->getdata_z(i_mid_1, j_mid_1, k_mid_1), tm1);
+				float Wm_A = solver_utils::lerp(Wm_000_001_t, Wm_010_011_t, sm1);
+				float Wm_B = solver_utils::lerp(Wm_100_101_s, Wm_110_111_t, sm1);
 
-			// BackTrace Along Negative Midpoint Vel - XG - dt0 * u(midpoint)
-			float xxp = i - dt0 * u_mid; float yyp = j - dt0 * v_mid;
-			if (xxp < 0.5) xxp = 0.5; if (xxp > N_dim + 0.5) xxp = N_dim + 0.5;
-			if (yyp < 0.5) yyp = 0.5; if (yyp > N_dim + 0.5) yyp = N_dim + 0.5;
+				// Interoplated Mid Point Velocity -
+				float u_mid = solver_utils::lerp(Um_A, Um_B, rm1);
+				float v_mid = solver_utils::lerp(Vm_A, Vm_B, rm1);
+				float w_mid = solver_utils::lerp(Wm_A, Wm_B, rm1);
 
-			// MidPoint - BackTrace Indices Test - 
-			int i0 = int(xxp); int i1 = i0 + 1;
-			int j0 = int(yyp); int j1 = j0 + 1;
-			//
-			// MidPoint - BackTrace Coefficents. 
-			float s1 = xxp - i0; float s0 = 1 - s1;
-			float t1 = yyp - j0; float t0 = 1 - t1;
+				// BackTrace Along Negative Midpoint Vel - XG - dt0 * u(midpoint) 
+				float xxp = i - dt0 * u_mid;
+				float yyp = j - dt0 * v_mid;
+				float zzp = k - dt0 * v_mid;
+				if (xxp < 0.5) xxp = 0.5; if (xxp > N_dim + 0.5) xxp = N_dim + 0.5;
+				if (yyp < 0.5) yyp = 0.5; if (yyp > N_dim + 0.5) yyp = N_dim + 0.5;
+				if (zzp < 0.5) zzp = 0.5; if (zzp > N_dim + 0.5) zzp = N_dim + 0.5;
 
-			// Bilinearly Sample Velocity Components at Backtraced postion (via MidPoint Vel). 
-			float new_u = s0 * (t0*grid_0->getdata_x(i0, j0) + t1 * grid_0->getdata_x(i0, j1))
-				+ s1 * (t0 * grid_0->getdata_x(i1, j0) + t1 * grid_0->getdata_x(i1, j1));
+				// MidPoint - Mid Indices 
+				int i_f = int(xxp); int i_f_1 = i_f + 1;
+				int j_f = int(yyp); int j_f_1 = j_f + 1;
+				int k_f = int(zzp); int k_f_1 = k_f + 1;
 
-			float new_v = s0 * (t0*grid_0->getdata_y(i0, j0) + t1 * grid_0->getdata_y(i0, j1))
-				+ s1 * (t0 * grid_0->getdata_y(i1, j0) + t1 * grid_0->getdata_y(i1, j1));
+				// MidPoint - Mid Interp Coefficents  
+				float rf1 = xxm - i_mid; float rf = 1 - rf1;
+				float sf1 = yym - j_mid; float sf = 1 - sf1;
+				float tf1 = yym - j_mid; float tf = 1 - tf1;
 
-			vec3<float> new_vec(new_u, new_v);
+				// Trilinearly Sample Velocity Components (u,v,w) at Back Traced Postion (f) 
+				// Interoplate Neighbours - for Velocity comp (U/x). 
+				float Uf_000_001_t = solver_utils::lerp(grid_0->getdata_x(i_f, j_f, k_f), grid_0->getdata_x(i_f, j_f, k_f_1), tf1);
+				float Uf_010_011_t = solver_utils::lerp(grid_0->getdata_x(i_f, j_f_1, k_f), grid_0->getdata_x(i_f, j_f_1, k_f), tf1);
+				float Uf_100_101_s = solver_utils::lerp(grid_0->getdata_x(i_f_1, j_f, k_f), grid_0->getdata_x(i_f_1, j_f, k_f_1), sf1);
+				float Uf_110_111_t = solver_utils::lerp(grid_0->getdata_x(i_f_1, j_f_1, k_f), grid_0->getdata_x(i_f_1, j_f_1, k_f_1), tf1);
+				float Uf_A = solver_utils::lerp(Um_000_001_t, Um_010_011_t, sm1);
+				float Uf_B = solver_utils::lerp(Um_100_101_s, Um_110_111_t, sm1);
+				// Interoplate Neighbours - for Velocity comp (V/y). 
+				float Vf_000_001_t = solver_utils::lerp(grid_0->getdata_y(i_f, j_f, k_f), grid_0->getdata_y(i_f, j_f, k_f_1), tf1);
+				float Vf_010_011_t = solver_utils::lerp(grid_0->getdata_y(i_f, j_f_1, k_f), grid_0->getdata_y(i_f, j_f_1, k_f_1), tf1);
+				float Vf_100_101_s = solver_utils::lerp(grid_0->getdata_y(i_f_1, j_f, k_f), grid_0->getdata_y(i_f_1, j_f, k_f_1), sf1);
+				float Vf_110_111_t = solver_utils::lerp(grid_0->getdata_y(i_f_1, j_f_1, k_f), grid_0->getdata_y(i_f_1, j_f_1, k_f_1), tf1);
+				float Vf_A = solver_utils::lerp(Vm_000_001_t, Vm_010_011_t, sm1);
+				float Vf_B = solver_utils::lerp(Vm_100_101_s, Vm_110_111_t, sm1);
+				// Interoplate Neighbours - for Velocity comp (W/z). 
+				float Wf_000_001_t = solver_utils::lerp(grid_0->getdata_z(i_f, j_f, k_f), grid_0->getdata_z(i_f, j_f, k_f_1), tf1);
+				float Wf_010_011_t = solver_utils::lerp(grid_0->getdata_z(i_f, j_f_1, k_f), grid_0->getdata_z(i_f, j_f_1, k_f_1), tf1);
+				float Wf_100_101_s = solver_utils::lerp(grid_0->getdata_z(i_f_1, j_f, k_f), grid_0->getdata_z(i_f_1, j_f, k_f_1), sf1);
+				float Wf_110_111_t = solver_utils::lerp(grid_0->getdata_z(i_f_1, j_f_1, k_f), grid_0->getdata_z(i_f_1, j_f_1, k_f_1), tf1);
+				float Wf_A = solver_utils::lerp(Wm_000_001_t, Wm_010_011_t, sf1);
+				float Wf_B = solver_utils::lerp(Wm_100_101_s, Wm_110_111_t, sf1);
 
-			// Set New Cur vel vec3 to Velocity Grid cell value - 
-			grid_1->setdata(new_vec, i, j);
+				// Final Sampled Interoplated Back Traced Point Velocity -
+				float U_f = solver_utils::lerp(Uf_A, Uf_B, rf1);
+				float V_f = solver_utils::lerp(Vf_A, Vf_B, rf1);
+				float W_f = solver_utils::lerp(Wf_A, Wf_B, rf1);
 
+				// Set Final Advected Velocity to cur grid - 
+				grid_1->setdata(vec3<float>(U_f, V_f, W_f), i, j, k);
+			}
 		}
 	}
 
@@ -942,13 +999,13 @@ void fluidsolver_3::advect_sl_mp(grid3_vector<vec3<float>> *grid_0, grid3_vector
 	#if dospherebound == 1
 	sphere_bounds_eval (grid_1, spherebound_coliso);
 	#endif
-
 }
 
 
 /* ====================================================
 				FORCES AND MISC - 
 	==================================================== */
+/* !TODO LATER
 
 // Loop Through Vel Grid, and Add passed force to velocity * dt. 
 void fluidsolver_3::vel_force(vec3<float> ff, float dtt)
@@ -957,8 +1014,8 @@ void fluidsolver_3::vel_force(vec3<float> ff, float dtt)
 	{
 		for (int i = 1; i <= N_dim; i++)
 		{
-			vec3<float> temp (ff.x, ff.y); // UN NEGATE AXIS for coord fix/dbg ?
-			f3obj->integrate_force(temp, dtt, i, j);   // Call add_force MF in fluid_obj.
+			//vec3<float> temp (ff.x, ff.y); // UN NEGATE AXIS for coord fix/dbg ?
+			//f3obj->integrate_force(temp, dtt, i, j);   // Call add_force MF in fluid_obj.
 		}
 	}
 }
@@ -979,6 +1036,7 @@ void fluidsolver_3::custom_force(grid3_vector<vec3<float>> *grid, std::function 
 		}
 	}
 }
+*/
 
 /*	====================================================
 	VORTICITY CONFINEMENT
@@ -1116,6 +1174,7 @@ void fluidsolver_3::vorticty_confine(float strength)
 }
 */
 
+/*! TODO Later 
 // Vorticity Confinement On The Fly (No Writing to Vorticity/Curl Grids, Curl, Curl Grad and Resulting VC Force
 // calculated all within one loop, via Curl Lambda to calc  Curl (w) and Curl Gradient (w'). 
 void fluidsolver_3::vorticty_confine_otf(float strength)
@@ -1231,6 +1290,7 @@ void fluidsolver_3::vorticity_confine_B(float strength)
 	// Delete/Dealloc Vort Grid. 
 	delete vort; vort = nullptr; 
 }
+*/
 
 /* ====================================================
 	VELOCITY PROJECTION / PRESSURE SOLVE 	
@@ -1258,33 +1318,37 @@ void fluidsolver_3::project(int iter)
 	del_divergence(); del_pressure(); 
 
 	// Init Solvers Own Divergence and Pressure Fields, Only needed for Scope of this Function.  
-	divergence = new grid3_scalar<float>(x_s, y_s, e_s, 4, 1.0f);
-	pressure = new grid3_scalar<float>(x_s, y_s, e_s, 5, 1.0f);
+	divergence = new grid3_scalar<float>(x_s, y_s, z_s, e_s);
+	pressure = new grid3_scalar<float>(x_s, y_s, z_s, e_s);
 
-	// DIVERGENCE FIELD CALC \\ - 
-
+	// DIVERGENCE FIELD CALC \\ -
 	// Compute Divergence Field, from Velocity Field - 
-	#pragma omp parallel for num_threads(omp_get_max_threads())
-	for (int j = 1; j <= N_dim; j++)
+
+	//#pragma omp parallel for num_threads(omp_get_max_threads())
+
+	for (int k = 1; k <= N_dim; k++)
 	{
-		for (int i = 1; i <= N_dim; i++)
+		for (int j = 1; j <= N_dim; j++)
 		{
-			// Init to 0 
-			divergence->setdata(0.0f, i, j);
+			for (int i = 1; i <= N_dim; i++)
+			{
+				// Init to 0 
+				divergence->setdata(0.0f, i, j, k);
 
-			// Compute Divergence Cell Value. 
-			float div = -0.5 * h * (f3obj->vel->getdata_x(i + 1, j) - f3obj->vel->getdata_x(i - 1, j)
-			+ f3obj->vel->getdata_y(i, j + 1) - f3obj->vel->getdata_y(i, j - 1));
-			
-			// Set Divergence Cell Value. 
-			divergence->setdata(div, i, j);
+				// Compute Divergence Cell Value. (0.5 * h oppose to / N) 
+				float div = -0.5 * h * (f3obj->vel->getdata_x(i + 1, j, k) - f3obj->vel->getdata_x(i - 1, j, k)
+					+ f3obj->vel->getdata_y(i, j + 1, k) - f3obj->vel->getdata_y(i, j - 1, k)
+					+ f3obj->vel->getdata_y(i, j,k + 1) - f3obj->vel->getdata_y(i, j, k - 1));
 
-			// Zero Out Pressure Grid, as Inital Value PreLinSolve. (Index Based oppose to calling grid3_scalar<float>->clear()).
-			pressure->setdata(0.0f, i, j);
+				// Set Divergence Cell Value. 
+				divergence->setdata(div, i, j, k);
 
-			// Write Inital PreProjected VelField to Grid For dbg - 
-			f3obj->preproj_vel->setdata(f3obj->vel->getdata(i, j), i, j);
+				// Zero Out Pressure Grid, as Inital Value PreLinSolve. (Index Based oppose to calling grid3_scalar<float>->clear()).
+				pressure->setdata(0.0f, i, j, k);
 
+				// Write Inital PreProjected VelField to Grid For dbg - 
+				//f3obj->preproj_vel->setdata(f3obj->vel->getdata(i, j, k), i, j, k);
+			}
 		}
 	}
 	// Call Boundary Condtions on Divergence Field and Inital Pressure Field - 
@@ -1297,42 +1361,47 @@ void fluidsolver_3::project(int iter)
 	// PRESSURE FIELD LINEAR SOLVE \\ 
 
 	// (Iterativly Compute Inverse of Divergence Grid/Matrix) Gauss-Seidel, Solve Discrete Poission Of Pressure Field, using Linear System. 
-	for (int k = 0; k < iter; k++)
+	for (int l = 0; l < iter; l++)
 	{
 		double error = 0.0f; 
 		double total_error = 0.0f; 
 
-		for (int j = 1; j <= N_dim; j++)
+		for (int k = 1; k <= N_dim; k++)
 		{
-			for (int i = 1; i <= N_dim; i++)
+			for (int j = 1; j <= N_dim; j++)
 			{
-				float n0 = pressure->getdata(i, j); // n (Pressure (k(n)) for SOR)
-
-				float pres = (divergence->getdata(i, j) + pressure->getdata(i - 1, j) + pressure->getdata(i + 1, j) +
-				pressure->getdata(i, j - 1) + pressure->getdata(i, j + 1)) / 4.0f; 
-				
-				float n1 = pres; // n+1 (Pressure (k(n+1)) for SOR)
-
-				// Use SOR or not - 
-				if (Parms.p_ProjectionType == Parms.Project_GaussSeidel_SOR)
+				for (int i = 1; i <= N_dim; i++)
 				{
-					// SOR 
-					float alpha = Parms.p_SOR_alpha;
-					float sor_pres = alpha * n1 + (1 - alpha) * n0;
-					pressure->setdata(sor_pres, i, j);
-				}
-				else if (Parms.p_ProjectionType == Parms.Project_GaussSeidel)
-				{
-					pressure->setdata(pres, i, j);
-				}
+					float n0 = pressure->getdata(i, j, k); // n (Pressure (l(n)) for SOR)
 
-				// Caluclate Resdiual - 
-				if (k == iter - 1)
-				{
-					// Check Error Value of Resulting Pressure Solve Convergence (b-Ax) wip -
-					error += std::fabsf(divergence->getdata(i, j)) - std::fabsf(pressure->getdata(i, j));
-				}
+					float pres = (divergence->getdata(i, j, k) + pressure->getdata(i - 1, j, k) + pressure->getdata(i + 1, j, k) 
+						+ pressure->getdata(i, j - 1, k) + pressure->getdata(i, j + 1, k)
+						+ pressure->getdata(i, j, k - 1) + pressure->getdata(i, j, k + 1)
+						) / 6.0f;
 
+					float n1 = pres; // n+1 (Pressure (l(n+1)) for SOR)
+
+					// Use SOR or not - 
+					if (Parms.p_ProjectionType == Parms.Project_GaussSeidel_SOR)
+					{
+						// SOR 
+						float alpha = Parms.p_SOR_alpha;
+						float sor_pres = alpha * n1 + (1 - alpha) * n0;
+						pressure->setdata(sor_pres, i, j, k);
+					}
+					else if (Parms.p_ProjectionType == Parms.Project_GaussSeidel)
+					{
+						pressure->setdata(pres, i, j, k);
+					}
+
+					// Caluclate Resdiual - 
+					if (l == iter - 1)
+					{
+						// Check Error Value of Resulting Pressure Solve Convergence (b-Ax) wip -
+						error += std::fabsf(divergence->getdata(i, j, k)) - std::fabsf(pressure->getdata(i, j, k));
+					}
+
+				}
 			}
 		}
 
@@ -1344,7 +1413,7 @@ void fluidsolver_3::project(int iter)
 		#endif	
 
 		// Get Avg Residual Error on Last Iter. 
-		if (k == iter - 1)
+		if (l == iter - 1)
 		{
 			// Average Total Error (Over num of Cells) and Print. 
 			total_error = std::fabsf(error / (float(pow(N_dim, 2))));
@@ -1355,33 +1424,38 @@ void fluidsolver_3::project(int iter)
 	
 	// SUBTRACT PRESSURE GRADEINT FROM VELOCITY FIELD \\  
 
-	#pragma omp parallel for num_threads(omp_get_max_threads()) 
-	for (int j = 1; j <= N_dim; j++)
+	//#pragma omp parallel for num_threads(omp_get_max_threads()) 
+	for (int k = 1; k <= N_dim; k++)
 	{
-		for (int i = 1; i <= N_dim; i++)
+		for (int j = 1; j <= N_dim; j++)
 		{
-			// 3 Methods Equivalent. 
-			//1 Partial Derivatves for Each Pressure Gradient Components (2003 StableFluids)-
-			float grad_x = 0.5 * (pressure->getdata(i + 1, j) - pressure->getdata(i - 1, j)) / h;
-			float grad_y = 0.5 * (pressure->getdata(i, j + 1) - pressure->getdata(i, j - 1)) / h;
+			for (int i = 1; i <= N_dim; i++)
+			{
+				// 3 Methods Equivalent. 
+				//1 Partial Derivatves for Each Pressure Gradient Components (2003 StableFluids)-
+				float grad_x = 0.5f * (pressure->getdata(i + 1, j, k) - pressure->getdata(i - 1, j, k)) / h;
+				float grad_y = 0.5f * (pressure->getdata(i, j + 1, k) - pressure->getdata(i, j - 1, k)) / h;
+				float grad_z = 0.5f * (pressure->getdata(i, j, k + 1) - pressure->getdata(i, j, k - 1)) / h;
 
-			//2 Typical Central Diffrence (/2h) - 
-			//grad_x = (pressure->getdata(i + 1, j) - pressure->getdata(i - 1, j)) / (2.0f*h);
-			//grad_y = (pressure->getdata(i, j + 1) - pressure->getdata(i, j - 1)) / (2.0f*h);
+				//2 Typical Central Diffrence (/2h) - 
+				//grad_x = (pressure->getdata(i + 1, j) - pressure->getdata(i - 1, j)) / (2.0f*h);
+				//grad_y = (pressure->getdata(i, j + 1) - pressure->getdata(i, j - 1)) / (2.0f*h);
 
-			//3 Stams Book Implmenetation - 
-			//grad_x = 0.5f * N_dim * (pressure->getdata(i + 1, j) - pressure->getdata(i - 1, j));
-			//grad_y = 0.5f * N_dim * (pressure->getdata(i, j + 1) - pressure->getdata(i, j - 1));
+				//3 Stams Book Implmenetation - 
+				//grad_x = 0.5f * N_dim * (pressure->getdata(i + 1, j) - pressure->getdata(i - 1, j));
+				//grad_y = 0.5f * N_dim * (pressure->getdata(i, j + 1) - pressure->getdata(i, j - 1));
 
-			// Subtract Gradient Components from Velocity Field Components and set to Velocity-
-			float new_vel_x = f3obj->vel->getdata_x(i, j) - grad_x;
-			f3obj->vel->setdata_x(new_vel_x, i, j);
-			float new_vel_y = f3obj->vel->getdata_y(i, j) - grad_y;
-			f3obj->vel->setdata_y(new_vel_y, i, j);
+				// Subtract Gradient Components from Velocity Field Components and set to Velocity-
+				float new_vel_x = f3obj->vel->getdata_x(i, j, k) - grad_x;
+				f3obj->vel->setdata_x(new_vel_x, i, j, k);
+				float new_vel_y = f3obj->vel->getdata_y(i, j, k) - grad_y;
+				f3obj->vel->setdata_y(new_vel_y, i, j, k);
+				float new_vel_z = f3obj->vel->getdata_z(i, j, k) - grad_z;
+				f3obj->vel->setdata_z(new_vel_z, i, j, k);
 
+			}
 		}
 	}
-
 	// Call and Enforce Boundary Condtions After Projection on Vel Field - 
 	edge_bounds(f3obj->vel);
 	#if dospherebound == 1

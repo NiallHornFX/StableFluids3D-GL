@@ -179,13 +179,6 @@ protected:
 	void advect_sl_mp(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1);
 	void advect_sl_mp(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3<float>> *grid_1);
 
-	// Bicubic Interoplation with MP Advection Test -
-	//void advect_sl_mp_bc(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1);
-
-	// SL MidPoint Advection - BackTrace In Grid Space. 
-	void advect_sl_mp_GS(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1);
-	void advect_sl_mp_GS(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3<float>> *grid_1);
-
 	// PROJECTION \\ - 
 	// Velocity Field Projection/Pressure Solve - 
 
