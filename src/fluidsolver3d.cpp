@@ -1834,16 +1834,7 @@ void fluidsolver_3::density_step(int diff_iter, float diffA, bool dodiff)
 	else if (Parms.p_Do_Dens_Diff == false)
 	{
 		// Use "SetCurToPrev" Funcs to Copy Grids, Oppose to via Diffusion - 
-		f3obj->setcurtoprev_dens();
-
-		if (Parms.p_useColour)
-		{
-			// SetCurtoPrev - Colour - 
-			f3obj->setcurtoprev(f3obj->c_R_prev, f3obj->c_R);
-			f3obj->setcurtoprev(f3obj->c_G_prev, f3obj->c_G);
-			f3obj->setcurtoprev(f3obj->c_B_prev, f3obj->c_B);
-		}
-
+		f3obj->setcurtoprev(f3obj->prev_dens, f3obj->dens);
 	}
 
 	// ADVECT Density - 
@@ -1855,25 +1846,6 @@ void fluidsolver_3::density_step(int diff_iter, float diffA, bool dodiff)
 	else if (Parms.p_AdvectionType == Parms.Advect_SL_BackTrace_RK2)
 	{
 		advect_sl_mp(f3obj->prev_dens, f3obj->dens);
-		advect_sl_mp_GS(f3obj->prev_dens, f3obj->dens);
-	}
-	
-	if (Parms.p_useColour)
-	{
-		// Advect Colour -
-		if (Parms.p_AdvectionType == Parms.Advect_SL_BackTrace_Euler)
-		{
-			advect_sl(f3obj->c_R_prev, f3obj->c_R);
-			advect_sl(f3obj->c_G_prev, f3obj->c_G);
-			advect_sl(f3obj->c_B_prev, f3obj->c_B);
-		}
-		else if (Parms.p_AdvectionType == Parms.Advect_SL_BackTrace_RK2)
-		{
-			// RK2 (MidPoint) 
-			advect_sl_mp(f3obj->c_R_prev, f3obj->c_R);
-			advect_sl_mp(f3obj->c_G_prev, f3obj->c_G);
-			advect_sl_mp(f3obj->c_B_prev, f3obj->c_B);
-		}
 	}
 
 	if (Parms.p_Do_Dens_Disp)
@@ -1904,7 +1876,7 @@ void fluidsolver_3::velocity_step(int diff_iter, int proj_iter, float diffA, boo
 	}
 	else if (dodiff == false)
 	{
-		f3obj->setcurtoprev_vel();
+		f3obj->setcurtoprev(f3obj->prev_vel, f3obj->vel);
 	}
 
 	// ADVECT VELOCITY FIELD (Self Advect) \\
@@ -1916,7 +1888,6 @@ void fluidsolver_3::velocity_step(int diff_iter, int proj_iter, float diffA, boo
 	else if (Parms.p_AdvectionType == Parms.Advect_SL_BackTrace_RK2)
 	{
 		advect_sl_mp(f3obj->prev_vel, f3obj->vel);
-		//advect_sl_mp_GS(f3obj->prev_vel, f3obj->vel);
 	}
 
 	if (Parms.p_Do_Vel_Disp)

@@ -24,6 +24,7 @@
     <ClInclude Include="include\vendor\GLEW\wglew.h" />
     <ClInclude Include="include\vendor\GLFW\glfw3.h" />
     <ClInclude Include="include\vendor\GLFW\glfw3native.h" />
+    <ClInclude Include="vec2d.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\fluidobj3d.cpp" />

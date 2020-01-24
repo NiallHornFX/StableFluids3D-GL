@@ -6,18 +6,6 @@
 
 extern const double PI; 
 
-// Vec2 Basic Implementation For Indexing. 
-template <class T>
-class vec2
-{
-public:
-	vec2(T xx, T yy) : x(xx), y(yy) {}
-	vec2() : x(0), y(0) {}
-	~vec2() {}
-
-	T x, y; 
-};
-
 // Vec3 Interface Implmentation - 
 
 template <class T>
