@@ -5,6 +5,7 @@
 #include <vector>
 
 // Cannot Forward Decl due to Class TMP. 
+#include "vec2d.h"
 #include "vec3d.h"
 #include "mat3d.h"
 
