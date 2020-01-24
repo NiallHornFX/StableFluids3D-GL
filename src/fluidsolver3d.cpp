@@ -1338,7 +1338,7 @@ void fluidsolver_3::project(int iter)
 				// Compute Divergence Cell Value. (0.5 * h oppose to / N) 
 				float div = -0.5 * h * (f3obj->vel->getdata_x(i + 1, j, k) - f3obj->vel->getdata_x(i - 1, j, k)
 					+ f3obj->vel->getdata_y(i, j + 1, k) - f3obj->vel->getdata_y(i, j - 1, k)
-					+ f3obj->vel->getdata_y(i, j,k + 1) - f3obj->vel->getdata_y(i, j, k - 1));
+					+ f3obj->vel->getdata_z(i, j,k + 1) - f3obj->vel->getdata_z(i, j, k - 1));
 
 				// Set Divergence Cell Value. 
 				divergence->setdata(div, i, j, k);
@@ -1374,7 +1374,8 @@ void fluidsolver_3::project(int iter)
 				{
 					float n0 = pressure->getdata(i, j, k); // n (Pressure (l(n)) for SOR)
 
-					float pres = (divergence->getdata(i, j, k) + pressure->getdata(i - 1, j, k) + pressure->getdata(i + 1, j, k) 
+					float pres = (divergence->getdata(i, j, k) 
+						+ pressure->getdata(i - 1, j, k) + pressure->getdata(i + 1, j, k) 
 						+ pressure->getdata(i, j - 1, k) + pressure->getdata(i, j + 1, k)
 						+ pressure->getdata(i, j, k - 1) + pressure->getdata(i, j, k + 1)
 						) / 6.0f;
@@ -1481,31 +1482,35 @@ void fluidsolver_3::project_jacobi(int iter)
 	del_divergence(); del_pressure();
 	
 	// Alloc New DP Grids. 
-	divergence = new grid3_scalar<float>(x_s, y_s, e_s, 4, 1.0f);
-	pressure = new grid3_scalar<float>(x_s, y_s, e_s, 5, 1.0f);
-	pressure_1 = new grid3_scalar<float>(x_s, y_s, e_s, 6, 1.0f);
+	divergence = new grid3_scalar<float>(x_s, y_s, z_s, e_s);
+	pressure = new grid3_scalar<float>(x_s, y_s, z_s, e_s);
+	pressure_1 = new grid3_scalar<float>(x_s, y_s, z_s, e_s);
 
 	// DIVERGENCE FIELD CALC \\ - 
 
 	// Compute Divergence Field, from Velocity Field - 
-	#pragma omp parallel for num_threads(omp_get_max_threads())
-	for (int j = 1; j <= N_dim; j++)
+	//#pragma omp parallel for num_threads(omp_get_max_threads())
+
+	for (int k = 1; k <= N_dim; k++)
 	{
-		for (int i = 1; i <= N_dim; i++)
+		for (int j = 1; j <= N_dim; j++)
 		{
-			// Init to 0 
-			divergence->setdata(0.0f, i, j);
+			for (int i = 1; i <= N_dim; i++)
+			{
+				// Init to 0 
+				divergence->setdata(0.0f, i, j, k);
 
-			// Compute Divergence Cell Value. 
-			float div = -0.5 * h * (f3obj->vel->getdata_x(i + 1, j) - f3obj->vel->getdata_x(i - 1, j)
-			+ f3obj->vel->getdata_y(i, j + 1) - f3obj->vel->getdata_y(i, j - 1));
-			
-			// Set Divergence Cell Value. 
-			divergence->setdata(div, i, j);
+				// Compute Divergence Cell Value. 
+				float div = -0.5 * h * (f3obj->vel->getdata_x(i + 1, j, k) - f3obj->vel->getdata_x(i - 1, j, k)
+					+ f3obj->vel->getdata_y(i, j + 1, k) - f3obj->vel->getdata_y(i, j - 1, k)
+					+ f3obj->vel->getdata_z(i, j, k + 1) - f3obj->vel->getdata_z(i, j, k - 1));
 
-			// Zero Out Pressure Grid, as Inital Value PreLinSolve. (Index Based oppose to calling grid3_scalar<float>->clear()).
-			pressure->setdata(0.0f, i, j);
+				// Set Divergence Cell Value. 
+				divergence->setdata(div, i, j, k);
 
+				// Zero Out Pressure Grid, as Inital Value PreLinSolve. (Index Based oppose to calling grid3_scalar<float>->clear()).
+				pressure->setdata(0.0f, i, j, k);
+			}
 		}
 	}
 	// Call Boundary Condtions on Divergence Field and Inital Pressure Field - 
@@ -1518,25 +1523,33 @@ void fluidsolver_3::project_jacobi(int iter)
 	// PRESSURE FIELD LINEAR SOLVE \\ 
 
 	// (Iterativly Compute Inverse of Divergence Grid/Matrix) 
-	// Jacobi For Possion Pressure Solve. (Write to Seperate "Sratch Grid", Only Swap at end of kth Iteration.
+	// Jacobi For Possion Pressure Solve. (Write to Seperate "Sratch Grid", Only Swap at end of lth Iteration.
 	// pressure == main pressure grid (to read from), pressure_1 == scratch pressure grid (to write to and then swap). 
 
-	for (int k = 0; k < iter; k++)
+	for (int l = 0; l < iter; l++)
 	{
 		#pragma omp parallel for
-		for (int j = 1; j <= N_dim; j++)
+		for (int k = 1; k <= N_dim; k++)
 		{
 			#pragma omp parallel for
-			for (int i = 1; i <= N_dim; i++)
+			for (int j = 1; j <= N_dim; j++)
 			{
-				float pres_n0 = pressure->getdata(i, j);
+				#pragma omp parallel for
+				for (int i = 1; i <= N_dim; i++)
+				{
+					float pres_n0 = pressure->getdata(i, j, k);
 
-				float pres = (divergence->getdata(i, j) + pressure->getdata(i - 1, j) + pressure->getdata(i + 1, j) +
-				pressure->getdata(i, j - 1) + pressure->getdata(i, j + 1)) / 4.0f;
+					float pres = (divergence->getdata(i, j, k) 
+						+ pressure->getdata(i - 1, j, k) + pressure->getdata(i + 1, j, k)
+						+ pressure->getdata(i, j - 1, k) + pressure->getdata(i, j + 1, k)
+						+ pressure->getdata(i, j, k - 1) + pressure->getdata(i, j, k + 1)
+						) / 6.0f;
 
-				pressure_1->setdata(pres, i, j); 
+					pressure_1->setdata(pres, i, j, k);
+				}
 			}
 		}
+
 		// Call Boundary Condtion Functions On Pressure After Each Pressure Field Iteration.
 		edge_bounds(pressure_1);
 		#if dospherebound == 1
@@ -1544,7 +1557,7 @@ void fluidsolver_3::project_jacobi(int iter)
 		sphere_bounds_eval(pressure_1,spherebound_coliso); // Optimized SphereBounds for pressure calc. 
 		#endif	
 
-		// Swap Pressure Grid with Scratch Grid at end of k Iter After internal i,j MT'd Jacobi Projection Iteration is complete.
+		// Swap Pressure Grid with Scratch Grid at end of k Iter After internal i,j,k MT'd Jacobi Projection Iteration is complete.
 		// (This is Single Threaded to ensure whole grid is swapped correctly together, and not within a Multithreaded Outer loop).
 		pressure_1->swap(pressure);
 		// Hence removal of Outer MT Kth Loop and OMP Crticial which was not correct, as Pressure grid was swapping atomically per x threads, not as a singlethread. 
@@ -1553,19 +1566,25 @@ void fluidsolver_3::project_jacobi(int iter)
 	// SUBTRACT PRESSURE GRADEINT FROM VELOCITY FIELD \\ -
 
 	#pragma omp parallel for num_threads(omp_get_max_threads())
-	for (int j = 1; j <= N_dim; j++)
+	for (int k = 1; k <= N_dim; k++)
 	{
-		for (int i = 1; i <= N_dim; i++)
+		for (int j = 1; j <= N_dim; j++)
 		{
-			// Partial Derivatves for Each Pressure Gradient Components -
-			float grad_x = 0.5 * (pressure->getdata(i + 1, j) - pressure->getdata(i - 1, j)) / h;
-			float grad_y = 0.5 * (pressure->getdata(i, j + 1) - pressure->getdata(i, j - 1)) / h;
+			for (int i = 1; i <= N_dim; i++)
+			{
+				// Partial Derivatves for Each Pressure Gradient Components -
+				float grad_x = 0.5 * (pressure->getdata(i + 1, j, k) - pressure->getdata(i - 1, j, k)) / h;
+				float grad_y = 0.5 * (pressure->getdata(i, j + 1, k) - pressure->getdata(i, j - 1, k)) / h;
+				float grad_z = 0.5 * (pressure->getdata(i, j, k + 1) - pressure->getdata(i, j, k - 1)) / h;
 
-			// Subtract Gradient Components from Velocity Field Components and set to Velocity-
-			float new_vel_x = f3obj->vel->getdata_x(i, j) - grad_x;
-			f3obj->vel->setdata_x(new_vel_x, i, j);
-			float new_vel_y = f3obj->vel->getdata_y(i, j) - grad_y;
-			f3obj->vel->setdata_y(new_vel_y, i, j);
+				// Subtract Gradient Components from Velocity Field Components and set to Velocity-
+				float new_vel_x = f3obj->vel->getdata_x(i, j, k) - grad_x;
+				f3obj->vel->setdata_x(new_vel_x, i, j, k);
+				float new_vel_y = f3obj->vel->getdata_y(i, j, k) - grad_y;
+				f3obj->vel->setdata_y(new_vel_y, i, j, k);
+				float new_vel_z = f3obj->vel->getdata_z(i, j, k) - grad_z;
+				f3obj->vel->setdata_z(new_vel_z, i, j, k);
+			}
 		}
 	}
 	// Call and Enforce Boundary Condtions After Projection on Vel Field - 
@@ -1581,6 +1600,9 @@ void fluidsolver_3::project_jacobi(int iter)
 }
 // End of Velocity Projection (Jacobi) Implementation.
 
+/////////////////////////////////////////////////////////////////////////////
+
+/* !TODO 
 // PROJECT - Gauss-Seidel + SOR - SIMD TESTING - 
 
 void fluidsolver_3::project_SIMD(int iter)
@@ -1749,7 +1771,7 @@ void fluidsolver_3::project_SIMD(int iter)
 
 	// Delete Transposed Grid_Data
 	//delete pres_transpose; pres_transpose = nullptr;
-
+/* !TODO
 	#pragma omp parallel for num_threads(omp_get_max_threads()) 
 	for (int j = 1; j <= N_dim; j++)
 	{
@@ -1788,7 +1810,7 @@ void fluidsolver_3::project_SIMD(int iter)
 
 }
 // End of Velocity Projection Implementation (GS + SOR) SIMD.
-
+*/
 
 /* ====================================================
 	DESNITY SOLVE STEP - 
