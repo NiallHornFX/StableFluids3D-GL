@@ -150,30 +150,37 @@ void fluidsolver_3::edge_bounds(grid3_scalar<float> *grid)
 	}
 
 	// 8 Corner Cells, ScalarGrid Edge Bounds Corner Adjacent Cell Neighbour Averages -
+	// Self + or - XYZ (0(+1) or N+1(-1(N)))
+	// If At 0 For Coord Offset +1, if At N+1 For Coord Offset -1. 
 
-	/* 2D 0,0 = 1,0 + 0,1 
-	float p_00 = 0.5 * (grid->getdata(1, 0) + grid->getdata(0, 1));
-	grid->setdata(p_00, 0, 0); */
+	// Corner Cell = Adjacent X + Y + Z (LH CoordSys Z->Back)
+	// 0, 0, 0 = 1, 0, 0 | 0, 1, 0 | 0, 0, 1 // LeftBottomFront (Assume Origin)
+	// 0,N+1,0 = 1,N+1,0 | 0,N,1 | 0,N+1,1 // LeftTopFront
+	// 0, 0, N+1 = 1, 0, N+1 | 0, 1, N+1 | 0, 0, N //LeftBottomBack
+	// 0,N+1,N+1 = 1,N+1,N+1| 0,N,N+1 | 0,N+1,N // LeftTopBack
+	// N+1,0,0 = N,0,0 | N+1,1,0 | N+1,0,1 // RightBottomFront
+	// N+1,N+1,0 = N,N+1,0 | N+1,N,0 | N+1,N+1,1 // RightTopFront
+	// N+1,0,N+1 = N, 0, N+1 | N+1,1,0 | N+1,0,N // RightBottomBack
+	// N+1,N+1,N+1 = N, N+1, N+1 | N+1,N,N+1 | N+1,N+1,N // RightTopBack
 
 	// 3D 0,0,0 = 1,0,0 + 0,1,0 + 0,0,1 
-	float c_000 = 0.33f * (grid->getdata(1, 0, 0) + grid->getdata(0, 1, 0) + grid->getdata(0, 0, 1));
-	grid->setdata(c_000, 0, 0, 0);
+	float c_0_0_0 = 0.33f * (grid->getdata(1, 0, 0) + grid->getdata(0, 1, 0) + grid->getdata(0, 0, 1));
+	grid->setdata(c_0_0_0, 0, 0, 0);
 
-	/* 2D 0,N+1 = 1,N+1 + 0,N
-	float p_01 = 0.5 * (grid->getdata(1, N_dim + 1) + grid->getdata(0, N_dim));
-	grid->setdata(p_01, 0, N_dim + 1); */
+	// 3D 0,N+1,0 = 1,N+1,0 + 0,N,1 + 0,N+1,1
+	float c_0_N1_0 = 0.33f * (grid->getdata(1, N_dim+1, 0) + grid->getdata(0, N_dim, 1) + grid->getdata(0, N_dim+1, 1));
+	grid->setdata(c_0_N1_0, 0, N_dim + 1, 0); 
 
-	// 3D 0,N+1,0 = 1,N+1,0 + 0,N,0 + 0,N+1,1
-	float c_0N10 = 0.33f * (grid->getdata(1, N_dim + 1, 0) + grid->getdata(0, N_dim, 0) + grid->getdata(0, N_dim + 1, 1));
-	grid->setdata(c_0N10, 0, N_dim + 1, 0); 
+	// 3D 0,0,N+1 = 1,0,N+1 + 0,1,N+1 + 0,0,N
+	float c_0_0_N1 = 0.33f * (grid->getdata(1, 0, N_dim+1) + grid->getdata(0, 1, N_dim+1) + grid->getdata(0, 0, N_dim));
+	grid->setdata(c_0_0_N1, 0, 0, N_dim+1);
 
-	//.............
+	// 3D 0,N+1,N+1 = 1,N+1,N+1 + 0,N,N+1 + 0,N+1,N
+	float c_0_N1_N1 = 0.33f * (grid->getdata(1, N_dim + 1, N_dim + 1) + grid->getdata(0, N_dim, N_dim + 1) + grid->getdata(0, N_dim + 1, N_dim));
+	grid->setdata(c_0_N1_N1, 0, N_dim + 1, N_dim + 1);
 
-	float p_03 = 0.5 * (grid->getdata(N_dim, N_dim + 1) + grid->getdata(N_dim + 1, N_dim));
-	grid->setdata(p_03, N_dim + 1, N_dim + 1);
 
-	float p_03 = 0.5 * (grid->getdata(N_dim, N_dim + 1) + grid->getdata(N_dim + 1, N_dim));
-	grid->setdata(p_03, N_dim + 1, N_dim + 1);
+
 }
 
 // ** EDGE_BOUNDS_VECTOR-FIELD IMPLEMENTATION ** \\ - 
@@ -181,8 +188,13 @@ void fluidsolver_3::edge_bounds(grid3_scalar<float> *grid)
 void fluidsolver_3::edge_bounds(grid3_vector<vec3<float>> *grid)
 {
 	// Loop Over Grid Not Including Edge Cells, 1D based Iteration. 1-N (N_dim). Set Edge Cells Layer Along 0 & N+1 On Each Axis +\-.  
+
+	// X +/- Grid Face Cells = Y Compoent Reflection
+	// Y +/- Grid Face Cells = X Component Relfection
+	// Z +/- Grid Face Cells = Z Component Relfection
 	
-	#pragma omp parallel for num_threads(omp_get_max_threads())
+	// !MT #pragma omp parallel for num_threads(omp_get_max_threads())
+
 	for (int i = 1; i <= N_dim; i++)
 	{
 		/*
@@ -252,9 +264,12 @@ void fluidsolver_3::edge_bounds(grid3_vector<vec3<float>> *grid)
 		grid->setdata_y(y_03, N_dim + 1, N_dim + 1);
 }
 
+
 // ** SPHERE_BOUNDS_SCALAR-FIELD IMPLEMENTATION ** \\ - 
 
-// Set SphereBounds At Beginning Of Each Step into FluidSolver spherebounds_sdf Scalar Grid -
+/* Set SphereBounds At Beginning Of Each Step:
+   Calculate SDF Sphere Function from passed Radius, Offset for Each Cell in GridSpace. 
+   Write into FluidSolver Spherebounds_SDF Signed Scalar Grid - */ 
 
 void fluidsolver_3::sphere_bounds_set(float radius, float col_iso, const vec3<float> &offset)
 {
@@ -1952,16 +1967,9 @@ void fluidsolver_3::solve_step(bool solve, bool do_diffdens, bool do_diffvel, fl
 	// Set Render_Object Texture Units to Sampler Uniforms Pre Solve Loop - 
 	glUseProgram(render_obj->shader_prog); // Call Use (Shader) Program First. 
 
-	// Set Tex Sampler Uniforms, to matching Texture Units.
+	// Set 3D Tex Sampler Uniforms, to matching Texture Units.
 	glUniform1i(glGetUniformLocation(render_obj->shader_prog, "d_tex"), 0); // Density = 0. 
-	glUniform1i(glGetUniformLocation(render_obj->shader_prog, "v_u_tex"), 1); // Velocity u = 1. 
-	glUniform1i(glGetUniformLocation(render_obj->shader_prog, "v_v_tex"), 2); // Velocity v = 2. 
-	glUniform1i(glGetUniformLocation(render_obj->shader_prog, "c_tex"), 3); // Collision c = 3. 
-	glUniform1i(glGetUniformLocation(render_obj->shader_prog, "vc_u_tex"), 4); // VortConfine u = 4. 
-	glUniform1i(glGetUniformLocation(render_obj->shader_prog, "vc_v_tex"), 5); // VortConfine v = 5. 
-	glUniform1i(glGetUniformLocation(render_obj->shader_prog, "img_rgb_tex"), 6); // Image RGB = 6.
-	glUniform1i(glGetUniformLocation(render_obj->shader_prog, "ppv_u_tex"), 7); // PreProj Vel U = 7.
-	glUniform1i(glGetUniformLocation(render_obj->shader_prog, "ppv_v_tex"), 8); // PreProj Vel V = 8.
+
 
 	//Solve Step And Render - EXEC LOOP 
 	while (solve == true && step_count <= max_step) // Infinite Solve Loop For Now. Will need to link this to drawing/waiting etc. 
@@ -1971,22 +1979,15 @@ void fluidsolver_3::solve_step(bool solve, bool do_diffdens, bool do_diffvel, fl
 		std::stringstream log_out;
 
 		// STEP INPUT OPERATIONS \\ ----------------
-		// Interactive Sourcing ... (Implemented with GL WIP). Do Here vs Inside RenderObject (passed grids). Do they have scope withiN?
-		// Interactive SphereBounds Collider Offset from Cursor Pos.
-		// TESTING - DEC 19 
-		// Check for Input to Modifiy SphereBounds Radius. 
+		// Interactive Sourcing ... 
+		// Interactive Sphere Bounds Radius Eval. 
 		sphere_rad_test(); // Can Cause Pressure Solver Crashes. 
-		if (glfwGetKey(winptr, GLFW_KEY_R) == GLFW_PRESS) // Messy inline for now. 
-		{
-			// Re-init Texture-ColourGrids - 
-			f3obj->vel->clear(); // Also Clear Vel Field. 
-			f3obj->RGB_imageLoad(f3obj->img_data.path);
-		}
+
 		// Interp Switching.
 		//if (glfwGetKey(winptr, GLFW_KEY_I) == GLFW_PRESS) { Parms.p_InteroplationType == Parms.Interoplation_Linear; };
 		//if (glfwGetKey(winptr, GLFW_KEY_C) == GLFW_PRESS) { Parms.p_InteroplationType == Parms.Interoplation_Cosine; };
 
-		// Get CurFrame Mouse Pos And Update Mouse Vel. 
+		// Get CurFrame Mouse Pos And Update Mouse Vel. Repos this call to avoid sleep delay. 
 		std::this_thread::sleep_for(std::chrono::milliseconds(5)); // Hold main thread to allow for delta mouse position (VelCalc). 5ms works fine  10ms
 		updt_mousepos(step::STEP_CUR); updt_mouseposNorm(step::STEP_CUR); updt_mouseposRange(step::STEP_CUR);
 		updt_mousevel(); 
@@ -2000,27 +2001,17 @@ void fluidsolver_3::solve_step(bool solve, bool do_diffdens, bool do_diffvel, fl
 		sphere_bounds_set(spherebound_radius, spherebound_coliso, spherebound_offset);
 
 		// STEP SOURCING OPERATIONS \\ ----------------
-		//vec3 offset(-0.5, -0.85);
-		//anim_offset.x = xpos; anim_offset.y = ypos; // Use Cursor Pos
-		//vec3 anim_offset(0.4 + (float(sin(float(step_count) / float(max_step) * 50.0f))) * 0.1, 0.1); 
-		// Fun Times Below - 
-	//	vec3 anim_offset(0.4 + (float(sin(float(step_count) / float(max_step) * 50.0f))) * 0.1f, 0.4 + (float(cos(float(step_count) / float(max_step) * (float(step_count) / float(max_step) * 10.0f)))) * 0.2f);
-	//	f3obj->implicit_source(0.1f, vec3(0.0f, 0.1f), anim_offset, 0.002f);
-		//f3obj->implicit_source(0.25f, vec3(0.0f, 0.1f), vec3(0.5f, 0.1f), 0.025f); 
-
-		f3obj->implicit_source(0.2f, vec3<float>(0.0f, 0.25f), vec3<float>(0.5f, 0.2f), 0.01f);
-
-	//	f3obj->implicit_source(0.25f, vec3<float>(0.0f, 0.0f), vec3<float>(0.5f, 0.5f), 0.1f);
+		//vec3 anim_offset(0.4 + (float(sin(float(step_count) / float(max_step) * 50.0f))) * 0.1f, 0.4 + (float(cos(float(step_count) / float(max_step) * (float(step_count) / float(max_step) * 10.0f)))) * 0.2f);
+		f3obj->implicit_sphere_source(0.5f, vec3<float>(0.0f, 0.5f, 0.0f), vec3<float>(0.5f, 0.5f, 0.5f), 0.01f);
 
 		// Forces- 
-	//	if (step_count <= 20) f3obj->radial_force(vec3<float>(0.499f, 0.499f), 0.8f, this->dt);
+		//if (step_count <= 20) f3obj->radial_force(vec3<float>(0.499f, 0.499f), 0.8f, this->dt);
 
 		// STEP - SUB - SOLVER STEP OPERATIONS \\ -------------- 
 		velocity_step(diff_iter, proj_iter, vel_diff, do_diffvel);
 		density_step(diff_iter, dens_diff, do_diffdens);
 
 		// STEP - RENDER CALLS \\ ------------------
-		#if RENDER_GL == 1
 		// Pass Cur Step - 
 		render_obj->et = step_count; 
 		// Uniform/Texture Set Calls (ShaderPipe) -
@@ -2029,15 +2020,8 @@ void fluidsolver_3::solve_step(bool solve, bool do_diffdens, bool do_diffvel, fl
 		render_obj->call_ren(rend_state::RENDER_ACTIVE); // Call Render Step Ops here within solver loop, ie NON Debug Mode (Pass RENDER_ACTIVE).
 		#endif	
 
-		#if RENDER_IMG == 1
-		// STEP WRITE OUTPUT OPERATIONS - Non OGL Img output.
-		//f3obj->writeto_img_all(step_count, pressure);
-		f3obj->writeto_img(step_count); // Write Density Only, Debug.
-	//	f3obj->writeto_img_vel(step_count); // Write Velocity Only, Debug. 
-	//	f3obj->writeto_txt(step_count);
-		#endif
 
-		// STEP CONSLE DEBUG OPERATIONS \\ -------------------- 
+		// STEP DEBUG CONSLE OPERATIONS \\ -------------------- 
 		std::chrono::system_clock::time_point timestep_end = std::chrono::system_clock::now();
 		std::chrono::duration<double> elapsed = timestep_end - timestep_start;
 		double elapsed_sec = elapsed.count();
@@ -2046,7 +2030,7 @@ void fluidsolver_3::solve_step(bool solve, bool do_diffdens, bool do_diffvel, fl
 		// Store Mouse Pos as Prev Frame Pos.. 
 		updt_mousepos(step::STEP_PREV); updt_mouseposNorm(step::STEP_PREV); updt_mouseposRange(step::STEP_PREV);
 
-		// Differintate between SimTime Passed of accumlated DeltaTime, Vs Duration of SolveStep Caluclation !
+		// Differintate between SimTime Passed of accumlated DeltaTime, Vs Duration of SolveStep Caluclation (WallClock) !
 		log_out << "INFO::Solve_Step::SimTime Passed = " << dt_acc << " Seconds of " << dt << " timestep \n";
 		log_out << "DEBUG::Solve_Step::Step_Count =  " << step_count << "\n";
 		log_out << "DEBUG::Solve_Step::Calc_Duration = " << elapsed_sec << " Seconds" << "\n";
@@ -2065,7 +2049,7 @@ void fluidsolver_3::solve_step(bool solve, bool do_diffdens, bool do_diffvel, fl
 			//f3obj->writeto_img_vel(step_count);
 		}
 
-		// Print Log_output - 
+		// Print Log to stdout - 
 		std::cout << log_out.str() << std::endl; 
 
 		// STEP INCREMENT \\ ------------
@@ -2074,8 +2058,6 @@ void fluidsolver_3::solve_step(bool solve, bool do_diffdens, bool do_diffvel, fl
 	}
 }
 // End of Solve Step Implementation.
-
-
 
 
 /*	====================================================
@@ -2189,29 +2171,36 @@ void fluidsolver_3::dissipate(grid3_scalar<float> *grid, float disp_mult, float 
 	//disp_mult = std::max(0.0f, std::min(disp_mult, 1.0f)); // Enforce 0-1 Mult. 
 	disp_mult = solver_utils::clamp(disp_mult, 0.0f, 1.0f); 
 
-	for (int j = 1; j <= N_dim; j++)
+	for (int k = 1; k <= N_dim; k++)
 	{
-		for (int i = 1; i <= N_dim; i++)
+		for (int j = 1; j <= N_dim; j++)
 		{
-			// Don't Mult By dt for now. 
-			float cur_scl = grid->getdata(i, j);
-			cur_scl *= disp_mult;
-			grid->setdata(cur_scl, i, j);
+			for (int i = 1; i <= N_dim; i++)
+			{
+				// Don't Mult By dt for now. 
+				float cur_scl = grid->getdata(i, j, k);
+				cur_scl *= disp_mult;
+				grid->setdata(cur_scl, i, j, k);
+			}
 		}
 	}
+
 }
 
 void fluidsolver_3::dissipate(grid3_vector<vec3<float>> *grid, float disp_mult, float dt)
 {
 	disp_mult = solver_utils::clamp(disp_mult, 0.0f, 1.0f);
-	for (int j = 1; j <= N_dim; j++)
+	for (int k = 1; k <= N_dim; k++)
 	{
-		for (int i = 1; i <= N_dim; i++)
+		for (int j = 1; j <= N_dim; j++)
 		{
-			// Don't Mult By dt for now. 
-			vec3<float> cur_vel = grid->getdata(i, j);
-			cur_vel *= disp_mult;
-			grid->setdata(cur_vel, i, j);
+			for (int i = 1; i <= N_dim; i++)
+			{
+				// Don't Mult By dt for now. 
+				vec3<float> cur_vel = grid->getdata(i, j, k);
+				cur_vel *= disp_mult;
+				grid->setdata(cur_vel, i, j, k);
+			}
 		}
 	}
 }
@@ -2222,7 +2211,7 @@ void fluidsolver_3::dissipate(grid3_vector<vec3<float>> *grid, float disp_mult, 
 Solver Utils Implementation (Lambda Utility Funcs) -
 ==================================================== */
 
-// Implement Static Function Lambdas. Why not just use Member Funcs? Well I'm been fancy. 
+// Implement Static std::function stored Lambdas.
 
 // CLAMP: Between Min and Max Range Lambda (Stored in std::function). 
 std::function<float(float,float,float)> solver_utils::clamp = [&](float v, float min, float max) -> float
@@ -2249,95 +2238,6 @@ std::function<float(float, float, float)> solver_utils::cosinterp = [&](float va
 	return (float) (val_0*(1.0f - mu) + val_1 * mu);
 };
 
-// BILINEAR: 2D Linear Interoplation Of Cell i,j by Coefficents a,b. 
-// Scalar Grid Input - (Cannot use Generics, due to inner Type diffs)
-std::function<float(grid3_scalar<float>*, float, float, int, int)> solver_utils::bilinear_S = [&](grid3_scalar<float> *grid, float a, float b, int i, int j) -> float
-{
-	// Complement to get other coeffs. 
-	float a1 = 1 - a; float b1 = 1 - b;
-
-	// LERP X,Y(b,b1) (SameCoeffs b,b1 because sqaure grid) and between resuilting X,Y (by a,a1). 
-
-	return a * (b * grid->getdata(i, j) + b1 * grid->getdata(i, j + 1)) +
-		a1 * (b * grid->getdata(i + 1, j) + b1 * grid->getdata(i + 1, j + 1));
-};
-// Vector Grid Input - (short specfices x or y component) 
-std::function<float(grid3_vector<vec3<float>>*, float, float, int, int, ushort)> solver_utils::bilinear_V = [&](grid3_vector<vec3<float>> *grid, float a, float b, int i, int j, ushort mode) -> float
-{
-	assert(mode <= 1); // 0 = X, 1 = Y.
-
-	// Complement to get other coeffs. 
-	float a1 = 1 - a; float b1 = 1 - b;
-
-	// LERP X,Y(b,b1) (SameCoeffs b,b1 because sqaure grid) and between resuilting X,Y (by a,a1). 
-
-	if (mode == 0)
-	{
-		return (float) a * (b * grid->getdata_x(i, j) + b1 * grid->getdata_x(i, j + 1)) +
-			a1 * (b * grid->getdata_x(i + 1, j) + b1 * grid->getdata_x(i + 1, j + 1));
-	}
-	else if (mode == 1)
-	{
-		return (float) a * (b * grid->getdata_y(i, j) + b1 * grid->getdata_y(i, j + 1)) +
-			a1 * (b * grid->getdata_y(i + 1, j) + b1 * grid->getdata_y(i + 1, j + 1));
-	}
-
-	return 0.0f; 
-};
-
-// BICUBIC
-// Scalar - 
-std::function<float(grid3_scalar<float>*, float, float, float, float, int, int)> solver_utils::bicubic_S = [&]
-	(grid3_scalar<float> *grid,
-	float wn1, float w0, float w1, float w2,
-	int i, int j) -> float
-{
-
-	float qn1 = (wn1 * grid->getdata(i - 1, j - 1)) + (w0 * grid->getdata(i, j - 1)) + (w1 * grid->getdata(i + 1, j - 1)) + (w2 * grid->getdata(i - 2, j - 1));
-	float q0 =  (wn1 * grid->getdata(i - 1, j)) + (w0 * grid->getdata(i, j)) + (w1 * grid->getdata(i + 1, j)) + (w2 * grid->getdata(i - 2, j));
-	float q1 =  (wn1 * grid->getdata(i - 1, j + 1)) + (w0 * grid->getdata(i, j + 1)) + (w1 * grid->getdata(i + 1, j + 1)) + (w2 * grid->getdata(i - 2, j + 1));
-	float q2 =  (wn1 * grid->getdata(i - 1, j + 2)) + (w0 * grid->getdata(i, j + 2)) + (w1 * grid->getdata(i + 1, j + 2)) + (w2 * grid->getdata(i - 2, j + 2));
-
-	return (float) (wn1 * qn1) + (w0 * q0) + (w1 * q1) + (w2 * q2); 
-};
-
-// Vector - 
-std::function<float(grid3_vector<vec3<float>>*, float, float, float, float, int, int, ushort)> solver_utils::bicubic_V = [&]
-	(grid3_vector<vec3<float>> *grid,
-	float wn1, float w0, float w1, float w2,
-	int i, int j, ushort mode) -> float
-{
-	assert(mode <= 1); // 0 = X, 1 = Y.
-
-	float qn1 = 0.0f, q0 = 0.0f, q1 = 0.0f, q2 = 0.0f; 
-
-	if (mode == 0) // Vector.x Value
-	{
-		qn1 = (wn1 * grid->getdata_x(i - 1, j - 1)) + (w0 * grid->getdata_x(i, j - 1)) + (w1 * grid->getdata_x(i + 1, j - 1)) + (w2 * grid->getdata_x(i - 2, j - 1));
-		q0 = (wn1 * grid->getdata_x(i - 1, j)) + (w0 * grid->getdata_x(i, j)) + (w1 * grid->getdata_x(i + 1, j)) + (w2 * grid->getdata_x(i - 2, j));
-		q1 = (wn1 * grid->getdata_x(i - 1, j + 1)) + (w0 * grid->getdata_x(i, j + 1)) + (w1 * grid->getdata_x(i + 1, j + 1)) + (w2 * grid->getdata_x(i - 2, j + 1));
-		q2 = (wn1 * grid->getdata_x(i - 1, j + 2)) + (w0 * grid->getdata_x(i, j + 2)) + (w1 * grid->getdata_x(i + 1, j + 2)) + (w2 * grid->getdata_x(i - 2, j + 2));
-	}
-	else if (mode == 1) // Vector.y Value
-	{
-		qn1 = (wn1 * grid->getdata_y(i - 1, j - 1)) + (w0 * grid->getdata_y(i, j - 1)) + (w1 * grid->getdata_y(i + 1, j - 1)) + (w2 * grid->getdata_y(i - 2, j - 1));
-		q0 = (wn1 * grid->getdata_y(i - 1, j)) + (w0 * grid->getdata_y(i, j)) + (w1 * grid->getdata_y(i + 1, j)) + (w2 * grid->getdata_y(i - 2, j));
-		q1 = (wn1 * grid->getdata_y(i - 1, j + 1)) + (w0 * grid->getdata_y(i, j + 1)) + (w1 * grid->getdata_y(i + 1, j + 1)) + (w2 * grid->getdata_y(i - 2, j + 1));
-		q2 = (wn1 * grid->getdata_y(i - 1, j + 2)) + (w0 * grid->getdata_y(i, j + 2)) + (w1 * grid->getdata_y(i + 1, j + 2)) + (w2 * grid->getdata_y(i - 2, j + 2));
-	}
-
-	return (float)(wn1 * qn1) + (w0 * q0) + (w1 * q1) + (w2 * q2);
-};
-
-/*
-qj-1 = W-1 i-1,j-1 + W0 i,j-1 + w1 i+1,j-1 + W2 i+2,j-1 // j Held Constant j-1 (Solve for x)
-qj   = w-1 i-1,j   + w0 i,j   + w1 i+1,j   + w2 i+2,j   // j
-qj+1 = w-1 i-1,j+1 + w0 i,j+1 + w1 i+1,j+1 + w2 i+2,j+1 // j+1
-qj+2 = w-1 i-1,j+2 + w0 i,j+2 + w1 i+1,j+2 + w2 i+2,j+2 // j+2
-q = w-1 qj-1 + w0 qj + w1 qj+1 + w2 qj+2
-*/
-
-
 
 /*	====================================================
 	DEBUG - Member FUnctions 
@@ -2347,13 +2247,17 @@ void fluidsolver_3::fill_test(int x)
 {
 	if (x >= NE_dim) x = NE_dim; 
 
-	for (int j = 0; j < x; j++)
+	for (int k = 0; k < x; k++)
 	{
-		for (int i = 0; i < x; i++)
+		for (int j = 0; j < x; j++)
 		{
-			f3obj->dens->setdata(1.0f, i, j);
+			for (int i = 0; i < x; i++)
+			{
+				f3obj->dens->setdata(1.0f, i, j, k);
+			}
 		}
 	}
+
 }
 
 // Test Implementation of Interactive Sphere Radius - Can Cause Pressure Solver Crashes. 
@@ -2367,9 +2271,7 @@ void fluidsolver_3::sphere_rad_test()
 	if (glfwGetKey(winptr, GLFW_KEY_PAGE_DOWN) == GLFW_PRESS)
 	{
 		spherebound_radius -= 0.0001f;
-		
 	}
 
 	if (spherebound_radius <= 0.0001) spherebound_radius = 0.0001;
-
 }

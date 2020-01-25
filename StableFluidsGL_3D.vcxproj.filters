@@ -59,7 +59,7 @@
     <ClInclude Include="include\vendor\GLFW\glfw3native.h">
       <Filter>Header Files\vendor\GLFW</Filter>
     </ClInclude>
-    <ClInclude Include="vec2d.h">
+    <ClInclude Include="include\vec2d.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

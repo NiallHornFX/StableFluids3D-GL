@@ -9,6 +9,7 @@ out vec4 frag_color;
 
 // Density Grid - 
 uniform sampler3D d_tex; // Texture Unit 0
+uniform sampler3D v_tex; // Texture Unit 1 (Packed x,y,z vel comps). 
 
 // Constant Uniforms - 
 // Util Uniforms - 
@@ -17,8 +18,7 @@ uniform int Mode; // 0 = Render Density, 1 = Render Velocity.
 uniform int Step; // Current Solve Step. 
 
 // Volume Uniforms - 
-uniform vec3 offset; 
-
+uniform vec3 offset; // Sample Offset of Grid/3DTex. Pre Matrix Transformation Implementation. 
 
 // Light Uniforms - 
 struct pt_light 
@@ -78,24 +78,30 @@ void main()
 
 	if (Mode == 0)
 	{
+		// Single Light (fn) - 
+		light_00.pos = vec3(0.5, 1.25, 0.0); 
+		light_00.radius = 1.0; light_00.strength = 1.0; 
+		
 		// Basic RayMarching Inital - 
 		int max_steps = 50;
 		float step_size = 0.1 / step_size;
 		vec3 dir = vec3(0.0, 0.0, -1.0); 
 		vec3 ray_P = vec3(uv, 0.0); 
 		
-		vec4 acc; 
+		vec4 acc = vec4(0.0, 0.0, 0.0, 0.0); 
 		
 		for (int i = 0; i < max_steps; i++)
 		{
+			// Primary Camera Ray (a)
 			acc += texture(d_tex, (ray_P + offset));
 			ray_P += dir * step_size; 
 			if (length(acc) >= 1.0) {break;}
+			
+			// Secondary Shadow Ray (c) - 
 		}
 		
 		frag_color = vec4(acc.x, acc.x, acc.x, 1.0); 
-		
-		
+	
 	}
 	else if (Mode == 1)
 	{

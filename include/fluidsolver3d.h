@@ -59,13 +59,6 @@ struct solver_utils
 	static std::function<float(float, float, float)> lerp;
 	static std::function<float(float, float, float)> cosinterp; 
 
-	// 2D
-	/*
-	static std::function<float(grid3_scalar<float>*, float, float, int, int)> bilinear_S; // Bilinear - Scalar. 
-	static std::function<float(grid3_vector<vec3<float>>*, float, float, int, int, ushort)> bilinear_V; // Bilinear - Vector. 
-	static std::function<float(grid3_scalar<float>*, float, float, float, float, int, int)> bicubic_S; // BiCubic - Scalar.
-	static std::function<float(grid3_vector<vec3<float>>*, float, float, float, float, int, int, ushort)> bicubic_V; // BiCubic - Vector.
-	*/
 };
 
 

@@ -17,6 +17,7 @@
     <ClInclude Include="include\mat3d.h" />
     <ClInclude Include="include\rendercontext3d.h" />
     <ClInclude Include="include\renderobject3d.h" />
+    <ClInclude Include="include\vec2d.h" />
     <ClInclude Include="include\vec3d.h" />
     <ClInclude Include="include\vendor\GLEW\eglew.h" />
     <ClInclude Include="include\vendor\GLEW\glew.h" />
@@ -24,7 +25,6 @@
     <ClInclude Include="include\vendor\GLEW\wglew.h" />
     <ClInclude Include="include\vendor\GLFW\glfw3.h" />
     <ClInclude Include="include\vendor\GLFW\glfw3native.h" />
-    <ClInclude Include="vec2d.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\fluidobj3d.cpp" />
