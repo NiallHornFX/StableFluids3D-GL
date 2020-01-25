@@ -1,5 +1,5 @@
-//#include "renderobject.h"
-//#include "fluidobj.h"
+#include "renderobject3d.h"
+#include "fluidobj3d.h"
 
 #include <iostream>
 #include <fstream>
@@ -11,51 +11,45 @@ extern short verbose;
 
 // Render Object Creation Classes Implementation - 
 
-// RenderObject_2D - ABC Implementations - 
+// RenderObject_3D - ABC Implementations - 
 
-// Render Object 2D ABC Constructor
-renderobject_2D::renderobject_2D(const char *api_name, int v_maj, int v_min, int win_x, int win_y, int rmode)
+// Render Object 3D ABC Constructor
+renderobject_3D::renderobject_3D(const char *api_name, int v_maj, int v_min, int win_x, int win_y, int rmode)
 	: API_Name(api_name), ver_major(v_maj), ver_minor(v_min), winsize_x(win_x), winsize_y(win_y), rendermode(rmode) {}
 
 
 // RenderObject_2D_OGL (OpenGL API) Implementations - 
 
 // RenderObject_2D_OGL Constructor - 
-renderobject_2D_OGL::renderobject_2D_OGL(const char *api_name, int v_maj, int v_min, int wx, int wy, GLFWwindow *winptr, int rmode)
-	: renderobject_2D(api_name, v_maj, v_min, wx, wy, rmode), window_ptr(winptr)  // Initalize ABC Members Via Its Own Constructor. 
+renderobject_3D_OGL::renderobject_3D_OGL(const char *api_name, int v_maj, int v_min, int wx, int wy, GLFWwindow *winptr, int rmode)
+	: renderobject_3D(api_name, v_maj, v_min, wx, wy, rmode), window_ptr(winptr)  // Initalize ABC Members Via Its Own Constructor. 
 {
-	std::cout << "DBG::RenderObject_2D Created For Render API: " << api_name << " " << v_maj << "." << v_min << "\n \n";
+	std::cout << "DBG::RenderObject_3D Created For Render API: " << api_name << " " << v_maj << "." << v_min << "\n \n";
 	// Call Setup MFuncs
 
 	int v_ret = vertex_setup(); 
-	int s_ret = shader_loader("render2d_ogl_vertShader.vert", "render2d_ogl_fragShader.frag" ); // Hard Coded Shader Paths For now. 
+	int s_ret = shader_loader("shaders/render3d_ogl_vertShader.vert", "shaders/render3d_ogl_fragShader.frag" ); // HC ShaderPaths. 
 
+	// Gen 3D Textures -
 	glGenTextures(1, &tex_dens);
-	glGenTextures(1, &tex_vel_u);
-	glGenTextures(1, &tex_vel_v);
-	glGenTextures(1, &tex_c);
-	glGenTextures(1, &tex_vc_u);
-	glGenTextures(1, &tex_vc_v);
-	glGenTextures(1, &tex_img_rgb);
-	glGenTextures(1, &tex_preprojvel_u);
-	glGenTextures(1, &tex_preprojvel_v);
-	// Dont Bind Any yet.
+	glGenTextures(1, &tex_vel);
+	// Do Not Bind On Initalization.
 }
 
 // RenderObject_2D_OGL Destructor -
-renderobject_2D_OGL::~renderobject_2D_OGL()
+renderobject_3D_OGL::~renderobject_3D_OGL()
 {
-	if (vert_shader != NULL) {
+	if (vert_shader || vert_shader != NULL) {
 		glDeleteShader(vert_shader);
 		vert_shader = NULL;
 	}
 
-	if (frag_shader != NULL) {
+	if (frag_shader || frag_shader != NULL) {
 		glDeleteShader(frag_shader);
 		frag_shader = NULL;
 	}
 
-	if (shader_prog != NULL) {
+	if (shader_prog || shader_prog != NULL) {
 		glDeleteProgram(shader_prog);
 		shader_prog = NULL; 
 	}
@@ -68,7 +62,7 @@ renderobject_2D_OGL::~renderobject_2D_OGL()
 }
 
 // RenderObject_2D_OGL Vertex Setup Implementation, For Quad and Indexed Vertex Drawing - 
-int renderobject_2D_OGL::vertex_setup()
+int renderobject_3D_OGL::vertex_setup()
 {
 	// Vertex Screen Quad Setup - 
 
@@ -86,7 +80,7 @@ int renderobject_2D_OGL::vertex_setup()
 		1,2,3  // Tri 2
 	};
 
-	// Vertex Array/Buffer Setup - 
+	// Vertex Array/Buffer Setup Gen/Bind/AttribData - 
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
 
@@ -106,8 +100,8 @@ int renderobject_2D_OGL::vertex_setup()
 	return 0;
 }
 
-// RenderObject_2D_OGL Shader Compilation Checker MFunc Implementation - 
-void renderobject_2D_OGL::shader_checkCompile(const char *type)
+// RenderObject_3D_OGL Shader Compilation Checker MFunc Implementation - 
+void renderobject_3D_OGL::shader_checkCompile(const char *type)
 {
 	assert(type == (const char*) "vertex" || type == (const char*) "fragment");
 
@@ -146,8 +140,8 @@ void renderobject_2D_OGL::shader_checkCompile(const char *type)
 	}
 }
 
-// RenderObject_2D_OGL ShaderProgram Linker Checker MFunc Implementation - 
-void renderobject_2D_OGL::shader_checkLink()
+// RenderObject_3D_OGL ShaderProgram Linker Checker MFunc Implementation - 
+void renderobject_3D_OGL::shader_checkLink()
 {
 	int sucess;
 	const int len = 512;
@@ -168,8 +162,8 @@ void renderobject_2D_OGL::shader_checkLink()
 	}
 }
 
-// RenderObject_2D_OGL Shader Loader Implementation - 
-int renderobject_2D_OGL::shader_loader(const char *vert_path, const char *frag_path)
+// RenderObject_3D_OGL Shader Loader Implementation - 
+int renderobject_3D_OGL::shader_loader(const char *vert_path, const char *frag_path)
 {
 	std::ifstream vert_shader_load, frag_shader_load; 
 	std::stringstream v_shad_buf, f_shad_buf; 
@@ -197,6 +191,7 @@ int renderobject_2D_OGL::shader_loader(const char *vert_path, const char *frag_p
 	catch (std::ifstream::failure err)
 	{
 		std::cerr << "ERR::Shader Load Err: " << err.what() << "\n";
+		std::abort();
 		return 1; 
 	}
 
@@ -222,14 +217,10 @@ int renderobject_2D_OGL::shader_loader(const char *vert_path, const char *frag_p
 
 	shader_checkLink();
 
-	// Dealloc Shaders Here vs Destruc? 
-	//glDeleteShader(vert_shader); vert_shader = NULL; 
-	//glDeleteShader(frag_shader); frag_shader = NULL;
-
 	return 0; 
 }
 
-void renderobject_2D_OGL::shader_pipe(fluidobj_2d *f2obj)
+void renderobject_3D_OGL::shader_pipe(fluidobj_3d *f3obj)
 {
 	// UNIFORM CONSTANTS (Per Step) \\
 
@@ -257,14 +248,16 @@ void renderobject_2D_OGL::shader_pipe(fluidobj_2d *f2obj)
 
 	// TEXTURE - DENSITY \\
 
-	// Pass Density Grid - grid_data vector, data array to 2D Texture. 4Bytes (32Bit) Float Per Grid Density Value.
+	// Pass Density Grid - grid_data vector, data array to 3D Texture. 4Bytes (32Bit) Float Per Grid Density Value.
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, tex_dens);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	GLfloat *ptr = (GLfloat*)f2obj->dens->grid_data->data(); // Dont need this cast to GLFloat, but good for explicit. 
-	// 1 Channel (Red) Single Float for total texel per cell value -
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, winsize_x, winsize_y, 0, GL_RED, GL_FLOAT, ptr);
+	glBindTexture(GL_TEXTURE_3D, tex_dens);
+	// Use Linear (Trilinear Texture Filtering HC'd) 
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	GLfloat *ptr = (GLfloat*)f3obj->dens->grid_data->data();
+
+	// 1 Channels (Red) Single Float for total texel per cell value -
+	glTexImage3D(GL_TEXTURE_3D, 0, GL_R32F, 64, 64, 64, 0, GL_RED, GL_FLOAT, ptr);
 
 	// TEXTURE - VELOCITY \\
 
@@ -298,130 +291,6 @@ void renderobject_2D_OGL::shader_pipe(fluidobj_2d *f2obj)
 	// Delete Temp Vel Component Grids 
 	delete[] temp_u; temp_u = nullptr;
 	delete[] temp_v; temp_v = nullptr; 
-
-	// TEXTURE - COLLISION \\
-
-	// Render Col (Collider) Grid (if passed) - 
-	if (f2obj->col)
-	{
-		glBindTexture(GL_TEXTURE_2D, 0);
-		glActiveTexture(GL_TEXTURE3);
-		glBindTexture(GL_TEXTURE_2D, tex_c);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		GLfloat *col_cast = (GLfloat*)f2obj->col->grid_data->data();
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, winsize_x, winsize_y, 0, GL_RED, GL_FLOAT, col_cast);
-	}
-
-	// TEXTURE - VORTICITY \\
-
-	// Render Vorticity Confinement Grid (Only if Exsits) - 
-	// Like Velocity Split u,v VortConfine Components into 32bit Float Single Channel (GL_Red) Textures to pass to GPU via GLTexImage2D.
-	
-	if (f2obj->vc)
-	{
-		// Split Vort Confine vec2 Grid Components into Seperate u,v float arrays, for each u,v tex. 
-		GLfloat *temp_vc_u = new float[int(f2obj->vc->grid_data->size())];
-		GLfloat *temp_vc_v = new float[int(f2obj->vc->grid_data->size())];
-		for (int i = 0; i < f2obj->vc->grid_data->size(); i++)
-		{
-			temp_vc_u[i] = std::fabsf(f2obj->vc->grid_data->at(i).x);
-			temp_vc_v[i] = std::fabsf(f2obj->vc->grid_data->at(i).y);
-		}
-
-		// Vorticty Confinement X U Component Texture - 
-		glBindTexture(GL_TEXTURE_2D, 0);
-		glActiveTexture(GL_TEXTURE4);
-		glBindTexture(GL_TEXTURE_2D, tex_vc_u);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, winsize_x, winsize_y, 0, GL_RED, GL_FLOAT, temp_vc_u);
-
-		// Vorticty Confinement Y V Component Texture - 
-		glBindTexture(GL_TEXTURE_2D, 0);
-		glActiveTexture(GL_TEXTURE5);
-		glBindTexture(GL_TEXTURE_2D, tex_vc_v);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, winsize_x, winsize_y, 0, GL_RED, GL_FLOAT, temp_vc_v);
-
-		// Delete Temp Vel Component Grids 
-		delete[] temp_vc_u;
-		delete[] temp_vc_v;
-	}
-
-	// TEXTURE - RGB \\
-
-	// RGB Image (Colour) Grid Texture - 
-	glActiveTexture(GL_TEXTURE6);
-	glBindTexture(GL_TEXTURE_2D, tex_img_rgb);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-	// Merge R,G,B Grids into to One Float Array (GL_RGB). 
-	const unsigned int merge_size = f2obj->c_R->grid_data->size() + f2obj->c_G->grid_data->size() + f2obj->c_B->grid_data->size(); 
-	GLfloat *RGBMerge = new GLfloat[merge_size];
-	assert(sizeof(GLfloat) == sizeof(float)); // Incase diff precision, will have bounds issues (grid vs tex stride).
-
-	// Assume Colour Grids are same dim (they should be) - 
-	assert(f2obj->c_R->grid_data->size() == f2obj->c_G->grid_data->size());
-	const unsigned int grid_size = f2obj->c_R->grid_data->size(); 
-
-	// For All Cells Get RGB Values, and write to Merged {R-G-B} (*3) Per Pixel Array to pass to Texture. 
-	// Do All Cells, assume Edge Cells do not have colour from sim itself, oppose to excluding them here. 
-	int ch_idx = 0; 
-	for (int i = 0; i < grid_size; i++)
-	{
-		// Get Colour Of Pixel From Colour Cur Grid Cell
-		GLfloat R_v = (GLfloat)f2obj->c_R->getdata(i) / 255.0f;
-		GLfloat G_v = (GLfloat)f2obj->c_G->getdata(i) / 255.0f;
-		GLfloat B_v = (GLfloat)f2obj->c_B->getdata(i) / 255.0f;
-
-		// Write to Mered Texture RGB Array - 
-		RGBMerge[ch_idx] = R_v; 
-		RGBMerge[ch_idx+1] = G_v;
-		RGBMerge[ch_idx+2] = B_v;
-
-		ch_idx += 3; // Stride Offset Num of Channels Per Pixel. 
-	}
-
-	// Pass Data To GPU Texture -
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, winsize_x, winsize_y, 0, GL_RGB, GL_FLOAT, RGBMerge);
-
-	// Clear CPU Resources 
-	delete[] RGBMerge; RGBMerge = nullptr; 
-
-	// TEXTURE - DEBUG - PRE-PROJECTED VELOCITY \\ 
-
-	// Draw PreProjected Velocity for debug purposes, and visulization of residual of pressure solve and HH Decomp. 
-	// Split PreProjVel vec2 components into Temp Arrays to pass to PPVel U,V Textures -
-	GLfloat *temp_pp_u = new float[int(f2obj->preproj_vel->grid_data->size())];
-	GLfloat *temp_pp_v = new float[int(f2obj->preproj_vel->grid_data->size())];
-
-	for (int i = 0; i < f2obj->vel->grid_data->size(); i++)
-	{
-		temp_pp_u[i] = std::fabsf(f2obj->preproj_vel->grid_data->at(i).x);
-		temp_pp_v[i] = std::fabsf(f2obj->preproj_vel->grid_data->at(i).y);
-	}
-	// Velocity X U Component Texture -
-	glBindTexture(GL_TEXTURE_2D, 0);
-	glActiveTexture(GL_TEXTURE7);
-	glBindTexture(GL_TEXTURE_2D, tex_preprojvel_u);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, winsize_x, winsize_y, 0, GL_RED, GL_FLOAT, temp_pp_u);
-
-	// Velocity Y V Component Texture -
-	glBindTexture(GL_TEXTURE_2D, 0);
-	glActiveTexture(GL_TEXTURE8);
-	glBindTexture(GL_TEXTURE_2D, tex_preprojvel_v);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, winsize_x, winsize_y, 0, GL_RED, GL_FLOAT, temp_pp_v);
-
-	// Delete Temp Vel Component Grids 
-	delete[] temp_pp_u; temp_pp_u = nullptr;
-	delete[] temp_pp_v; temp_pp_v = nullptr;
 
 }
 

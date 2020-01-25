@@ -12,8 +12,8 @@ class fluidobj_3d
 // FluidObject is Friend of FluidSolver And RenderObj Class to allow private acess. 
 
 friend class fluidsolver_3;
-friend class renderobject_3d;
-friend class renderobject_3d_OGL; 
+friend class renderobject_3D;
+friend class renderobject_3D_OGL; 
 
 using BYTE = unsigned char; 
 

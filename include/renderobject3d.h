@@ -7,9 +7,9 @@
 
 #include "grids3d.h"
 
-
 // Forward Decls - 
 class fluidobj_3d; 
+class fluidsolver_3;
 
 // Render State Enum 
 enum class rend_state
@@ -18,22 +18,28 @@ enum class rend_state
 	RENDER_ACTIVE
 };
 
+enum tex_interp
+{
+	NEAREST = 0,
+	TRILINEAR
+};
 
-// Abstract Base Class Interface for API Specfic Render Object. (2D Fluid)
+
+// Abstract Base Class Interface for API Specfic Render Object. 
 class renderobject_3D
 {
 // FCs
-friend class fluidsolver_3; // Allow Private/Protected Acess of FluidSolver_2. 
+friend class fluidsolver_3;
 
 public:
-	renderobject_2D(const char *api_name, int v_maj, int v_min, int win_x, int win_y, int rmode);
-	virtual ~renderobject_2D() = default;
+	renderobject_3D(const char *api_name, int v_maj, int v_min, int win_x, int win_y, int rmode);
+	virtual ~renderobject_3D() = default;
 
 protected:
 	virtual int vertex_setup() = 0;
 	virtual int shader_loader(const char *vert_path , const char *frag_path) = 0; 
-	virtual void shader_pipe(fluidobj_2d *f2obj) = 0;
-	virtual void render_loop(rend_state dbg) = 0;
+	virtual void shader_pipe(fluidobj_3d *f3obj) = 0;
+	virtual void render_loop(rend_state rs) = 0;
 
 	const char* API_Name; 
 	int ver_major, ver_minor;
@@ -44,23 +50,23 @@ protected:
 };
 
 // OpenGL Render Object 2D -
-class renderobject_2D_OGL : public renderobject_2D
+class renderobject_3D_OGL : public renderobject_3D
 {
 // FCs
-friend class fluidsolver_2; // Allow Private/Protected Acess of FluidSolver_2. 
+friend class fluidsolver_3; 
 public:
-	renderobject_2D_OGL(const char *api_name, int v_maj, int v_min, int wx, int wy, GLFWwindow *winptr, int rmode);
-	~renderobject_2D_OGL();
+	renderobject_3D_OGL(const char *api_name, int v_maj, int v_min, int wx, int wy, GLFWwindow *winptr, int rmode);
+	~renderobject_3D_OGL();
 
-	// Temp Public Render Getter - 
-	void call_ren(rend_state dbg); 
+	// Publicly Callable Start Render. 
+	void call_ren(rend_state rs); 
 	
 protected:
 	// RenderObject Virtual MFunc OVerrides - 
-	virtual int vertex_setup() override;
-	virtual int shader_loader(const char *vert_path, const char *frag_path) override;
-	virtual void shader_pipe(fluidobj_2d *f2obj) override;
-	virtual void render_loop(rend_state dbg) override;
+	virtual int vertex_setup() override final;
+	virtual int shader_loader(const char *vert_path, const char *frag_path) override final;
+	virtual void shader_pipe(fluidobj_3d *f3obj) override final;
+	virtual void render_loop(rend_state dbg) override final;
 
 	// OGL Specfic MFuncs. 
 	void shader_checkCompile(const char *type);
@@ -75,10 +81,8 @@ private:
 	GLuint VBO, VAO, EBO;
 	// Shaders -
 	GLuint vert_shader, frag_shader, shader_prog;
-	// Textures - 
-	GLuint	tex_dens, tex_vel_u, tex_vel_v, tex_c, tex_vc_u, tex_vc_v, tex_img_rgb;
-	// Debug Textures - 
-	GLuint tex_preprojvel_u, tex_preprojvel_v, tex_divergence, tex_pressure; 
+	// 3D Textures - 
+	GLuint tex_dens, tex_vel;
 	// Geo Arrays
 	GLfloat *vertices = nullptr; 
 	GLuint *indices = nullptr; 
