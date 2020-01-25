@@ -31,7 +31,6 @@
 #include "rendercontext3d.h"
 #include "renderobject3d.h"
 
-
 // Macros - 
 #define GLMajor 4
 #define GLMinor 0
@@ -47,7 +46,8 @@ short verbose = 0;
 double const PI = 3.14159265359; 
 
 int const cube = 64; // Cube Grid Size N (1-N)
-int const edg = 2; // Total Edge Cells E (1 For each dim) (0 | N+1). N+E per dim.
+int const edge = 2; // Total Edge Cells E (1 For each dim) (0 | N+1). N+E per dim.
+int const win_size_xy = 512; 
 int const solve_steps = 1000; 
 float const timestep = 1.0f / 60.0f;  // dt = 0.0166f
 
@@ -63,50 +63,41 @@ float const timestep = 1.0f / 60.0f;  // dt = 0.0166f
 
 int main()
 {
-	
-	grid3_scalar<float> test(cube, cube, cube, edg);
-	auto ptr = test.griddataptr_getter();
+	// Create Render Context For OpenGL Context With Window Setup (in main thread). Window Dimensions Incl Edge Cell/Pixels. 
+	render_context_OGL render_c (win_size_xy, win_size_xy, short(GLMajor), short(GLMinor)); 
+	// ^^ Check Window / Context Creation - 
 
 	/*
-	// Create Render Context For OpenGL Context With Window Setup (in main thread). Window Dimensions Incl Edge Cell/Pixels. 
-	render_context_OGL render_c (sqr + edg, sqr + edg, short(GLMajor), short(GLMinor)); 
-	
 	// Create Fluid Object - Containing Fluid Grids and Data. 
-	fluidobj_2d test_fluidobj (sqr, sqr, edg, 0, 1.0f); // Get Rid of Spacing Control... h is always 1/N.
-	//test_fluidobj.RGB_imageLoad("Checker_512_b.jpg"); // Load RGB Image
+	fluidobj_3d test_fluidobj (cube, cube, cube, edge); 
 
 	// Print Fluid Object Debug Info - 
 	//test_fluidobj.print_info();
 
 	// Create FluidSolver Instance,  Pass FluidObj Pointer to It. 
-	fluidsolver_2 test_fluidsolver (&test_fluidobj, timestep);
+	fluidsolver_3 test_fluidsolver (&test_fluidobj, timestep);
 
-	// Inital Density and Velocity if used - 
-	//test_fluidobj.implicit_source(0.75f, vec2<float>(0.0f, 0.0f), vec2<float>(0.5f, 0.5f), 0.01f);
-	//test_fluidobj.sink_vel(vec2<float>(0.5f, 0.49999f), 0.1f);
-	//test_fluidobj.radial_vel(vec2<float> (0.5f, 0.5f), 5.0f);
-	
 	// Pre Solve Parmaters Inital Values Set. (Can be Changed In Solve Per Step Later) - 
-	//test_fluidsolver.Parms.p_useColour = true;
 
 	test_fluidsolver.Parms.p_Do_Dens_Diff = false; 
 	test_fluidsolver.Parms.p_useVorticity = false;
 	test_fluidsolver.Parms.p_Do_Dens_Disp = false; 
+	test_fluidsolver.Parms.p_Do_Vel_Disp = false; 
 
 	test_fluidsolver.Parms.p_ProjectionType = test_fluidsolver.Parms.Project_GaussSeidel_SOR; 
-	//test_fluidsolver.Parms.p_ProjectionType = test_fluidsolver.Parms.Project_Jacobi;
-	//test_fluidsolver.Parms.p_Jacobi_Proj_Iter = 100; 
 	test_fluidsolver.Parms.p_SOR_alpha = 1.9f;
 	test_fluidsolver.Parms.p_GS_Proj_iter = 10; 
+
+	//test_fluidsolver.Parms.p_ProjectionType = test_fluidsolver.Parms.Project_Jacobi;
+	//test_fluidsolver.Parms.p_Jacobi_Proj_Iter = 100; 
+
 	test_fluidsolver.Parms.p_AdvectionType = test_fluidsolver.Parms.Advect_SL_BackTrace_Euler;
-	test_fluidsolver.Parms.p_InteroplationType = test_fluidsolver.Parms.Interoplation_Cosine;
-	//test_fluidsolver.Parms.p_useVorticity = true; 
 
 	// Disable Project/Advect for Pref testing. 
 //	test_fluidsolver.Parms.p_AdvectionType = test_fluidsolver.Parms.Advect_NONE_DBG;
 //	test_fluidsolver.Parms.p_ProjectionType = test_fluidsolver.Parms.Project_NONE_DBG;
 
-	// For now Pass Window Pointer directly from RenderContext (Oppose to RenderContext Obj/ptr Itself) - 
+	// Pass Window Pointer from RenderContext - 
 	test_fluidsolver.set_window(render_c.get_window());
 
 	// Call Solve Step Loop to start simulation and rendering - 

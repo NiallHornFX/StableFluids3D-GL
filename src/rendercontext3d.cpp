@@ -1,4 +1,4 @@
-//#include "rendercontext.h"
+#include "rendercontext3d.h"
 
 #include <iostream>
 
@@ -39,7 +39,7 @@ void render_context_OGL::window_context()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, gl_ver_major);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, gl_ver_minor);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE); // Fix Window Size For (1:1 Cell idx - Fragment Mapping). 
+	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE); // Fixed Window Size. 
 
 	window = glfwCreateWindow(wind_x, wind_y, "StableFluidsGL", NULL, NULL);
 

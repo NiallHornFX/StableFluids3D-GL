@@ -10,14 +10,14 @@
 class render_context
 {
 public:
-	render_context(int sizex, int sizey); // Constructor For Inherited Calls Only. 
+	render_context(int sizex, int sizey); // Constructor For Inherited Initalization Calls Only. 
 	virtual ~render_context() = default; 
 
 protected:
 	virtual void window_context() = 0; // Window and Context Setup. 
 	virtual void extensions_setup() = 0; // Extensions Loading Setup. 
 
-	int wind_x, wind_y; 
+	int wind_x, wind_y;
 };
 
 
