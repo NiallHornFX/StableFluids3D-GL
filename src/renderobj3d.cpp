@@ -11,6 +11,9 @@ extern short verbose;
 
 // Render Object Creation Classes Implementation - 
 
+// Oppose to 2D Window does NOT Correspond to Grid in Size or Cell-Pixel Mapping. We are defining a window of aribitrary size, whose fragments will raymarch
+// the FluidObject Grids passed to GPU as 3D Textures sampled in WS. 
+
 // RenderObject_3D - ABC Implementations - 
 
 // Render Object 3D ABC Constructor
@@ -261,71 +264,56 @@ void renderobject_3D_OGL::shader_pipe(fluidobj_3d *f3obj)
 	// TEXTURE - VELOCITY \\
 
 	// Pack X-Y-Z Velocity into R-G-B Components of single Velocity 3D Texture. 
+	// Check Vel Grid Size (via grid_data flat array size) Actually == Passed GridSize to RenderObj. 
+	assert(f3obj->vel - grid_data->size() == (grid_size.x * grid_size.y * grid_size.z)); // Passed Grid Size, should incl Edge Cells per Dim. 
 
-	// Pass Vel Grid Per Component - grid_data vector, data array to 2D Texture. 4Bytes (32Bit) Float Per Grid Velocity u/v value.
-	// Need to Sepreate Vel vec2 into u and v Float Component Arrays. 
-	// Pass Vel Components to Temp Per Component Array to Pass to Vel_U Texture (This is not ideal).  Ideally Split within gridobject method.
-	GLfloat *temp_u = new float[int(f2obj->vel->grid_data->size())];
-	GLfloat *temp_v = new float[int(f2obj->vel->grid_data->size())];
-	// Parrelize ? 
-	for (int i = 0; i < f2obj->vel->grid_data->size(); i++)
+	// Memory Layout - 
+	// Per Voxel (3D Texel) - [Rx|Gy|Bz]. VelocityGrid Size (1D) * 3. Thus per voxel byte stride of 3 * sizeof (float)  
+
+	GLfloat *vel3D = new float[int(f3obj->vel->grid_data->size() * 3)];
+
+	// For Each Voxel, Write XYZ Vel Comps to RGB T/Voxel Comps - 
+	for (int i = 0; i < (int) f3obj->vel->grid_data->size(); i++)
 	{
-		temp_u[i] = std::fabsf(f2obj->vel->grid_data->at(i).x);
-		temp_v[i] = std::fabsf(f2obj->vel->grid_data->at(i).y);
+		// Get Velocity Components Of Current Cell - 
+		float temp_U =  f3obj->vel->getdata_x(i);
+		float temp_V = f3obj->vel->getdata_y(i);
+		float temp_W = f3obj->vel->getdata_z(i);
+
+		// XYZ -> RGB Components 
+		for (int j = i; j < j+2; j++)
+		{
+			if (i % 0 == 0) vel3D[j] = temp_U; // R
+			if (i % 1 == 0) vel3D[j] = temp_V; // G
+			if (i % 2 == 0) vel3D[j] = temp_W; // B
+		}
 	}
-	// Velocity X U Component Texture -
-	glBindTexture(GL_TEXTURE_2D, 0);
+
+	// Now Pass Single Flat 1D Array to 3D Velocity Texture - 
+
+	// Velocity Texture - 
+	glBindTexture(GL_TEXTURE_3D, 0);
 	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, tex_vel_u);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, winsize_x, winsize_y, 0, GL_RED, GL_FLOAT, temp_u);
+	glBindTexture(GL_TEXTURE_3D, tex_vel);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, grid_size.x, grid_size.y, grid_size.z, GL_RGB, GL_FLOAT, vel3D);
 
-	// Velocity Y V Component Texture -
-	glBindTexture(GL_TEXTURE_2D, 0);
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, tex_vel_v);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, winsize_x, winsize_y, 0, GL_RED, GL_FLOAT, temp_v);
-
-	// Delete Temp Vel Component Grids 
-	delete[] temp_u; temp_u = nullptr;
-	delete[] temp_v; temp_v = nullptr; 
-
+	// Delete Temp Arrays - 
+	delete vel3D; vel3D = nullptr; 
 }
 
 
 // RenderObject_2D_OGL Shader Loader Implementation -
-void renderobject_2D_OGL::render_loop(rend_state dbg)
+void renderobject_3D_OGL::render_loop(rend_state rs)
 {
 	// IF DBG Then Use While Loop Here - (As Assume NOT CALLED FROM INSIDE SOLVER LOOP (per step))
 	// DBG Mode assumes RenderObject Setup/Debugging outside of a FluidSolver Instance eg from main for dbg sake. 
-	// Now Using Enum to identify these states, oppose to bool true/false which is not very clear. 
-	if (dbg == rend_state::RENDER_DEBUG)
+	if (rs == rend_state::RENDER_DEBUG)
 	{
-		// Texture Debug Code, Ignore...
-		int count = 0;
-		glBindTexture(GL_TEXTURE_2D, tex_dens);
-		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		unsigned char *barr = new unsigned char[66564 * 3];
-		//memset(barr, 1000.0f, 66564 * 3);
-		for (int i = 0; i < int(66564 * 3); i++)
-		{
-			barr[i] = float(abs(sin(i))) * 250.0f;
-		}
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 258, 258, 0, GL_RGB, GL_UNSIGNED_BYTE, barr);
-		glUniform1i(glGetUniformLocation(shader_prog, "d_tex"), 0); // Enfroce Texture Unit 0. 
-																	//delete barr;
 		while (!glfwWindowShouldClose(window_ptr))
 		{
-			// Do Input Polling in hear for now? 
 			// Render Loop 
-			std::cout << count << "\n";
-			count++;
 
 			//glPolygonMode(GL_FRONT, GL_LINE);
 			glClearColor(0.0f, 0.0f, 1.0f, 0.0f);
@@ -334,7 +322,7 @@ void renderobject_2D_OGL::render_loop(rend_state dbg)
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, tex_dens);
 			glActiveTexture(GL_TEXTURE1);
-			glBindTexture(GL_TEXTURE_2D, tex_vel_u);
+			glBindTexture(GL_TEXTURE_2D, tex_vel);
 
 			glUseProgram(shader_prog);
 
@@ -351,39 +339,18 @@ void renderobject_2D_OGL::render_loop(rend_state dbg)
 	else // Assume Called INSIDE SOLVE LOOP. Thus RENDER_ACTIVE dbg state. 
 	{
 		//So Just do In Loop Operations (Because there already called within a (solve) loop) -	
-		// Do Input Polling in hear for now? No. Input Polling done within Solver Solve_Step Loop for more freedom of inputs vars. 
-
-		//if (glfwWindowShouldClose(window_ptr)) return; // Kill RenderStep if GLFW WindowClose. (Wont Kill Solver).
+		//Input Polling done within Solver Solve_Step Loop for more freedom of inputs vars. 
 
 		// Render Loop \\
 
-		//glPolygonMode(GL_FRONT, GL_LINE);
 		glClearColor(0.0f, 0.0f, 1.0f, 0.0f);
 
 		// Active and Bind Textures. (Multiple Texture/Units) - 
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, tex_dens);
+		glBindTexture(GL_TEXTURE_3D, tex_dens);
 
 		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, tex_vel_u);
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, tex_vel_v);
-
-		glActiveTexture(GL_TEXTURE3);
-		glBindTexture(GL_TEXTURE_2D, tex_c);
-
-		glActiveTexture(GL_TEXTURE4);
-		glBindTexture(GL_TEXTURE_2D, tex_vc_u);
-		glActiveTexture(GL_TEXTURE5);
-		glBindTexture(GL_TEXTURE_2D, tex_vc_v);
-
-		glActiveTexture(GL_TEXTURE6);
-		glBindTexture(GL_TEXTURE_2D, tex_img_rgb);
-
-		glActiveTexture(GL_TEXTURE7);
-		glBindTexture(GL_TEXTURE_2D, tex_preprojvel_u);
-		glActiveTexture(GL_TEXTURE8);
-		glBindTexture(GL_TEXTURE_2D, tex_preprojvel_v);
+		glBindTexture(GL_TEXTURE_3D, tex_vel);
 
 		// Call Shader Program. (Is also called in SolveStep on RenderObj Instance). 
 		glUseProgram(shader_prog);
@@ -405,12 +372,12 @@ void renderobject_2D_OGL::render_loop(rend_state dbg)
 
 // Temp Implementation to allow public acess to call render (From FluidSolver_2 SolveStep).
 // FIX THIS HACKYNESS ! Why not Just Friend RenderObj to FluidSolver_2 ? 
-void renderobject_2D_OGL::call_ren(rend_state dbg)
+void renderobject_3D_OGL::call_ren(rend_state rs)
 {
-	render_loop(dbg);
+	render_loop(rs);
 }
 
-void renderobject_2D_OGL::print_GL_error()
+void renderobject_3D_OGL::print_GL_error()
 {
 	GLenum err;
 	while ((err = glGetError()) != GL_NO_ERROR)
