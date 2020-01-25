@@ -2010,7 +2010,8 @@ void fluidsolver_3::solve_step(bool solve, bool do_diffdens, bool do_diffvel, fl
 	// Render Object Creation/Setup - 
 	// Pass Render Context Window Ptr Now FluidSovler2Mem, to RenderObject. (Passed in To Solver in Main via set_window() MF.
 	int render_mode = 1; // 0 = Density, 1 = Vel. // May be overriden by Input in SolveStep (RenderObj::ShaderPipe()).
-	render_obj = new renderobject_3D_OGL("OpenGL", 4, 0, x_s + e_s, y_s + e_s, this->winptr, render_mode); 
+	extern const int win_size_xy;
+	render_obj = new renderobject_3D_OGL("OpenGL", 4, 0, vec2<int>(win_size_xy, win_size_xy), vec3<int>(x_s + e_s, y_s + e_s, z_s + e_s), this->winptr, render_mode); 
 	// Ideally Move render_obj setup to main/outside, and then pass into fluidsolver...?
 
 	// Move this into RenderObject Initalization - 
@@ -2068,7 +2069,6 @@ void fluidsolver_3::solve_step(bool solve, bool do_diffdens, bool do_diffvel, fl
 		render_obj->shader_pipe(f3obj); // Pass Grids Via Friend Acess to shader_pipe() MF
 		// Render Operations Call - 
 		render_obj->call_ren(rend_state::RENDER_ACTIVE); // Call Render Step Ops here within solver loop, ie NON Debug Mode (Pass RENDER_ACTIVE).
-		#endif	
 
 
 		// STEP DEBUG CONSLE OPERATIONS \\ -------------------- 

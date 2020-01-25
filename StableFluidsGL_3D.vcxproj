@@ -74,8 +74,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>..\StableFluidsGL_3D\build\bin</OutDir>
-    <IntDir>..\StableFluidsGL_3D\build</IntDir>
+    <OutDir>..\StableFluidsGL_3D\build\bin\</OutDir>
+    <IntDir>..\StableFluidsGL_3D\build\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>

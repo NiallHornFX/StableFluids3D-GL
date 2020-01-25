@@ -2,6 +2,7 @@
 #define MAT_3_H
 
 #include <iostream>
+#include "vec2d.h"
 
 /*	Matrix Info -
 	Matrix 4x4 Implementation, Template and or Inline Def in Header. 

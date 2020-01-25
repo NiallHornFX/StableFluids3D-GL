@@ -1,9 +1,12 @@
 #ifndef RENDEROBJECT_H
 #define RENDEROBJECT_H
 
+// Prevent Glew and GLFW multiple inclusion. 
+#ifndef GLEW_STATIC
 #define GLEW_STATIC // Static Linking GLEW and GLFW For now. 
 #include <GLEW\glew.h>
 #include <GLFW\glfw3.h>
+#endif 
 
 #include "grids3d.h"
 
@@ -30,7 +33,6 @@ class renderobject_3D
 {
 // FCs
 friend class fluidsolver_3;
-
 public:
 	renderobject_3D(const char *api_name, int v_maj, int v_min, const vec2<int> &win_size, const vec3<int> &grd_size, short rmode);
 	virtual ~renderobject_3D() = default;

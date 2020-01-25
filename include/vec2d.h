@@ -204,7 +204,7 @@ static inline float vec2<T>::degtoRad(float deg)
 template <class T>
 static inline float vec2<T>::radtoDeg(float rad)
 {
-	return (float)rad * (180.0f / pi);
+	return (float)rad * (180.0f / PI);
 }
 
 

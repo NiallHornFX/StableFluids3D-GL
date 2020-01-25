@@ -2,7 +2,7 @@
 #define FLUIDSOLVER_2_H
 
 #include "fluidobj3d.h"
-//#include "renderobject.h"
+#include "renderobject3d.h"
 
 // Vendor Headers - 
 #include <GLFW\glfw3.h>
@@ -12,8 +12,7 @@
 #include <functional> // std::function object. 
 #include <iostream>
 
-// Forward Decls -  
-class renderobject_3d_OGL;
+class renderobject_3D_OGL; 
 
 using ushort = unsigned short; 
 using avx256 = __m256;
@@ -250,7 +249,7 @@ private:
 	grid3_scalar<float> *spherebounds_sdf; // Grid to hold SphereBounds SDF Value For Cur Step. 
 
 	// Render Members - 
-	renderobject_3d_OGL *render_obj; // Uses OGL Not Base Ptr for now, nocast. 
+	renderobject_3D_OGL *render_obj; // Uses OGL Not Base Ptr for now, nocast. 
 	GLFWwindow *winptr; // From Render Contex Passed In Window. 
 };
 
