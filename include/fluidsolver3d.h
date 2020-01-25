@@ -12,8 +12,6 @@
 #include <functional> // std::function object. 
 #include <iostream>
 
-class renderobject_3D_OGL; 
-
 using ushort = unsigned short; 
 using avx256 = __m256;
 
