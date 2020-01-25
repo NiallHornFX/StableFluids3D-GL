@@ -150,7 +150,7 @@ void fluidsolver_3::edge_bounds(grid3_scalar<float> *grid)
 	}
 
 	// 8 Corner Cells, ScalarGrid Edge Bounds Corner Adjacent Cell Neighbour Averages -
-	// Self + or - XYZ (0(+1) or N+1(-1(N)))
+	// Self + or - XYZ (0(+1) or N+1(-1(N))) (0 and N+1 Axis Ghost/Edge Cells).
 	// If At 0 For Coord Offset +1, if At N+1 For Coord Offset -1. 
 
 	// Corner Cell = Adjacent X + Y + Z (LH CoordSys Z->Back)
@@ -160,7 +160,7 @@ void fluidsolver_3::edge_bounds(grid3_scalar<float> *grid)
 	// 0,N+1,N+1 = 1,N+1,N+1| 0,N,N+1 | 0,N+1,N // LeftTopBack
 	// N+1,0,0 = N,0,0 | N+1,1,0 | N+1,0,1 // RightBottomFront
 	// N+1,N+1,0 = N,N+1,0 | N+1,N,0 | N+1,N+1,1 // RightTopFront
-	// N+1,0,N+1 = N, 0, N+1 | N+1,1,0 | N+1,0,N // RightBottomBack
+	// N+1,0,N+1 = N, 0, N+1 | N+1,1,N | N+1,0,N // RightBottomBack
 	// N+1,N+1,N+1 = N, N+1, N+1 | N+1,N,N+1 | N+1,N+1,N // RightTopBack
 
 	// 3D 0,0,0 = 1,0,0 + 0,1,0 + 0,0,1 
@@ -177,7 +177,23 @@ void fluidsolver_3::edge_bounds(grid3_scalar<float> *grid)
 
 	// 3D 0,N+1,N+1 = 1,N+1,N+1 + 0,N,N+1 + 0,N+1,N
 	float c_0_N1_N1 = 0.33f * (grid->getdata(1, N_dim + 1, N_dim + 1) + grid->getdata(0, N_dim, N_dim + 1) + grid->getdata(0, N_dim + 1, N_dim));
-	grid->setdata(c_0_N1_N1, 0, N_dim + 1, N_dim + 1);
+	grid->setdata(c_0_N1_N1, 0, N_dim+1, N_dim+1);
+
+	// 3D N+1,0,0 = N,0,0 + N+1,1,0 + N+1,0,1
+	float c_N1_0_0 = 0.33f * (grid->getdata(N_dim, 0, 0) + grid->getdata(N_dim + 1, 1, 0) + grid->getdata(N_dim + 1, 0, 1));
+	grid->setdata(c_N1_0_0, N_dim+1, 0, 0); 
+
+	// 3D N+1,N+1,0 = N,N+1,0 + N+1,N,0 + N+1,N+1,1
+	float c_N1_N1_0 = 0.33f * (grid->getdata(N_dim, N_dim + 1, 0) + grid->getdata(N_dim + 1, N_dim, 0) + grid->getdata(N_dim + 1, N_dim + 1, 1));
+	grid->setdata(c_N1_N1_0, N_dim+1, N_dim+1, 0);
+
+	// 3D N+1,0,N+1 = N,1,N+1 + N+1,1,N+1 + N+1,0,N
+	float c_N1_0_N1 = 0.33f * (grid->getdata(N_dim, 0, N_dim + 1) + grid->getdata(N_dim + 1, 1, N_dim + 1) + grid->getdata(N_dim + 1, 0, N_dim));
+	grid->setdata(c_N1_0_N1, N_dim+1, 0, N_dim+1);
+
+	// 3D N+1,N+1,N+1 = N,N+1,N+1 + N+1,N,N+1 + N+1,N+1,N
+	float c_N1_N1_N1 = 0.33f * (grid->getdata(N_dim, N_dim + 1, N_dim + 1) + grid->getdata(N_dim + 1, N_dim, N_dim + 1) + grid->getdata(N_dim + 1, N_dim + 1, N_dim)); 
+	grid->setdata(c_N1_N1_N1, N_dim + 1, N_dim + 1, N_dim + 1); 
 
 
 
