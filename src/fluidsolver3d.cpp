@@ -151,7 +151,7 @@ void fluidsolver_3::edge_bounds(grid3_scalar<float> *grid)
 
 	// 8 Corner Cells, ScalarGrid Edge Bounds Corner Adjacent Cell Neighbour Averages -
 	// Self + or - XYZ (0(+1) or N+1(-1(N))) (0 and N+1 Axis Ghost/Edge Cells).
-	// If At 0 For Coord Offset +1, if At N+1 For Coord Offset -1. 
+	// If At 0 For Coord Offset +1, if At N+1 For Coord Offset -1. Offset Axis, Keep Others Const. Like a PDE. 
 
 	// Corner Cell = Adjacent X + Y + Z (LH CoordSys Z->Back)
 	// 0, 0, 0 = 1, 0, 0 | 0, 1, 0 | 0, 0, 1 // LeftBottomFront (Assume Origin)
@@ -201,83 +201,111 @@ void fluidsolver_3::edge_bounds(grid3_scalar<float> *grid)
 
 // ** EDGE_BOUNDS_VECTOR-FIELD IMPLEMENTATION ** \\ - 
 
+// Is ThreadSafe as Face/Edge Cells and Corner Cells only Read and Write to Selves locally.
 void fluidsolver_3::edge_bounds(grid3_vector<vec3<float>> *grid)
 {
-	// Loop Over Grid Not Including Edge Cells, 1D based Iteration. 1-N (N_dim). Set Edge Cells Layer Along 0 & N+1 On Each Axis +\-.  
+	// Set Grid Edge Bounds Faces, to reflect the perpendicualr velocity component for cells within each six faces of grid. 
 
 	// X +/- Grid Face Cells = Y Compoent Reflection
 	// Y +/- Grid Face Cells = X Component Relfection
-	// Z +/- Grid Face Cells = Z Component Relfection
+	// Z +/- Grid Face Cells = Z Component Relfection (Yes Z reflects Z)
 	
 	// !MT #pragma omp parallel for num_threads(omp_get_max_threads())
 
 	for (int i = 1; i <= N_dim; i++)
 	{
-		/*
-		Assuming X Velocity is ONLY Reflected by X Axis Edge Cells, and Y Velocity is ONLY Reflected
-		by Y Axis Edge Cells. This is not true for NoSlip, which would solve both velocity axis/components for each
-		edge cell layer axis. But for now basic Per Edge/Bound Axis, Per Velocity Axis Reflection is implemented.
-		*/
+		// X -/+ Face Cells, Reflect Y Velocity Component -
 
-		// X Velocity Reflection - X-Axis Bound/Edge Collum Cells 
+		// X- Edge Boundary 
+		float x0i = grid->getdata_y(1, i, i); // [0,i,i] Boundary Values from Edge [1,i,i] Values.
+		x0i *= -1.0f; 
+		grid->setdata_y(x0i, 0, i, i);
 
-		// Vel x (u) Collum (0,(i)) -
+		// X+ Edge Boundary
+		float xNi = grid->getdata_y(N_dim, i, i); // [N+1,i,i] Boundary Values from Edge [N,i,i] Values.
+		xNi *= -1.0f;
+		grid->setdata_y(xNi, (N_dim + 1), i, i);
 
-		// Get X Vel Of Next Cell In (1, (i))
-		float next_x_1 = grid->getdata_x(1, i);
-		next_x_1 *= -1.0f;
-		// Set Inverse Vel To EdgeCells Along vel[0, i]
-		grid->setdata_x(next_x_1, 0, i);
+		// Y -/+ Face Cells, Reflect X Velocity Component -
 
-		// Vel x (u) Collum (N+1,(i)) -
+		// Y- Edge Boundary
+		float y0i = grid->getdata_x(i, 1, i); // [i, 0, i] Boundary Values from Edge [i, 1, i] Values.
+		y0i *= -1.0f; 
+		grid->setdata_x(y0i, i, 0, i);
 
-		// Get X Vel Of Next Cell In (N, i)
-		float next_x_N = grid->getdata_x(N_dim, i);
-		next_x_N *= -1.0f;
-		// Set Inverse Vel To EdgeCells Along vel[N+1, i]
-		grid->setdata_x(next_x_N, N_dim + 1, i);
+		// Y+ Edge Boundary
+		float yNi = grid->getdata_x(i, N_dim, i); // [i, N+1, i] Boundary Values from Edge [i,N,i] Values.
+		yNi *= -1.0f; 
+		grid->setdata_y(yNi, i, N_dim + 1, i);
 
-		// Y Velocity Reflect - Y-Axis Bound/Edge Row Cells 
+		// Z -/+ Face Cells, Reflect Z Velocity Component -
 
-		// Vel y (v) Row (i,0) -
+		// Z- Edge Boundary
+		float z0i = grid->getdata_z(i, i, 1); // [i, i, 0] Boundary Values from Edge [i,i,1] Values.
+		z0i *= -1.0f; 
+		grid->setdata_z(z0i, i, i, 0);
 
-		// Get Y Vel Of Next Cell In ((i), 1)
-		float next_y_1 = grid->getdata_y(i, 1);
-		next_y_1 *= -1.0f;
-		// Set Inverse Vel To EdgeCells Along vel[i, 0]
-		grid->setdata_y(next_y_1, i, 0);
-
-		// Vel y (v) Collum ((i),N+1) -
-
-		// Get Y Vel Of Next Cell In (i, N)
-		float next_y_N = grid->getdata_y(i, N_dim);
-		next_y_N *= -1.0f;
-		// Set Inverse Vel To EdgeCells Along vel[i, N+1]
-		grid->setdata_y(next_y_N, i, N_dim + 1);
-
+		// Z+ Edge Boundary
+		float zNi = grid->getdata_z(i, i, N_dim); // [i, i, N+1] Boundary Values from Edge [i, i, N] Values.
+		zNi *= -1.0f; 
+		grid->setdata_z(zNi, i, i, N_dim + 1);
 	}
 
-		// Set Single Corner Cells (Average Of Neighbours) - (Set Per Component Oppose to using vec3 opoverload add/avg Operations)
+	// Corner Cell Interoplation/Averaging of Adjacent Neighbours for Ux,Vy,Wz Velocity Components -  
+	// Do Each Corner Cell For each Component. Inline Averaging (messy but perf !). 
 
-		// X Vel Neighbour Averages - 
-		float x_00 = 0.5 * (grid->getdata_x(1, 0) + grid->getdata_x(0, 1));
-		grid->setdata_x(x_00, 0, 0);
-		float x_01 = 0.5 * (grid->getdata_x(1, N_dim + 1) + grid->getdata_x(0, N_dim));
-		grid->setdata_x(x_01, 0, N_dim + 1);
-		float x_02 = 0.5 * (grid->getdata_x(N_dim, 0) + grid->getdata_x(N_dim + 1, 1));
-		grid->setdata_x(x_02, N_dim + 1, 0);
-		float x_03 = 0.5 * (grid->getdata_x(N_dim, N_dim + 1) + grid->getdata_x(N_dim + 1, N_dim));
-		grid->setdata_x(x_03, N_dim + 1, N_dim + 1);
+	// U (X Component)
+	float cU_0_0_0 = 0.33f * (grid->getdata_x(1, 0, 0) + grid->getdata_x(0, 1, 0) + grid->getdata_x(0, 0, 1));
+	grid->setdata_x(cU_0_0_0, 0, 0, 0);
+	float cU_0_N1_0 = 0.33f * (grid->getdata_x(1, N_dim + 1, 0) + grid->getdata_x(0, N_dim, 1) + grid->getdata_x(0, N_dim + 1, 1));
+	grid->setdata_x(cU_0_N1_0, 0, N_dim + 1, 0);
+	float cU_0_0_N1 = 0.33f * (grid->getdata_x(1, 0, N_dim + 1) + grid->getdata_x(0, 1, N_dim + 1) + grid->getdata_x(0, 0, N_dim));
+	grid->setdata_x(cU_0_0_N1, 0, 0, N_dim + 1);
+	float cU_0_N1_N1 = 0.33f * (grid->getdata_x(1, N_dim + 1, N_dim + 1) + grid->getdata_x(0, N_dim, N_dim + 1) + grid->getdata_x(0, N_dim + 1, N_dim));
+	grid->setdata_x(cU_0_N1_N1, 0, N_dim + 1, N_dim + 1);
+	float cU_N1_0_0 = 0.33f * (grid->getdata_x(N_dim, 0, 0) + grid->getdata_x(N_dim + 1, 1, 0) + grid->getdata_x(N_dim + 1, 0, 1));
+	grid->setdata_x(cU_N1_0_0, N_dim + 1, 0, 0);
+	float cU_N1_N1_0 = 0.33f * (grid->getdata_x(N_dim, N_dim + 1, 0) + grid->getdata_x(N_dim + 1, N_dim, 0) + grid->getdata_x(N_dim + 1, N_dim + 1, 1));
+	grid->setdata_x(cU_N1_N1_0, N_dim + 1, N_dim + 1, 0);
+	float cU_N1_0_N1 = 0.33f * (grid->getdata_x(N_dim, 0, N_dim + 1) + grid->getdata_x(N_dim + 1, 1, N_dim + 1) + grid->getdata_x(N_dim + 1, 0, N_dim));
+	grid->setdata_x(cU_N1_0_N1, N_dim + 1, 0, N_dim + 1);
+	float cU_N1_N1_N1 = 0.33f * (grid->getdata_x(N_dim, N_dim + 1, N_dim + 1) + grid->getdata_x(N_dim + 1, N_dim, N_dim + 1) + grid->getdata_x(N_dim + 1, N_dim + 1, N_dim));
+	grid->setdata_x(cU_N1_N1_N1, N_dim + 1, N_dim + 1, N_dim + 1);
+	// V (Y Component)
+	float cV_0_0_0 = 0.33f * (grid->getdata_y(1, 0, 0) + grid->getdata_y(0, 1, 0) + grid->getdata_y(0, 0, 1));
+	grid->setdata_y(cV_0_0_0, 0, 0, 0);
+	float cV_0_N1_0 = 0.33f * (grid->getdata_y(1, N_dim + 1, 0) + grid->getdata_y(0, N_dim, 1) + grid->getdata_y(0, N_dim + 1, 1));
+	grid->setdata_y(cV_0_N1_0, 0, N_dim + 1, 0);
+	float cV_0_0_N1 = 0.33f * (grid->getdata_y(1, 0, N_dim + 1) + grid->getdata_y(0, 1, N_dim + 1) + grid->getdata_y(0, 0, N_dim));
+	grid->setdata_y(cV_0_0_N1, 0, 0, N_dim + 1);
+	float cV_0_N1_N1 = 0.33f * (grid->getdata_y(1, N_dim + 1, N_dim + 1) + grid->getdata_y(0, N_dim, N_dim + 1) + grid->getdata_y(0, N_dim + 1, N_dim));
+	grid->setdata_y(cV_0_N1_N1, 0, N_dim + 1, N_dim + 1);
+	float cV_N1_0_0 = 0.33f * (grid->getdata_y(N_dim, 0, 0) + grid->getdata_y(N_dim + 1, 1, 0) + grid->getdata_y(N_dim + 1, 0, 1));
+	grid->setdata_y(cV_N1_0_0, N_dim + 1, 0, 0);
+	float cV_N1_N1_0 = 0.33f * (grid->getdata_y(N_dim, N_dim + 1, 0) + grid->getdata_y(N_dim + 1, N_dim, 0) + grid->getdata_y(N_dim + 1, N_dim + 1, 1));
+	grid->setdata_y(cV_N1_N1_0, N_dim + 1, N_dim + 1, 0);
+	float cV_N1_0_N1 = 0.33f * (grid->getdata_y(N_dim, 0, N_dim + 1) + grid->getdata_y(N_dim + 1, 1, N_dim + 1) + grid->getdata_y(N_dim + 1, 0, N_dim));
+	grid->setdata_y(cV_N1_0_N1, N_dim + 1, 0, N_dim + 1);
+	float cV_N1_N1_N1 = 0.33f * (grid->getdata_y(N_dim, N_dim + 1, N_dim + 1) + grid->getdata_y(N_dim + 1, N_dim, N_dim + 1) + grid->getdata_y(N_dim + 1, N_dim + 1, N_dim));
+	grid->setdata_y(cV_N1_N1_N1, N_dim + 1, N_dim + 1, N_dim + 1);
+	// W (Z Component)
+	float cW_0_0_0 = 0.33f * (grid->getdata_z(1, 0, 0) + grid->getdata_z(0, 1, 0) + grid->getdata_z(0, 0, 1));
+	grid->setdata_z(cW_0_0_0, 0, 0, 0);
+	float cW_0_N1_0 = 0.33f * (grid->getdata_z(1, N_dim + 1, 0) + grid->getdata_z(0, N_dim, 1) + grid->getdata_z(0, N_dim + 1, 1));
+	grid->setdata_z(cW_0_N1_0, 0, N_dim + 1, 0);
+	float cW_0_0_N1 = 0.33f * (grid->getdata_z(1, 0, N_dim + 1) + grid->getdata_z(0, 1, N_dim + 1) + grid->getdata_z(0, 0, N_dim));
+	grid->setdata_z(cW_0_0_N1, 0, 0, N_dim + 1);
+	float cW_0_N1_N1 = 0.33f * (grid->getdata_z(1, N_dim + 1, N_dim + 1) + grid->getdata_z(0, N_dim, N_dim + 1) + grid->getdata_z(0, N_dim + 1, N_dim));
+	grid->setdata_z(cW_0_N1_N1, 0, N_dim + 1, N_dim + 1);
+	float cW_N1_0_0 = 0.33f * (grid->getdata_z(N_dim, 0, 0) + grid->getdata_z(N_dim + 1, 1, 0) + grid->getdata_z(N_dim + 1, 0, 1));
+	grid->setdata_z(cW_N1_0_0, N_dim + 1, 0, 0);
+	float cW_N1_N1_0 = 0.33f * (grid->getdata_z(N_dim, N_dim + 1, 0) + grid->getdata_z(N_dim + 1, N_dim, 0) + grid->getdata_z(N_dim + 1, N_dim + 1, 1));
+	grid->setdata_z(cW_N1_N1_0, N_dim + 1, N_dim + 1, 0);
+	float cW_N1_0_N1 = 0.33f * (grid->getdata_z(N_dim, 0, N_dim + 1) + grid->getdata_z(N_dim + 1, 1, N_dim + 1) + grid->getdata_z(N_dim + 1, 0, N_dim));
+	grid->setdata_z(cW_N1_0_N1, N_dim + 1, 0, N_dim + 1);
+	float cW_N1_N1_N1 = 0.33f * (grid->getdata_z(N_dim, N_dim + 1, N_dim + 1) + grid->getdata_z(N_dim + 1, N_dim, N_dim + 1) + grid->getdata_z(N_dim + 1, N_dim + 1, N_dim));
+	grid->setdata_z(cW_N1_N1_N1, N_dim + 1, N_dim + 1, N_dim + 1);
 
-		// Y Vel Neighbour Averages - 
-		float y_00 = 0.5 * (grid->getdata_y(1, 0) + grid->getdata_y(0, 1));
-		grid->setdata_y(y_00, 0, 0);
-		float y_01 = 0.5 * (grid->getdata_y(1, N_dim + 1) + grid->getdata_y(0, N_dim));
-		grid->setdata_y(y_01, 0, N_dim + 1);
-		float y_02 = 0.5 * (grid->getdata_y(N_dim, 0) + grid->getdata_y(N_dim + 1, 1));
-		grid->setdata_y(y_02, N_dim + 1, 0);
-		float y_03 = 0.5 * (grid->getdata_y(N_dim, N_dim + 1) + grid->getdata_y(N_dim + 1, N_dim));
-		grid->setdata_y(y_03, N_dim + 1, N_dim + 1);
 }
 
 
@@ -291,7 +319,8 @@ void fluidsolver_3::sphere_bounds_set(float radius, float col_iso, const vec3<fl
 {
 	float h = 1.0f / N_dim; // Grid Spacing, Recoprical of One Dim Size (N). 
 
-	#pragma omp parallel for num_threads(omp_get_max_threads())	
+	//!MT #pragma omp parallel for num_threads(omp_get_max_threads())	
+
 	for (int k = 1; k < N_dim; k++)
 	{
 		for (int j = 1; j <= N_dim; j++)
@@ -319,7 +348,8 @@ void fluidsolver_3::sphere_bounds_eval(grid3_scalar<float> *grid, float col_iso)
 {
 	float h = 1.0f / N_dim; // Grid Spacing, Recoprical of One Dim Size (N). 
 	
-	#pragma omp parallel for num_threads(omp_get_max_threads())	
+	//!MT #pragma omp parallel for num_threads(omp_get_max_threads())	
+
 	for (int k = 1; k < N_dim; k++)
 	{
 		for (int j = 1; j <= N_dim; j++)
@@ -327,7 +357,7 @@ void fluidsolver_3::sphere_bounds_eval(grid3_scalar<float> *grid, float col_iso)
 			for (int i = 1; i <= N_dim; i++)
 			{
 				// Lookup Sphere/sphere SDF At CurCell i,j. 
-				float sphere_func = spherebounds_sdf->getdata(i, j);
+				float sphere_func = spherebounds_sdf->getdata(i, j, k);
 				f3obj->col->setdata(0.0f, i, j, k); // Zero Out Prev Collison Cell Values. 
 
 				/*
@@ -376,7 +406,7 @@ void fluidsolver_3::sphere_bounds_eval(grid3_vector<vec3<float>> *grid, float co
 {
 	float h = 1.0f / N_dim; // Grid Spacing, Recoprical of One Dim Size (N). 
 
-	#pragma omp parallel for num_threads(omp_get_max_threads())
+	//!MT #pragma omp parallel for num_threads(omp_get_max_threads())
 	for (int k = 1; k < N_dim; k++)
 	{
 		for (int j = 1; j <= N_dim; j++)
@@ -568,7 +598,7 @@ void fluidsolver_3::advect_sl(grid3_scalar<float> *grid_0, grid3_scalar<float> *
 
 	// Density (Scalar Field Advection) - 
 
-	//#pragma omp parallel for num_threads(omp_get_max_threads()) 
+	//!MT#pragma omp parallel for num_threads(omp_get_max_threads()) 
 
 	for (int k = 1; k <= N_dim; k++)
 	{
@@ -666,7 +696,7 @@ void fluidsolver_3::advect_sl(grid3_vector<vec3<float>> *grid_0, grid3_vector<ve
 {
 	float dt0 = dt*N_dim; // Step Distance (Velocity Scaling) of DeltaTime * Grid Length, Hence GridSpace Dt Coeff (dt0). 
 
-	//#pragma omp parallel for num_threads(omp_get_max_threads())
+	//!MT#pragma omp parallel for num_threads(omp_get_max_threads())
 
 	for (int k = 1; k <= N_dim; k++)
 	{
@@ -803,7 +833,7 @@ void fluidsolver_3::advect_sl_mp(grid3_scalar<float> *grid_0, grid3_scalar<float
 
 	// Density (Scalar Field Advection) - 
 
-	//#pragma omp parallel for num_threads(omp_get_max_threads()) 
+	//!MT#pragma omp parallel for num_threads(omp_get_max_threads()) 
 
 	for (int k = 1; k <= N_dim; k++)
 	{
@@ -911,7 +941,7 @@ void fluidsolver_3::advect_sl_mp(grid3_vector<vec3<float>> *grid_0, grid3_vector
 {
 	float dt0 = dt * N_dim; // Scale DeltaTime to Grid Dimension Size. 
 
-	//#pragma omp parallel for num_threads(omp_get_max_threads()) 
+	//!MT#pragma omp parallel for num_threads(omp_get_max_threads()) 
 
 	for (int k = 1; k <= N_dim; k++)
 	{
@@ -1355,7 +1385,7 @@ void fluidsolver_3::project(int iter)
 	// DIVERGENCE FIELD CALC \\ -
 	// Compute Divergence Field, from Velocity Field - 
 
-	//#pragma omp parallel for num_threads(omp_get_max_threads())
+	//!MT#pragma omp parallel for num_threads(omp_get_max_threads())
 
 	for (int k = 1; k <= N_dim; k++)
 	{
@@ -1456,7 +1486,7 @@ void fluidsolver_3::project(int iter)
 	
 	// SUBTRACT PRESSURE GRADEINT FROM VELOCITY FIELD \\  
 
-	//#pragma omp parallel for num_threads(omp_get_max_threads()) 
+	//!MT#pragma omp parallel for num_threads(omp_get_max_threads()) 
 	for (int k = 1; k <= N_dim; k++)
 	{
 		for (int j = 1; j <= N_dim; j++)
@@ -1520,12 +1550,15 @@ void fluidsolver_3::project_jacobi(int iter)
 	// DIVERGENCE FIELD CALC \\ - 
 
 	// Compute Divergence Field, from Velocity Field - 
-	//#pragma omp parallel for num_threads(omp_get_max_threads())
+	//!MTpragma omp parallel for num_threads(omp_get_max_threads())
 
+	#pragma omp parallel for
 	for (int k = 1; k <= N_dim; k++)
 	{
+		#pragma omp parallel for
 		for (int j = 1; j <= N_dim; j++)
 		{
+			#pragma omp parallel for
 			for (int i = 1; i <= N_dim; i++)
 			{
 				// Init to 0 
@@ -1595,12 +1628,13 @@ void fluidsolver_3::project_jacobi(int iter)
 	}
 	
 	// SUBTRACT PRESSURE GRADEINT FROM VELOCITY FIELD \\ -
-
-	#pragma omp parallel for num_threads(omp_get_max_threads())
+	#pragma omp parallel for
 	for (int k = 1; k <= N_dim; k++)
 	{
+		#pragma omp parallel for
 		for (int j = 1; j <= N_dim; j++)
 		{
+			#pragma omp parallel for
 			for (int i = 1; i <= N_dim; i++)
 			{
 				// Partial Derivatves for Each Pressure Gradient Components -
@@ -2187,10 +2221,13 @@ void fluidsolver_3::dissipate(grid3_scalar<float> *grid, float disp_mult, float 
 	//disp_mult = std::max(0.0f, std::min(disp_mult, 1.0f)); // Enforce 0-1 Mult. 
 	disp_mult = solver_utils::clamp(disp_mult, 0.0f, 1.0f); 
 
+	#pragma omp parallel for
 	for (int k = 1; k <= N_dim; k++)
 	{
+		#pragma omp parallel for
 		for (int j = 1; j <= N_dim; j++)
 		{
+			#pragma omp parallel for
 			for (int i = 1; i <= N_dim; i++)
 			{
 				// Don't Mult By dt for now. 
@@ -2206,10 +2243,13 @@ void fluidsolver_3::dissipate(grid3_scalar<float> *grid, float disp_mult, float 
 void fluidsolver_3::dissipate(grid3_vector<vec3<float>> *grid, float disp_mult, float dt)
 {
 	disp_mult = solver_utils::clamp(disp_mult, 0.0f, 1.0f);
+	#pragma omp parallel for
 	for (int k = 1; k <= N_dim; k++)
 	{
+		#pragma omp parallel for
 		for (int j = 1; j <= N_dim; j++)
 		{
+			#pragma omp parallel for
 			for (int i = 1; i <= N_dim; i++)
 			{
 				// Don't Mult By dt for now. 
