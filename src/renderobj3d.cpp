@@ -14,15 +14,14 @@ extern short verbose;
 // RenderObject_3D - ABC Implementations - 
 
 // Render Object 3D ABC Constructor
-renderobject_3D::renderobject_3D(const char *api_name, int v_maj, int v_min, int win_x, int win_y, int rmode)
-	: API_Name(api_name), ver_major(v_maj), ver_minor(v_min), winsize_x(win_x), winsize_y(win_y), rendermode(rmode) {}
-
+renderobject_3D::renderobject_3D(const char *api_name, int v_maj, int v_min, const vec2<int> &win_size, const vec3<int> &grd_size, short rmode)
+	: API_Name(api_name), ver_major(v_maj), ver_minor(v_min), window_size(win_size), grid_size(grd_size), rendermode(rmode) {}
 
 // RenderObject_2D_OGL (OpenGL API) Implementations - 
 
 // RenderObject_2D_OGL Constructor - 
-renderobject_3D_OGL::renderobject_3D_OGL(const char *api_name, int v_maj, int v_min, int wx, int wy, GLFWwindow *winptr, int rmode)
-	: renderobject_3D(api_name, v_maj, v_min, wx, wy, rmode), window_ptr(winptr)  // Initalize ABC Members Via Its Own Constructor. 
+renderobject_3D_OGL::renderobject_3D_OGL(const char *api_name, int v_maj, int v_min, const vec2<int> &ws, const vec3<int> &gs, GLFWwindow *winptr, short rmode)
+	: renderobject_3D(api_name, v_maj, v_min, ws, gs, rmode), window_ptr(winptr)  // Initalize ABC Members Via Its Own Constructor. 
 {
 	std::cout << "DBG::RenderObject_3D Created For Render API: " << api_name << " " << v_maj << "." << v_min << "\n \n";
 	// Call Setup MFuncs
@@ -225,7 +224,7 @@ void renderobject_3D_OGL::shader_pipe(fluidobj_3d *f3obj)
 	// UNIFORM CONSTANTS (Per Step) \\
 
 	// Pass Window Size (Single_Dimension / N + EdgeSize) to GL Uniform. // Could be done after Shader Compile (Once.?)
-	glUniform1i(glGetUniformLocation(shader_prog, "N_Size"), winsize_x); // Assuming Square Grid/Window so just pass X size. 
+	glUniform1i(glGetUniformLocation(shader_prog, "N_Size"), grid_size.x); // Assuming Cubed Grid so just pass X size. 
 	//std::cout << "DEBUG ***********    " << winsize_x << "\n \n";
 
 	// Interactive Render Mode Switching - 
@@ -256,10 +255,12 @@ void renderobject_3D_OGL::shader_pipe(fluidobj_3d *f3obj)
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	GLfloat *ptr = (GLfloat*)f3obj->dens->grid_data->data();
 
-	// 1 Channels (Red) Single Float for total texel per cell value -
-	glTexImage3D(GL_TEXTURE_3D, 0, GL_R32F, 64, 64, 64, 0, GL_RED, GL_FLOAT, ptr);
+	// 1 Channels (Red) Single Float for total Voxel/Texel per cell value -
+	glTexImage3D(GL_TEXTURE_3D, 0, GL_R32F, (GLint) grid_size.x, (GLint) grid_size.y, (GLint) grid_size.z, 0, GL_RED, GL_FLOAT, ptr);
 
 	// TEXTURE - VELOCITY \\
+
+	// Pack X-Y-Z Velocity into R-G-B Components of single Velocity 3D Texture. 
 
 	// Pass Vel Grid Per Component - grid_data vector, data array to 2D Texture. 4Bytes (32Bit) Float Per Grid Velocity u/v value.
 	// Need to Sepreate Vel vec2 into u and v Float Component Arrays. 

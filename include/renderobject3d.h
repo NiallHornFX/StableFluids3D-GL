@@ -32,7 +32,7 @@ class renderobject_3D
 friend class fluidsolver_3;
 
 public:
-	renderobject_3D(const char *api_name, int v_maj, int v_min, int win_x, int win_y, int rmode);
+	renderobject_3D(const char *api_name, int v_maj, int v_min, const vec2<int> &win_size, const vec3<int> &grd_size, short rmode);
 	virtual ~renderobject_3D() = default;
 
 protected:
@@ -43,8 +43,9 @@ protected:
 
 	const char* API_Name; 
 	int ver_major, ver_minor;
-	int winsize_x, winsize_y; 
-	int rendermode; 
+	vec2<int> window_size; 
+	vec3<int> grid_size; 
+	short rendermode; 
 	double dt, et; 
 
 };
@@ -55,7 +56,7 @@ class renderobject_3D_OGL : public renderobject_3D
 // FCs
 friend class fluidsolver_3; 
 public:
-	renderobject_3D_OGL(const char *api_name, int v_maj, int v_min, int wx, int wy, GLFWwindow *winptr, int rmode);
+	renderobject_3D_OGL(const char *api_name, int v_maj, int v_min, const vec2<int> &w_s, const vec3<int> &g_s, GLFWwindow *winptr, short rmode);
 	~renderobject_3D_OGL();
 
 	// Publicly Callable Start Render. 
