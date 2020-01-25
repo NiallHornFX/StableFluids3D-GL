@@ -25,6 +25,7 @@ vec3<float> spherebound_offset(0.0f, 0.0f, 0.0f);
 const float spherebound_coliso = 0.0025f; 
 float spherebound_radius = 0.005f; 
 
+extern int win_size_xy;
 extern short verbose; // Get Verbose Global from main. 
 
 // !CLEAN
@@ -1968,9 +1969,8 @@ void fluidsolver_3::velocity_step(int diff_iter, int proj_iter, float diffA, boo
 		/* WIP
 		vorticty_confine(1.0f);
 		vorticty_confine_otf(5.0f);
-		*/
 		vorticity_confine_B(5.0f);
-
+		*/
 	}
 
 	// PROJECT VELOCITY FIELD \\  (Post Advect Only) 
@@ -2010,7 +2010,6 @@ void fluidsolver_3::solve_step(bool solve, bool do_diffdens, bool do_diffvel, fl
 	// Render Object Creation/Setup - 
 	// Pass Render Context Window Ptr Now FluidSovler2Mem, to RenderObject. (Passed in To Solver in Main via set_window() MF.
 	int render_mode = 1; // 0 = Density, 1 = Vel. // May be overriden by Input in SolveStep (RenderObj::ShaderPipe()).
-	extern const int win_size_xy;
 	render_obj = new renderobject_3D_OGL("OpenGL", 4, 0, vec2<int>(win_size_xy, win_size_xy), vec3<int>(x_s + e_s, y_s + e_s, z_s + e_s), this->winptr, render_mode); 
 	// Ideally Move render_obj setup to main/outside, and then pass into fluidsolver...?
 
@@ -2020,7 +2019,7 @@ void fluidsolver_3::solve_step(bool solve, bool do_diffdens, bool do_diffvel, fl
 
 	// Set 3D Tex Sampler Uniforms, to matching Texture Units.
 	glUniform1i(glGetUniformLocation(render_obj->shader_prog, "d_tex"), 0); // Density = 0. 
-
+	glUniform1i(glGetUniformLocation(render_obj->shader_prog, "v_tex"), 1); // Density = 0. 
 
 	//Solve Step And Render - EXEC LOOP 
 	while (solve == true && step_count <= max_step) // Infinite Solve Loop For Now. Will need to link this to drawing/waiting etc. 

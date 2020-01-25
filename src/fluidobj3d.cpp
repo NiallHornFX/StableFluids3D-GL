@@ -108,7 +108,7 @@ void fluidobj_3d::print_info()
 	std::cout << "DEBUG::Fluid Object 3D:: vec3 Grid Size = " << vgrid_MB << " MB \n";
 	std::cout << "DEBUG::Fluid Object 3D:: vec3 Grid Size = " << vgrid_GB << " GB \n";
 	std::cout << "DEBUG::Fluid Object 3D:: vec3 Cell Size = " << sizeof(vec3<float>) << " B \n";
-	std::cout << "DEBUG::Fluid Object 2D " << " INFO END. \n \n";
+	std::cout << "DEBUG::Fluid Object 3D " << " INFO END. \n \n";
 
 	// Print Size of Total FluidObj Allocated grids memory. Based on above vec/scalar grid size. 
 }

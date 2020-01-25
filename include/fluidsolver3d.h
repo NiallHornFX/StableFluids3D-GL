@@ -2,7 +2,7 @@
 #define FLUIDSOLVER_2_H
 
 #include "fluidobj3d.h"
-#include "renderobject3d.h"
+#include "renderobject3d.h" // Incl Here not source, to stop Inclusion of Glew within FluidSolversrc.
 
 // Vendor Headers - 
 #include <GLFW\glfw3.h>
@@ -186,15 +186,14 @@ protected:
 	void dissipate(grid3_vector<vec3<float>> *grid, float disp_mult, float dt);
 
 	// MISC \\ - 
-	void vel_force(vec3<float> ff, float dtt);
-
-	// Run Passed Lambda Callback Over Each Vector Grid Cell. 
-	void custom_force(grid3_vector<vec3<float>> *grid, std::function <vec2<float>(vec2<int> idx)> &force);
+	//void vel_force(vec3<float> ff, float dtt);
+	//// Run Passed Lambda Callback Over Each Vector Grid Cell. 
+	//void custom_force(grid3_vector<vec3<float>> *grid, std::function <vec2<float>(vec2<int> idx)> &force);
 
 	// VORTICITY CONFINEMENT WIP \\ - 
-	void vorticty_confine(float strength);
-	void vorticty_confine_otf(float strength); // On the fly, without Vort/Curl Grids. 
-	void vorticity_confine_B(float strength);
+	//void vorticty_confine(float strength);
+	//void vorticty_confine_otf(float strength); // On the fly, without Vort/Curl Grids. 
+	//void vorticity_confine_B(float strength);
 
 	// SOLVER - SUB SOLVERS \\ - 
 	void density_step(int lin_iter, float diff, bool dodiff);
