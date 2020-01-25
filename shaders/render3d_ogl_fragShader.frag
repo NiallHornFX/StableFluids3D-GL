@@ -24,8 +24,7 @@ uniform vec3 offset; // Sample Offset of Grid/3DTex. Pre Matrix Transformation I
 struct pt_light 
 {
 	vec3 pos;
-	float radius
-	float strength;
+	float radius, strength;
 	
 } light_00;
 
@@ -84,7 +83,7 @@ void main()
 		
 		// Basic RayMarching Inital - 
 		int max_steps = 50;
-		float step_size = 0.1 / step_size;
+		float step_size = 0.1 / max_steps;
 		vec3 dir = vec3(0.0, 0.0, -1.0); 
 		vec3 ray_P = vec3(uv, 0.0); 
 		

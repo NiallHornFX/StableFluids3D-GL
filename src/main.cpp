@@ -71,9 +71,9 @@ int main()
 	fluidobj_3d test_fluidobj (cube, cube, cube, edge); 
 
 	// Print Fluid Object Debug Info - 
-	test_fluidobj.print_info();
+	//test_fluidobj.print_info();
 
-	/*
+	
 	// Create FluidSolver Instance,  Pass FluidObj Pointer to It. 
 	fluidsolver_3 test_fluidsolver (&test_fluidobj, timestep);
 
@@ -102,7 +102,6 @@ int main()
 
 	// Call Solve Step Loop to start simulation and rendering - 
 	test_fluidsolver.solve_step(true, false, false, 0.001f, 0.001f, 10, 8, solve_steps);
-	*/
 
 	return 0;
 }

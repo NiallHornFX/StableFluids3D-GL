@@ -2011,7 +2011,6 @@ void fluidsolver_3::solve_step(bool solve, bool do_diffdens, bool do_diffvel, fl
 	// Pass Render Context Window Ptr Now FluidSovler2Mem, to RenderObject. (Passed in To Solver in Main via set_window() MF.
 	int render_mode = 1; // 0 = Density, 1 = Vel. // May be overriden by Input in SolveStep (RenderObj::ShaderPipe()).
 	render_obj = new renderobject_3D_OGL("OpenGL", 4, 0, vec2<int>(win_size_xy, win_size_xy), vec3<int>(x_s + e_s, y_s + e_s, z_s + e_s), this->winptr, render_mode); 
-	// Ideally Move render_obj setup to main/outside, and then pass into fluidsolver...?
 
 	// Move this into RenderObject Initalization - 
 	// Set Render_Object Texture Units to Sampler Uniforms Pre Solve Loop - 
@@ -2058,8 +2057,8 @@ void fluidsolver_3::solve_step(bool solve, bool do_diffdens, bool do_diffvel, fl
 		//if (step_count <= 20) f3obj->radial_force(vec3<float>(0.499f, 0.499f), 0.8f, this->dt);
 
 		// STEP - SUB - SOLVER STEP OPERATIONS \\ -------------- 
-		velocity_step(diff_iter, proj_iter, vel_diff, do_diffvel);
-		density_step(diff_iter, dens_diff, do_diffdens);
+//		velocity_step(diff_iter, proj_iter, vel_diff, do_diffvel);
+//		density_step(diff_iter, dens_diff, do_diffdens);
 
 		// STEP - RENDER CALLS \\ ------------------
 		// Pass Cur Step - 

@@ -265,30 +265,32 @@ void renderobject_3D_OGL::shader_pipe(fluidobj_3d *f3obj)
 
 	// Pack X-Y-Z Velocity into R-G-B Components of single Velocity 3D Texture. 
 	// Check Vel Grid Size (via grid_data flat array size) Actually == Passed GridSize to RenderObj. 
-	assert(f3obj->vel - grid_data->size() == (grid_size.x * grid_size.y * grid_size.z)); // Passed Grid Size, should incl Edge Cells per Dim. 
+	assert(f3obj->vel->grid_data->size() == (grid_size.x * grid_size.y * grid_size.z)); // Passed Grid Size, should incl Edge Cells per Dim. 
 
 	// Memory Layout - 
 	// Per Voxel (3D Texel) - [Rx|Gy|Bz]. VelocityGrid Size (1D) * 3. Thus per voxel byte stride of 3 * sizeof (float)  
 
-	GLfloat *vel3D = new float[int(f3obj->vel->grid_data->size() * 3)];
+	std::size_t vel3dsize = f3obj->vel->grid_data->size() * 3;
+	GLfloat *vel3D = new float[vel3dsize];
 
 	// For Each Voxel, Write XYZ Vel Comps to RGB T/Voxel Comps - 
-	for (int i = 0; i < (int) f3obj->vel->grid_data->size(); i++)
+	for (std::size_t i = 0; i < f3obj->vel->grid_data->size(); i++)
 	{
 		// Get Velocity Components Of Current Cell - 
-		float temp_U =  f3obj->vel->getdata_x(i);
+		float temp_U = f3obj->vel->getdata_x(i);
 		float temp_V = f3obj->vel->getdata_y(i);
 		float temp_W = f3obj->vel->getdata_z(i);
 
+		// Per Voxel Components Set. 
 		// XYZ -> RGB Components 
-		for (int j = i; j < j+2; j++)
+		for (std::size_t j = i; j < i+2; j++)
 		{
-			if (i % 0 == 0) vel3D[j] = temp_U; // R
-			if (i % 1 == 0) vel3D[j] = temp_V; // G
-			if (i % 2 == 0) vel3D[j] = temp_W; // B
+			if (j % 3 == 0) vel3D[j] = temp_U; // R
+			if (j % 3 == 1) vel3D[j] = temp_V; // G
+			if (j % 3 == 2) vel3D[j] = temp_W; // B
 		}
-	}
 
+	}
 	// Now Pass Single Flat 1D Array to 3D Velocity Texture - 
 
 	// Velocity Texture - 
