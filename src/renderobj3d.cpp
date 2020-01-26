@@ -226,9 +226,8 @@ void renderobject_3D_OGL::shader_pipe(fluidobj_3d *f3obj)
 {
 	// UNIFORM CONSTANTS (Per Step) \\
 
-	// Pass Window Size (Single_Dimension / N + EdgeSize) to GL Uniform. // Could be done after Shader Compile (Once.?)
-	glUniform1i(glGetUniformLocation(shader_prog, "N_Size"), grid_size.x); // Assuming Cubed Grid so just pass X size. 
-	//std::cout << "DEBUG ***********    " << winsize_x << "\n \n";
+	// Pass Window Size to GL Uniform. // Could be done after Shader Compile (Once.?)
+	glUniform1i(glGetUniformLocation(shader_prog, "W_Size"), window_size.x); // Window Size (Assume Square Dim, Used for Frag-UV Space)
 
 	// Interactive Render Mode Switching - 
 	int ent_state = glfwGetKey(window_ptr, GLFW_KEY_ENTER);

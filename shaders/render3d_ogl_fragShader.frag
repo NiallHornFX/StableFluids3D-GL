@@ -13,7 +13,7 @@ uniform sampler3D v_tex; // Texture Unit 1 (Packed x,y,z vel comps).
 
 // Constant Uniforms - 
 // Util Uniforms - 
-uniform int N_Size; // Grid Size + Edge Cells. Per Dimension (N). // WINDOW SIZE ? 
+uniform int W_Size; // Window Size to Get GLFragCoords -> UV Space for Inital XY RayMarch Postions.
 uniform int Mode; // 0 = Render Density, 1 = Render Velocity. 
 uniform int Step; // Current Solve Step. 
 
@@ -73,7 +73,7 @@ float noise(vec2 n)
 void main()
 {
 	// Map from 0-N FragCoord_Space to 0-1 UV Space. 
-	vec2 uv = (gl_FragCoord.xy - 0.0) / 512; // N_Size; // (Currently NOT) With -0.5f Half Pixel Offset Subtracted off. 
+	vec2 uv = (gl_FragCoord.xy - 0.0) / W_Size; // N_Size; // (Currently NOT) With -0.5f Half Pixel Offset Subtracted off. 
 
 	if (Mode == 0)
 	{
@@ -82,26 +82,37 @@ void main()
 		light_00.radius = 1.0; light_00.strength = 1.0; 
 		
 		// Basic RayMarching Inital - 
-		int max_steps = 100;
-		float step_size = 0.075 / max_steps;
+		int max_steps = 50;
+		//float step_size = 0.1 / max_steps;
+		float step_size = 0.05;
 		vec3 dir = vec3(0.0, 0.0, -1.0); 
 		vec3 ray_P = vec3(uv, 0.0); 
 		
 		vec4 acc = vec4(0.0, 0.0, 0.0, 0.0); 
-		
+		int total_i = 0; 
 		for (int i = 0; i < max_steps; i++)
 		{
 			// Primary Camera Ray (a)
-			acc += texture(d_tex, (ray_P + offset));
+			acc += texture(d_tex, (ray_P)); // ray_P + offset
 			ray_P += dir * step_size; 
-			if (length(acc) >= 1.0) {break;}
+			total_i++;
+			//if (length(acc) >= 1.0) {break;}
 			
 			// Secondary Shadow Ray (c) - 
 		}
 		
 		frag_color = vec4(acc.x, acc.x, acc.x, 1.0); 
-		//frag_color = vec4(1.0, 0.0, 0.0, 1.0); 
-	
+		
+		//frag_color = vec4(uv, 0.0, 1.0);
+		//frag_color = vec4(1.0, 0.0, 0.0, 1.0);
+		/*
+		float viz = float(total_i) / float(max_steps); // float(max_steps);
+		if (total_i <= 5)
+		{
+			frag_color = vec4(1.0, 0.0, 0.0, 1.0); 
+		}
+		frag_color = vec4(viz, viz, viz, 1.0); 
+		*/
 	}
 	else if (Mode == 1)
 	{

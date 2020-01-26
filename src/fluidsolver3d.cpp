@@ -1992,6 +1992,21 @@ void fluidsolver_3::velocity_step(int diff_iter, int proj_iter, float diffA, boo
 }
 // End of Velocity Step Implemetnation.
 
+/*	====================================================
+	Debug SOLVE STEP -
+	==================================================== */
+
+void fluidsolver_3::debug_step()
+{
+	// Use "SetCurToPrev" Funcs to Copy Grids, Oppose to via Diffusion - 
+	f3obj->setcurtoprev(f3obj->prev_dens, f3obj->dens);
+
+	// advect_sl(f3obj->prev_dens, f3obj->dens);
+
+	// DISSIPATE Density by multipler - 
+	// dissipate(f3obj->dens, Parms.p_Dens_Disp_Mult, this->dt); // Density Dissipation.
+
+}
 
 /*	====================================================
 	SOLVE STEP -
@@ -2051,16 +2066,18 @@ void fluidsolver_3::solve_step(bool solve, bool do_diffdens, bool do_diffvel, fl
 
 		// STEP SOURCING OPERATIONS \\ ----------------
 		//vec3 anim_offset(0.4 + (float(sin(float(step_count) / float(max_step) * 50.0f))) * 0.1f, 0.4 + (float(cos(float(step_count) / float(max_step) * (float(step_count) / float(max_step) * 10.0f)))) * 0.2f);
-		f3obj->implicit_sphere_source(0.5f, vec3<float>(0.0f, 0.5f, 0.0f), vec3<float>(0.5f, 0.5f, 0.5f), 0.01f);
+		f3obj->implicit_sphere_source(0.5f, vec3<float>(0.0f, 0.0f, 0.0f), vec3<float>(0.0f, 0.0f, 0.0f), 1.0f);
 
 		// Forces- 
 		//if (step_count <= 20) f3obj->radial_force(vec3<float>(0.499f, 0.499f), 0.8f, this->dt);
 
 		// STEP - SUB - SOLVER STEP OPERATIONS \\ -------------- 
 		//velocity_step(diff_iter, proj_iter, vel_diff, do_diffvel);
-		density_step(diff_iter, dens_diff, do_diffdens);
+		//density_step(diff_iter, dens_diff, do_diffdens);
 
-		// DebugStep - ShereSet,Eval->DensTex.. RM.. 
+		// !!!! DebugStep - 
+		debug_step();
+
 
 		// STEP - RENDER CALLS \\ ------------------
 		// Pass Cur Step - 

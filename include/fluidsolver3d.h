@@ -199,6 +199,8 @@ protected:
 	void density_step(int lin_iter, float diff, bool dodiff);
 	void velocity_step(int diff_iter, int proj_iter, float diffA, bool dodiff);
 
+	void debug_step(); 
+
 	// UTILITY \\ - 
 
 	// Mouse Input - 
