@@ -83,8 +83,8 @@ void main()
 		
 		// Basic RayMarching Inital - 
 		int max_steps = 50;
-		//float step_size = 0.1 / max_steps;
-		float step_size = 0.05;
+		float step_size = 1.0 / max_steps;
+		//float step_size = 0.05;
 		vec3 dir = vec3(0.0, 0.0, -1.0); 
 		vec3 ray_P = vec3(uv, 0.0); 
 		
@@ -96,7 +96,7 @@ void main()
 			acc += texture(d_tex, (ray_P)); // ray_P + offset
 			ray_P += dir * step_size; 
 			total_i++;
-			//if (length(acc) >= 1.0) {break;}
+			if (acc.x >= 1.0) {break;}
 			
 			// Secondary Shadow Ray (c) - 
 		}
@@ -105,14 +105,14 @@ void main()
 		
 		//frag_color = vec4(uv, 0.0, 1.0);
 		//frag_color = vec4(1.0, 0.0, 0.0, 1.0);
-		/*
+		
 		float viz = float(total_i) / float(max_steps); // float(max_steps);
-		if (total_i <= 5)
-		{
-			frag_color = vec4(1.0, 0.0, 0.0, 1.0); 
-		}
-		frag_color = vec4(viz, viz, viz, 1.0); 
-		*/
+		// if (total_i <= 5)
+		// {
+			// frag_color = vec4(1.0, 0.0, 0.0, 1.0); 
+		// }
+		// Shade By Ray Step (Depth till >= 1.0 exit) Count. 
+		frag_color = vec4(1.0-viz, 1.0-viz, 1.0-viz, 1.0); 
 	}
 	else if (Mode == 1)
 	{
