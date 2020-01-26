@@ -2057,8 +2057,10 @@ void fluidsolver_3::solve_step(bool solve, bool do_diffdens, bool do_diffvel, fl
 		//if (step_count <= 20) f3obj->radial_force(vec3<float>(0.499f, 0.499f), 0.8f, this->dt);
 
 		// STEP - SUB - SOLVER STEP OPERATIONS \\ -------------- 
-		velocity_step(diff_iter, proj_iter, vel_diff, do_diffvel);
+		//velocity_step(diff_iter, proj_iter, vel_diff, do_diffvel);
 		density_step(diff_iter, dens_diff, do_diffdens);
+
+		// DebugStep - ShereSet,Eval->DensTex.. RM.. 
 
 		// STEP - RENDER CALLS \\ ------------------
 		// Pass Cur Step - 

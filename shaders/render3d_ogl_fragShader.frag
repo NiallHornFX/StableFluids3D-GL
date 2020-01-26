@@ -13,7 +13,7 @@ uniform sampler3D v_tex; // Texture Unit 1 (Packed x,y,z vel comps).
 
 // Constant Uniforms - 
 // Util Uniforms - 
-uniform int N_Size; // Grid Size + Edge Cells. Per Dimension (N).
+uniform int N_Size; // Grid Size + Edge Cells. Per Dimension (N). // WINDOW SIZE ? 
 uniform int Mode; // 0 = Render Density, 1 = Render Velocity. 
 uniform int Step; // Current Solve Step. 
 
@@ -73,7 +73,7 @@ float noise(vec2 n)
 void main()
 {
 	// Map from 0-N FragCoord_Space to 0-1 UV Space. 
-	vec2 uv = (gl_FragCoord.xy - 0.0) / N_Size; // N_Size; // (Currently NOT) With -0.5f Half Pixel Offset Subtracted off. 
+	vec2 uv = (gl_FragCoord.xy - 0.0) / 512; // N_Size; // (Currently NOT) With -0.5f Half Pixel Offset Subtracted off. 
 
 	if (Mode == 0)
 	{
@@ -82,8 +82,8 @@ void main()
 		light_00.radius = 1.0; light_00.strength = 1.0; 
 		
 		// Basic RayMarching Inital - 
-		int max_steps = 50;
-		float step_size = 0.1 / max_steps;
+		int max_steps = 100;
+		float step_size = 0.075 / max_steps;
 		vec3 dir = vec3(0.0, 0.0, -1.0); 
 		vec3 ray_P = vec3(uv, 0.0); 
 		
@@ -100,6 +100,7 @@ void main()
 		}
 		
 		frag_color = vec4(acc.x, acc.x, acc.x, 1.0); 
+		//frag_color = vec4(1.0, 0.0, 0.0, 1.0); 
 	
 	}
 	else if (Mode == 1)
