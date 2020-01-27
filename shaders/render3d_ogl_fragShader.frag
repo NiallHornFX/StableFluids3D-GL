@@ -89,13 +89,13 @@ void main()
 		vec3 ray_P = vec3(uv, 0.0); 
 		
 		vec4 acc = vec4(0.0, 0.0, 0.0, 0.0); 
-		//vec4 accv = vec4(0.0, 0.0, 0.0, 0.0); 
+		vec4 accv = vec4(0.0, 0.0, 0.0, 0.0); 
 		int total_i = 0; 
 		for (int i = 0; i < max_steps; i++)
 		{
 			// Primary Camera Ray (a)
 			acc += texture(d_tex, (ray_P)); // ray_P + offset
-			//accv += texture(v_tex, (ray_P)); 
+			accv += texture(v_tex, (ray_P)); 
 			ray_P += dir * step_size; 
 			total_i++;
 			if (acc.x >= 1.0) {break;}
@@ -119,7 +119,7 @@ void main()
 		
 		// Vel Tex Tiling, Not due to UV/Fragment Sample pos, probs due to XYZ->RGB Packing Issue. 
 		//vec4 v_test = texture(v_tex, vec3(uv, -0.1)); 
-		//frag_color = vec4(vec3(accv.xyz), 1.0); 
+		frag_color = vec4(vec3(accv.xyz), 1.0); 
 		
 	}
 	else if (Mode == 1)

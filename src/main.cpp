@@ -1,4 +1,4 @@
-/* INFO ---- 
+/*	-- INFO --
 	A Realtime CPU Based 3D Fluid-Solver based on Jos Stams Stable Fluids Paper. Along with Fedkiw and Bridson.
 	With a Basic GPU Realtime RayMarcher For Rendering based in OpenGL. 
 
@@ -10,7 +10,8 @@
 	- Use of amd64 (Intel x64) SIMD intrinsics, with hardcoded instruction sets SSE3 and AVX currently used. 
 	- Modern OpenGL, Using 4.0+
 	- TO-DO | CMake BuildSystem | Test on Linux 
----*/
+	-- END --
+*/
 
 // Std Headers 
 #include <iostream>
