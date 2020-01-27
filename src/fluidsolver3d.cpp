@@ -13,7 +13,7 @@
 #include <omp.h> // OpenMP 2.0
 
 #define dospherebound 0 // Enable Sphere Collisions
-#define doedgebound 0 // NEEDS DEBUGGING LINE ISSUES...
+#define doedgebound 1 // NEEDS DEBUGGING LINE ISSUES...
 #define DO_SPHEREBOUNDS_MT 1
 
 #define RENDER_GL 1
@@ -148,6 +148,7 @@ void fluidsolver_3::edge_bounds(grid3_scalar<float> *grid)
 		// Z+ Edge Boundary
 		float zNi = grid->getdata(i, i, N_dim); // [i, i, N+1] Boundary Values from Edge [i, i, N] Values.
 		grid->setdata(zNi, i, i, N_dim + 1);
+
 	}
 
 	// 8 Corner Cells, ScalarGrid Edge Bounds Corner Adjacent Cell Neighbour Averages -
@@ -164,6 +165,7 @@ void fluidsolver_3::edge_bounds(grid3_scalar<float> *grid)
 	// N+1,0,N+1 = N, 0, N+1 | N+1,1,N | N+1,0,N // RightBottomBack
 	// N+1,N+1,N+1 = N, N+1, N+1 | N+1,N,N+1 | N+1,N+1,N // RightTopBack
 
+	
 	// 3D 0,0,0 = 1,0,0 + 0,1,0 + 0,0,1 
 	float c_0_0_0 = 0.33f * (grid->getdata(1, 0, 0) + grid->getdata(0, 1, 0) + grid->getdata(0, 0, 1));
 	grid->setdata(c_0_0_0, 0, 0, 0);
@@ -2085,9 +2087,8 @@ void fluidsolver_3::solve_step(bool solve, bool do_diffdens, bool do_diffvel, fl
 		// STEP SOURCING OPERATIONS \\ ----------------
 		//vec3 anim_offset(0.4 + (float(sin(float(step_count) / float(max_step) * 50.0f))) * 0.1f, 0.4 + (float(cos(float(step_count) / float(max_step) * (float(step_count) / float(max_step) * 10.0f)))) * 0.2f);
 		//vec2<float> offs ((sin(((float)step_count / (float)max_step) * 5.0) * 0.5f), (cos(((float)step_count / (float)max_step) * 5.0) * 0.5f));
-		float offs = sin(((float)step_count / (float)max_step) * 10.0) * 0.5f;
-		float a_offset = (float)step_count / (float)max_step; 
-		f3obj->implicit_sphere_source(0.1f, vec3<float>(0.0f, 2.5f, 0.0f), vec3<float>(offs + 0.25f, 0.2f, 0.0f), 0.002f); // vec3<float>(0.4f + a_offset, 0.25f, 0.0f), 0.01f);
+		float offs = sin(((float)step_count / (float)max_step) * 12.5f) * 0.1f;
+		f3obj->implicit_sphere_source(0.1f, vec3<float>(0.0f, 2.5f, 0.0f), vec3<float>(offs + 0.4f, 0.2f, 0.0f), 0.01f); // vec3<float>(0.4f + a_offset, 0.25f, 0.0f), 0.01f);
 
 		// Forces- 
 		//if (step_count <= 20) f3obj->radial_force(vec3<float>(0.499f, 0.499f), 0.8f, this->dt);

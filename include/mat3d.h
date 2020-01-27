@@ -287,6 +287,41 @@ inline matrix_4x4<T>& matrix_4x4<T>::operator/= (const T s)
 	return *this;
 }
 
+// Matrix Transformations - 
+template <class T>
+inline matrix_4x4<T>& matrix_4x4<T>::translate(const vec3<T> &tv)
+{
+	comp[12] += tv.x, comp[13] += tv.y, comp[14] += tv.z;
+	return *this; 
+}
+
+template <class T>
+inline matrix_4x4<T>& matrix_4x4<T>::rotate(const vec3<T> &axis, T angle)
+{
+	// X Rot
+	T x_ang = axis.x * angle; 
+	matrix_4x4<T> xrot(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, cosf(x_ang), -sinf(x_ang), 0.0f, 0.0f, sinf(x_ang), cosf(x_ang), 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+	// Y Rot
+	T y_ang = axis.y * angle;
+	matrix_4x4<T> yrot(cosf(y_ang), 0.0f, sinf(y_ang), 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, -sinf(y_ang), 0.0f, cosf(y_ang), 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+	// Z Rot
+	T z_ang = axis.z * angle;
+	matrix_4x4<T> zrot(cosf(z_ang), -sinf(z_ang), 0.0f, 0.0f, sinf(z_ang), cosf(z_ang), 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+
+	// x*y*z Rot Order. 
+	matrix_4x4<T> xy = xrot * yrot;
+	matrix_4x4<T> frot = xy * zrot; 
+
+	return operator*=(frot);
+}
+
+template <class T>
+inline matrix_4x4<T>& matrix_4x4<T>::scale(const vec3<T> &sv)
+{
+	comp[0] *= sv.x, comp[5] *= sv.y, comp[11] *= sv.z;
+	return *this; 
+}
+
 // Static MFs - Indexers - 
 
 template <class T>

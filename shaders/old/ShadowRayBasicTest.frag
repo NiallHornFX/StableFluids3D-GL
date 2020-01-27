@@ -72,69 +72,67 @@ float noise(vec2 n)
 
 void main()
 {
-	// Use Constant Max Window Size so Fragment UV and thus Fragment Ray Origins, do not scale with Window Oppose to using passed W_Size. 
-	const int window_max = 512;
-	
 	// Map from 0-N FragCoord_Space to 0-1 UV Space. 
-	vec2 uv = (gl_FragCoord.xy - 0.0) / window_max; // / W_Size; (Currently NOT) With -0.5f Half Pixel Offset Subtracted off. 
+	vec2 uv = (gl_FragCoord.xy - 0.0) / W_Size; // N_Size; // (Currently NOT) With -0.5f Half Pixel Offset Subtracted off. 
 	
-	
-	vec4 accv = vec4(0.0, 0.0, 0.0, 0.0); // Primary Ray - Accumalted Velocity.
-	vec4 acc = vec4(0.0, 0.0, 0.0, 0.0); // Primary Ray - Accumlated Density.
-	vec4 accsd = vec4(0.0, 0.0, 0.0, 0.0); // Shadow Ray - Accumlated Density. 
-	
-	// Single Light (fn) - 
-	light_00.pos = vec3(1.0, 1.25, 0.25); 
-	light_00.radius = 1.0; light_00.strength = 1.0; 
-		
-	// Basic RayMarching Inital - 
-	int max_steps = 50;
-	float step_size = 1.0 / max_steps;
-	//float step_size = 0.05;
-	vec3 dir = vec3(0.0, 0.0, -1.0); 
-	vec3 ray_P = vec3(uv, 0.0); 
+	// Use Constant Window Size so Fragment UV and thus Fragment Ray Origins, do not scale with Window ? 
 
-	
-	int total_i = 0; 
-	for (int i = 0; i < max_steps; i++)
-	{
-		// Primary Camera Ray (a)
-		acc += texture(d_tex, ray_P); // ray_P + offset
-		accv += texture(v_tex, ray_P); 
-			
-			
-		/*
-		// Secondary Shadow Ray (c) - 
-		vec3 sray_P = ray_P; 
-		// Is Ray Dir Inversed ? 
-		vec3 light_dir = normalize(light_00.pos - ray_P); 
-		//vec3 light_dir = normalize(ray_P - light_00.pos); 
-		for (int j = 0; j < 10; j++)
-		{
-			// For L in Lights
-			accsd += texture(d_tex, sray_P); // ray_P + offset
-			sray_P += light_dir * step_size; 
-			if (accsd.x >= 1.0) {break;} // Accumalted 1.0 Density, in Complete Shadow. 
-		}	
-			
-		// Check for Max Accumlated. 
-		if (acc.x >= 1.0) {break;}
-		*/
-		
-		// Increment Primary Ray
-		ray_P += dir * step_size; 
-		total_i++;	
-	}
-		
+	vec4 accv = vec4(0.0, 0.0, 0.0, 0.0); // Primary Ray - Accumalted Velocity. 
 	
 	if (Mode == 0)
 	{
+		// Single Light (fn) - 
+		light_00.pos = vec3(1.0, 1.25, 0.25); 
+		light_00.radius = 1.0; light_00.strength = 1.0; 
+		
+		// Basic RayMarching Inital - 
+		int max_steps = 50;
+		float step_size = 1.0 / max_steps;
+		//float step_size = 0.05;
+		vec3 dir = vec3(0.0, 0.0, -1.0); 
+		vec3 ray_P = vec3(uv, 0.0); 
+
+		
+		vec4 acc = vec4(0.0, 0.0, 0.0, 0.0); // Primary Ray - Accumlated Density.
+
+		
+		vec4 accsd = vec4(0.0, 0.0, 0.0, 0.0); 
+	
+		int total_i = 0; 
+		
+		for (int i = 0; i < max_steps; i++)
+		{
+			// Primary Camera Ray (a)
+			acc += texture(d_tex, ray_P); // ray_P + offset
+			accv += texture(v_tex, ray_P); 
+			
+			// Secondary Shadow Ray (c) - 
+			vec3 sray_P = ray_P; 
+			vec3 light_dir = normalize(light_00.pos - ray_P); 	
+			if (acc.x != 0.0)
+			{
+				for (int j = 0; i < 10; j++)
+				{
+					// For L in Lights
+					accsd += texture(d_tex, sray_P); // ray_P + offset
+					sray_P += light_dir * step_size; 
+					if (accsd.x >= 1.0) {break;} // Accumalted 1.0 Density, in Complete Shadow. 
+				}
+			}
+
+			// Check for Max Accumlated. 
+			if (acc.x >= 1.0) {break;}
+			
+			// Increment Primary Ray
+			ray_P += dir * step_size; 
+			total_i++;	
+		}
+		
+		float f_dens = (accsd.x  * 1.0) - acc.x; 
 		frag_color = clamp(vec4(acc.x, acc.x, acc.x, 1.0), 0.0, 1.0); 
 		
-		//float f_dens = (accsd.x * 1.0) - acc.x; 
-		//frag_color = clamp(vec4(f_dens, f_dens, f_dens, 1.0), 0.0, 1.0); 
 		
-		//float viz = float(total_i) / float(max_steps); // float(max_steps);
+		float viz = float(total_i) / float(max_steps); // float(max_steps);
 		// if (total_i <= 5)
 		// {
 			// frag_color = vec4(1.0, 0.0, 0.0, 1.0); 
@@ -145,7 +143,7 @@ void main()
 	}
 	else if (Mode == 1)
 	{
-		// Accumlated Velocity Per Fragment (Averaged). 
+		// Accumlated Velocity Per Fragment. 
 		
 		frag_color = vec4(vec3(accv.xyz), 1.0); 
 
