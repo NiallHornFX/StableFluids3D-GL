@@ -123,7 +123,7 @@ public:
 
 		// Dissipation Swtiches - 
 		bool p_Do_Dens_Disp = true, p_Do_Vel_Disp = false;
-		float p_Dens_Disp_Mult = 0.990f, p_Vel_Disp_Mult = 1.0f; 
+		float p_Dens_Disp_Mult = 0.980f, p_Vel_Disp_Mult = 1.0f; 
 
 		bool p_spherebounds_killint = false; 
 

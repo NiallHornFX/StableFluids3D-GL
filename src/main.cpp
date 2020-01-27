@@ -45,7 +45,7 @@
 short verbose = 0;
 double const PI = 3.14159265359; 
 
-int const cube = 64; // Cube Grid Size N (1-N)
+int const cube = 128; // Cube Grid Size N (1-N)
 int const edge = 2; // Total Edge Cells E (1 For each dim) (0 | N+1). N+E per dim.
 int win_size_xy = 512; 
 int const solve_steps = 1000; 
@@ -78,9 +78,9 @@ int main()
 
 	// Pre Solve Parmaters Inital Values Set. (Can be Changed In Solve Per Step Later) - 
 
-	test_fluidsolver.Parms.p_Do_Dens_Diff = true; 
+	test_fluidsolver.Parms.p_Do_Dens_Diff = false; 
 	test_fluidsolver.Parms.p_useVorticity = false;
-	test_fluidsolver.Parms.p_Do_Dens_Disp = false; 
+	test_fluidsolver.Parms.p_Do_Dens_Disp = true; 
 	test_fluidsolver.Parms.p_Do_Vel_Disp = false; 
 
 	test_fluidsolver.Parms.p_ProjectionType = test_fluidsolver.Parms.Project_GaussSeidel_SOR; 

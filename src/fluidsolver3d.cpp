@@ -2087,7 +2087,7 @@ void fluidsolver_3::solve_step(bool solve, bool do_diffdens, bool do_diffvel, fl
 		//vec2<float> offs ((sin(((float)step_count / (float)max_step) * 5.0) * 0.5f), (cos(((float)step_count / (float)max_step) * 5.0) * 0.5f));
 		float offs = sin(((float)step_count / (float)max_step) * 10.0) * 0.5f;
 		float a_offset = (float)step_count / (float)max_step; 
-		f3obj->implicit_sphere_source(0.1f, vec3<float>(0.0f, 0.5f, 0.0f), vec3<float>(offs + 0.25f, 0.2f, 0.0f), 0.002f); // vec3<float>(0.4f + a_offset, 0.25f, 0.0f), 0.01f);
+		f3obj->implicit_sphere_source(0.1f, vec3<float>(0.0f, 2.5f, 0.0f), vec3<float>(offs + 0.25f, 0.2f, 0.0f), 0.002f); // vec3<float>(0.4f + a_offset, 0.25f, 0.0f), 0.01f);
 
 		// Forces- 
 		//if (step_count <= 20) f3obj->radial_force(vec3<float>(0.499f, 0.499f), 0.8f, this->dt);
