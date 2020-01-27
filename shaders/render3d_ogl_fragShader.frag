@@ -103,7 +103,7 @@ void main()
 			// Secondary Shadow Ray (c) - 
 		}
 		
-		frag_color = vec4(acc.x, acc.x, acc.x, 1.0); 
+		frag_color = clamp(vec4(acc.x, acc.x, acc.x, 1.0), 0.0, 1.0); 
 		
 		//frag_color = vec4(uv, 0.0, 1.0);
 		//frag_color = vec4(1.0, 0.0, 0.0, 1.0);
@@ -114,7 +114,7 @@ void main()
 			// frag_color = vec4(1.0, 0.0, 0.0, 1.0); 
 		// }
 		// Shade By Ray Step (Depth till >= 1.0 exit) Count. 
-		frag_color = vec4((1.0-viz) * 5.0, (1.0-viz) * 5.0, (1.0-viz) * 5.0, 1.0); 
+		//frag_color = vec4((1.0-viz) * 5.0, (1.0-viz) * 5.0, (1.0-viz) * 5.0, 1.0); 
 		
 		
 		// Vel Tex Tiling, Not due to UV/Fragment Sample pos, probs due to XYZ->RGB Packing Issue. 

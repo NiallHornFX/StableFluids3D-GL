@@ -78,7 +78,7 @@ int main()
 
 	// Pre Solve Parmaters Inital Values Set. (Can be Changed In Solve Per Step Later) - 
 
-	test_fluidsolver.Parms.p_Do_Dens_Diff = false; 
+	test_fluidsolver.Parms.p_Do_Dens_Diff = true; 
 	test_fluidsolver.Parms.p_useVorticity = false;
 	test_fluidsolver.Parms.p_Do_Dens_Disp = false; 
 	test_fluidsolver.Parms.p_Do_Vel_Disp = false; 
