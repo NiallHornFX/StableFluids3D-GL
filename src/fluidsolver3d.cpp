@@ -12,7 +12,8 @@
 // Windows Specfic Headers - 
 #include <omp.h> // OpenMP 2.0
 
-#define dospherebound 1 // Enable Sphere Collisions
+#define dospherebound 0 // Enable Sphere Collisions
+#define doedgebound 0
 #define JACOBI_DO_SOR 1 // Do Sucessive Over Relaxiation Inside Jacobi Projection.
 #define DO_SPHEREBOUNDS_MT 1
 
@@ -516,7 +517,9 @@ void fluidsolver_3::diffuse(grid3_scalar<float> *grid_0, grid3_scalar<float> *gr
 		}
 
 		// Call (Re-Inforce Boundary Condtions) Boundary Calc MFs on each Relaxation Iter - 
+		#if doedgebound == 1
 		edge_bounds(grid_1); // Generic Func Call, Pass Grid_1 (n+1). 
+		#endif
 
 		#if dospherebound == 1
 		sphere_bounds_eval(grid_1, spherebound_coliso);
@@ -571,7 +574,9 @@ void fluidsolver_3::diffuse(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3
 			}
 		}
 		// Call Boundary Calc MFs on each Relaxation Iter - 
-		edge_bounds(grid_1);
+		#if doedgebound == 1
+		edge_bounds(grid_1); // Generic Func Call, Pass Grid_1 (n+1). 
+		#endif
 
 		#if dospherebound == 1
 		sphere_bounds_eval(grid_1, spherebound_coliso);
@@ -630,12 +635,12 @@ void fluidsolver_3::advect_sl(grid3_scalar<float> *grid_0, grid3_scalar<float> *
 				if (z < 0.5) z = 0.5;
 				if (z > N_dim + 0.5) z = N_dim + 0.5;
 				// Interp Indices K
-				int k0 = int(z); int k1 = j0 + 1;
+				int k0 = int(z); int k1 = k0 + 1;
 
 				// Interoplation Coefficents - 
 				float r1 = x - i0; float r0 = 1 - r1;
 				float s1 = y - j0; float s0 = 1 - s1;
-				float t1 = z - j0; float t0 = 1 - t1;
+				float t1 = z - k0; float t0 = 1 - t1;
 
 				/* //!TODO - Implement Cosine / LERP Switces -
 				// Calc New Density from BackTrace Advection Neighbours Interoplation Of PrevFrame Grid - 
@@ -682,7 +687,9 @@ void fluidsolver_3::advect_sl(grid3_scalar<float> *grid_0, grid3_scalar<float> *
 	}
 
 	// Call Boundary Condtions Post Advection (Scalar)- 
-	edge_bounds(grid_1);
+	#if doedgebound == 1
+	edge_bounds(grid_1); // Generic Func Call, Pass Grid_1 (n+1). 
+	#endif
 
 	#if dospherebound == 1
 	sphere_bounds_eval(grid_1, spherebound_coliso); 
@@ -731,12 +738,12 @@ void fluidsolver_3::advect_sl(grid3_vector<vec3<float>> *grid_0, grid3_vector<ve
 				if (z < 0.5) z = 0.5;
 				if (z > N_dim + 0.5) z = N_dim + 0.5;
 				// Interp Indices K
-				int k0 = int(z); int k1 = j0 + 1;
+				int k0 = int(z); int k1 = k0 + 1;
 
 				// Interoplation Coefficents - 
 				float r1 = x - i0; float r0 = 1 - r1;
 				float s1 = y - j0; float s0 = 1 - s1;
-				float t1 = z - j0; float t0 = 1 - t1;
+				float t1 = z - k0; float t0 = 1 - t1;
 
 				/*
 				// Interoplate Velocity U,V Components.  
@@ -812,7 +819,9 @@ void fluidsolver_3::advect_sl(grid3_vector<vec3<float>> *grid_0, grid3_vector<ve
 	}
 
 	// Call Boundary Condtions Post Advection (Density)- 
-	edge_bounds(grid_1);
+	#if doedgebound == 1
+	edge_bounds(grid_1); // Generic Func Call, Pass Grid_1 (n+1). 
+	#endif
 
 	#if dospherebound == 1
 	sphere_bounds_eval(grid_1, spherebound_coliso);
@@ -930,7 +939,9 @@ void fluidsolver_3::advect_sl_mp(grid3_scalar<float> *grid_0, grid3_scalar<float
 	}
 
 	// Call Boundary Condtions Post Advection (Scalar)- 
-	edge_bounds(grid_1);
+	#if doedgebound == 1
+	edge_bounds(grid_1); // Generic Func Call, Pass Grid_1 (n+1). 
+	#endif
 
 	#if dospherebound == 1
 	sphere_bounds_eval(grid_1, spherebound_coliso);
@@ -1056,7 +1067,9 @@ void fluidsolver_3::advect_sl_mp(grid3_vector<vec3<float>> *grid_0, grid3_vector
 	}
 
 	// Call Boundary Condtions Post Advection (Scalar)- 
-	edge_bounds(grid_1);
+	#if doedgebound == 1
+	edge_bounds(grid_1); // Generic Func Call, Pass Grid_1 (n+1). 
+	#endif
 
 	#if dospherebound == 1
 	sphere_bounds_eval (grid_1, spherebound_coliso);
@@ -1414,7 +1427,9 @@ void fluidsolver_3::project(int iter)
 		}
 	}
 	// Call Boundary Condtions on Divergence Field and Inital Pressure Field - 
+	#if doedgebound == 1
 	edge_bounds(divergence); edge_bounds(pressure);
+	#endif
 	#if dospherebound == 1
 	sphere_bounds_eval(divergence, spherebound_coliso);
 	sphere_bounds_eval(pressure, spherebound_coliso);
@@ -1469,7 +1484,9 @@ void fluidsolver_3::project(int iter)
 		}
 
 		// Call Boundary Condtion Functions On Pressure After Each Pressure Field Iteration.
+		#if doedgebound == 1
 		edge_bounds(pressure);
+		#endif
 		#if dospherebound == 1
 		//sphere_bounds_scalar(pressure, spherebound_radius, spherebound_coliso, spherebound_offset);
 		sphere_bounds_eval(pressure, spherebound_coliso);
@@ -1520,7 +1537,9 @@ void fluidsolver_3::project(int iter)
 		}
 	}
 	// Call and Enforce Boundary Condtions After Projection on Vel Field - 
+	#if doedgebound == 1
 	edge_bounds(f3obj->vel);
+	#endif
 	#if dospherebound == 1
 	sphere_bounds_eval(f3obj->vel, spherebound_coliso);
 	#endif
@@ -2067,17 +2086,17 @@ void fluidsolver_3::solve_step(bool solve, bool do_diffdens, bool do_diffvel, fl
 		// STEP SOURCING OPERATIONS \\ ----------------
 		//vec3 anim_offset(0.4 + (float(sin(float(step_count) / float(max_step) * 50.0f))) * 0.1f, 0.4 + (float(cos(float(step_count) / float(max_step) * (float(step_count) / float(max_step) * 10.0f)))) * 0.2f);
 		float a_offset = (float)step_count / (float)max_step; 
-		f3obj->implicit_sphere_source(0.5f, vec3<float>(0.0f, 0.0f, 0.0f), vec3<float>(0.4f + a_offset, 0.25f, 0.0f), 0.01f);
+		f3obj->implicit_sphere_source(0.5f, vec3<float>(0.0f, 0.1f, 0.0f), vec3<float>(0.5f, 0.25f, 0.0f), 0.01f); // vec3<float>(0.4f + a_offset, 0.25f, 0.0f), 0.01f);
 
 		// Forces- 
 		//if (step_count <= 20) f3obj->radial_force(vec3<float>(0.499f, 0.499f), 0.8f, this->dt);
 
 		// STEP - SUB - SOLVER STEP OPERATIONS \\ -------------- 
-		//velocity_step(diff_iter, proj_iter, vel_diff, do_diffvel);
-		//density_step(diff_iter, dens_diff, do_diffdens);
+		velocity_step(diff_iter, proj_iter, vel_diff, do_diffvel);
+		density_step(diff_iter, dens_diff, do_diffdens);
 
 		// !!!! DebugStep - 
-		debug_step();
+		//debug_step();
 
 
 		// STEP - RENDER CALLS \\ ------------------

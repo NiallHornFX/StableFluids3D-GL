@@ -48,7 +48,6 @@ double const PI = 3.14159265359;
 int const cube = 64; // Cube Grid Size N (1-N)
 int const edge = 2; // Total Edge Cells E (1 For each dim) (0 | N+1). N+E per dim.
 int win_size_xy = 512; 
-int const sssizze = 10;
 int const solve_steps = 1000; 
 float const timestep = 1.0f / 60.0f;  // dt = 0.0166f
 
@@ -92,6 +91,7 @@ int main()
 	//test_fluidsolver.Parms.p_Jacobi_Proj_Iter = 100; 
 
 	test_fluidsolver.Parms.p_AdvectionType = test_fluidsolver.Parms.Advect_SL_BackTrace_Euler;
+	//test_fluidsolver.Parms.p_AdvectionType = test_fluidsolver.Parms.Advect_SL_BackTrace_RK2;
 
 	// Disable Project/Advect for Pref testing. 
 //	test_fluidsolver.Parms.p_AdvectionType = test_fluidsolver.Parms.Advect_NONE_DBG;
@@ -101,7 +101,7 @@ int main()
 	test_fluidsolver.set_window(render_c.get_window());
 
 	// Call Solve Step Loop to start simulation and rendering - 
-	test_fluidsolver.solve_step(true, false, false, 0.001f, 0.001f, 10, 8, solve_steps);
+	test_fluidsolver.solve_step(true, false, false, 0.0001f, 0.001f, 10, 8, solve_steps);
 
 	return 0;
 }

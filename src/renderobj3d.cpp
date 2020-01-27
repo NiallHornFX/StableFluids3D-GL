@@ -266,29 +266,32 @@ void renderobject_3D_OGL::shader_pipe(fluidobj_3d *f3obj)
 	// Check Vel Grid Size (via grid_data flat array size) Actually == Passed GridSize to RenderObj. 
 	assert(f3obj->vel->grid_data->size() == (grid_size.x * grid_size.y * grid_size.z)); // Passed Grid Size, should incl Edge Cells per Dim. 
 
+	/* WIP DEBUG
 	// Memory Layout - 
 	// Per Voxel (3D Texel) - [Rx|Gy|Bz]. VelocityGrid Size (1D) * 3. Thus per voxel byte stride of 3 * sizeof (float)  
 
 	std::size_t vel3dsize = f3obj->vel->grid_data->size() * 3;
-	GLfloat *vel3D = new float[vel3dsize];
+	GLfloat *vel3D = new float[vel3dsize] {};
 
-	// For Each Voxel, Write XYZ Vel Comps to RGB T/Voxel Comps - 
-	for (std::size_t i = 0; i < f3obj->vel->grid_data->size(); i++)
+
+	//// For Each Voxel, Write XYZ Vel Comps to RGB T/Voxel Comps - 
+	//for (std::size_t i = 0; i < f3obj->vel->grid_data->size(); i++)
+	//{
+
+	//}
+	
+	
+	for (std::size_t i = 0; i < vel3dsize; i+=3)
 	{
-		// Get Velocity Components Of Current Cell - 
-		float temp_U = f3obj->vel->getdata_x(i);
-		float temp_V = f3obj->vel->getdata_y(i);
-		float temp_W = f3obj->vel->getdata_z(i);
+		//float foof = f3obj->vel->getdata_x(i);
+		std::size_t curi = (i >= 66 || i == 0) ? 0 : i;
+		std::cout << i << "\n";
+		//std::size_t curcell
+		//if (i % 3 != 0)
 
-		// Per Voxel Components Set. 
-		// XYZ -> RGB Components 
-		for (std::size_t j = i; j < i+2; j++)
-		{
-			if (j % 3 == 0) vel3D[j] = temp_U; // R
-			if (j % 3 == 1) vel3D[j] = temp_V; // G
-			if (j % 3 == 2) vel3D[j] = temp_W; // B
-		}
-
+		//vel3D[i - 1] = f3obj->vel->getdata_z(i);
+		//vel3D[i - 2] = f3obj->vel->getdata_y(i);
+		//vel3D[i - 3] = f3obj->vel->getdata_x(i);
 	}
 	// Now Pass Single Flat 1D Array to 3D Velocity Texture - 
 
@@ -298,10 +301,13 @@ void renderobject_3D_OGL::shader_pipe(fluidobj_3d *f3obj)
 	glBindTexture(GL_TEXTURE_3D, tex_vel);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, grid_size.x, grid_size.y, grid_size.z, GL_RGB, GL_FLOAT, vel3D);
+
+	//glTexImage3D(GL_TEXTURE_3D, 0, GL_R32F, (GLint)grid_size.x, (GLint)grid_size.y, (GLint)grid_size.z, 0, GL_RED, GL_FLOAT, vel3D);
+	glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB, (GLint)grid_size.x, (GLint)grid_size.y, (GLint)grid_size.z, 0, GL_RGB, GL_FLOAT, vel3D); 
 
 	// Delete Temp Arrays - 
 	delete vel3D; vel3D = nullptr; 
+	*/
 }
 
 

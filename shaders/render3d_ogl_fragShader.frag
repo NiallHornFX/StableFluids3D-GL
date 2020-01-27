@@ -89,11 +89,13 @@ void main()
 		vec3 ray_P = vec3(uv, 0.0); 
 		
 		vec4 acc = vec4(0.0, 0.0, 0.0, 0.0); 
+		//vec4 accv = vec4(0.0, 0.0, 0.0, 0.0); 
 		int total_i = 0; 
 		for (int i = 0; i < max_steps; i++)
 		{
 			// Primary Camera Ray (a)
 			acc += texture(d_tex, (ray_P)); // ray_P + offset
+			//accv += texture(v_tex, (ray_P)); 
 			ray_P += dir * step_size; 
 			total_i++;
 			if (acc.x >= 1.0) {break;}
@@ -112,14 +114,20 @@ void main()
 			// frag_color = vec4(1.0, 0.0, 0.0, 1.0); 
 		// }
 		// Shade By Ray Step (Depth till >= 1.0 exit) Count. 
-		frag_color = vec4(1.0-viz, 1.0-viz, 1.0-viz, 1.0); 
+		frag_color = vec4((1.0-viz) * 5.0, (1.0-viz) * 5.0, (1.0-viz) * 5.0, 1.0); 
+		
+		
+		// Vel Tex Tiling, Not due to UV/Fragment Sample pos, probs due to XYZ->RGB Packing Issue. 
+		//vec4 v_test = texture(v_tex, vec3(uv, -0.1)); 
+		//frag_color = vec4(vec3(accv.xyz), 1.0); 
+		
 	}
 	else if (Mode == 1)
 	{
 		// Velocity + Collider Viz
 		//frag_color = vec4(clamp(vel_x.x + cold.x, 0.0, 1.0), vel_y.x, 0.0, 1.0); 
 
-		frag_color = vec4(0.0, 1.0, 0.0, 1.0); 
+		//frag_color = vec4(accv.x * 10.0, accv.y * 10.0 , accv.z * 10.0, 1.0); 
 	}
 	
 }
