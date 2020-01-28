@@ -20,6 +20,7 @@ uniform int Step; // Current Solve Step.
 // Volume Uniforms - 
 uniform vec3 offset; // Sample Offset of Grid/3DTex. Pre Matrix Transformation Implementation. 
 
+
 // Light Uniforms - 
 struct pt_light 
 {
@@ -78,10 +79,15 @@ void main()
 	// Map from 0-N FragCoord_Space to 0-1 UV Space. 
 	vec2 uv = (gl_FragCoord.xy - 0.0) / window_max; // / W_Size; (Currently NOT) With -0.5f Half Pixel Offset Subtracted off. 
 	
+	vec3 eye_pos = vec3(0.0, 0.0, 1.0); 
 	
+	// Sampler Acculumation - 
 	vec4 accv = vec4(0.0, 0.0, 0.0, 0.0); // Primary Ray - Accumalted Velocity.
 	vec4 acc = vec4(0.0, 0.0, 0.0, 0.0); // Primary Ray - Accumlated Density.
 	vec4 accsd = vec4(0.0, 0.0, 0.0, 0.0); // Shadow Ray - Accumlated Density. 
+	
+	float opac = 0.0; // Primary Ray - Accumlated Density. Scalar
+	float colR = 0.0; // Shadow Ray - Accumlated Density. Scalar
 	
 	// Single Light (fn) - 
 	light_00.pos = vec3(1.0, 1.25, 0.25); 
@@ -92,6 +98,10 @@ void main()
 	float step_size = 1.0 / max_steps;
 	//float step_size = 0.05;
 	vec3 dir = vec3(0.0, 0.0, -1.0); 
+	// 
+	vec3 fragP_ss = vec3(uv, 0.0); 
+	//vec3 dir = normalize(eye_pos - fragP_ss); 
+	
 	vec3 ray_P = vec3(uv, 0.0); 
 
 	
@@ -99,7 +109,7 @@ void main()
 	for (int i = 0; i < max_steps; i++)
 	{
 		// Primary Camera Ray (a)
-		acc += texture(d_tex, ray_P); // ray_P + offset
+		opac += texture(d_tex, ray_P).x; // ray_P + offset
 		accv += texture(v_tex, ray_P); 
 			
 			
@@ -129,7 +139,7 @@ void main()
 	
 	if (Mode == 0)
 	{
-		frag_color = clamp(vec4(acc.x, acc.x, acc.x, 1.0), 0.0, 1.0); 
+		frag_color = clamp(vec4(opac, opac, opac, 1.0), 0.0, 1.0); 
 		
 		//float f_dens = (accsd.x * 1.0) - acc.x; 
 		//frag_color = clamp(vec4(f_dens, f_dens, f_dens, 1.0), 0.0, 1.0); 

@@ -295,6 +295,7 @@ inline matrix_4x4<T>& matrix_4x4<T>::translate(const vec3<T> &tv)
 	return *this; 
 }
 
+// Will Implement 3x3 Mats later, till then just use 4x4, with each 4th comp apart from [3][3] zero'd.
 template <class T>
 inline matrix_4x4<T>& matrix_4x4<T>::rotate(const vec3<T> &axis, T angle)
 {

@@ -12,7 +12,7 @@
 // Windows Specfic Headers - 
 #include <omp.h> // OpenMP 2.0
 
-#define dospherebound 0 // Enable Sphere Collisions
+#define dospherebound 1 // Enable Sphere Collisions
 #define doedgebound 1 // NEEDS DEBUGGING LINE ISSUES...
 #define DO_SPHEREBOUNDS_MT 1
 
@@ -118,38 +118,42 @@ void fluidsolver_3::del_divergence()
 // Assumes Grid is Cubed (N = X = Y = Z)
 void fluidsolver_3::edge_bounds(grid3_scalar<float> *grid)
 {
-	// bool do_mt = Parms.p_MT_Global & Parms.p_MT_Global;
-
 	// 6 Edge Faces of Grid (X-|X+|Y-|Y+|Z-|Z+)
+	// Loop 2 Dimensions Holding 1 Constant for Each Grid Face. Get Data From adjancent cell, and set to self. 
 
+	// bool do_mt = Parms.p_MT_Global & Parms.p_MT_Global;
 	//!MT #pragma omp parallel for num_threads(omp_get_max_threads())
-	for (int i = 1; i <= N_dim; i++)
+	for (int j = 1; j <= N_dim; j++)
 	{
-		// X- Edge Boundary 
-		float x0i = grid->getdata(1, i, i); // [0,i,i] Boundary Values from Edge [1,i,i] Values.
-		grid->setdata(x0i, 0, i, i);
+		for (int i = 1; i <= N_dim; i++)
+		{
+			// X- Face Boundary 
+			float x0i = grid->getdata(1, i, j); // [0,i,j] Boundary Values from Edge [1,i,j] Values.
+			grid->setdata(x0i, 0, i, j);
 
-		// X+ Edge Boundary
-		float xNi = grid->getdata(N_dim, i, i); // [N+1,i,i] Boundary Values from Edge [N,i,i] Values.
-		grid->setdata(xNi, (N_dim + 1), i, i);
+			// X+ Edge Boundary
+			float xNi = grid->getdata(N_dim, i, j); // [N+1,i,j] Boundary Values from Edge [N,i,j] Values.
+			grid->setdata(xNi, (N_dim + 1), i, j);
 
-		// Y- Edge Boundary
-		float y0i = grid->getdata(i, 1, i); // [i, 0, i] Boundary Values from Edge [i, 1, i] Values.
-		grid->setdata(y0i, i, 0, i);
+			// Y- Edge Boundary
+			float y0i = grid->getdata(i, 1, j); // [i, 0, j] Boundary Values from Edge [i, 1, j] Values.
+			grid->setdata(y0i, i, 0, j);
 
-		// Y+ Edge Boundary
-		float yNi = grid->getdata(i, N_dim, i); // [i, N+1, i] Boundary Values from Edge [i,N,i] Values.
-		grid->setdata(yNi, i, N_dim + 1, i);
+			// Y+ Edge Boundary
+			float yNi = grid->getdata(i, N_dim, j); // [i, N+1, j] Boundary Values from Edge [i,N,j] Values.
+			grid->setdata(yNi, i, N_dim + 1, j);
 
-		// Z- Edge Boundary
-		float z0i = grid->getdata(i, i, 1); // [i, i, 0] Boundary Values from Edge [i,i,1] Values.
-		grid->setdata(z0i, i, i, 0);
+			// Z- Edge Boundary
+			float z0i = grid->getdata(i, j, 1); // [i, j, 0] Boundary Values from Edge [i,j,1] Values.
+			grid->setdata(z0i, i, j, 0);
 
-		// Z+ Edge Boundary
-		float zNi = grid->getdata(i, i, N_dim); // [i, i, N+1] Boundary Values from Edge [i, i, N] Values.
-		grid->setdata(zNi, i, i, N_dim + 1);
+			// Z+ Edge Boundary
+			float zNi = grid->getdata(i, j, N_dim); // [i, j, N+1] Boundary Values from Edge [i, j, N] Values.
+			grid->setdata(zNi, i, j, N_dim + 1);
 
+		}
 	}
+
 
 	// 8 Corner Cells, ScalarGrid Edge Bounds Corner Adjacent Cell Neighbour Averages -
 	// Self + or - XYZ (0(+1) or N+1(-1(N))) (0 and N+1 Axis Ghost/Edge Cells).
@@ -215,43 +219,46 @@ void fluidsolver_3::edge_bounds(grid3_vector<vec3<float>> *grid)
 	
 	// !MT #pragma omp parallel for num_threads(omp_get_max_threads())
 
-	for (int i = 1; i <= N_dim; i++)
+	for (int j = 1; j <= N_dim; j++)
 	{
-		// X -/+ Face Cells, Reflect Y Velocity Component -
+		for (int i = 1; i <= N_dim; i++)
+		{
+			// X -/+ Face Cells, Reflect Y Velocity Component -
 
-		// X- Edge Boundary 
-		float x0i = grid->getdata_y(1, i, i); // [0,i,i] Boundary Values from Edge [1,i,i] Values.
-		x0i *= -1.0f; 
-		grid->setdata_y(x0i, 0, i, i);
+			// X- Edge Boundary 
+			float x0i = grid->getdata_y(1, i, j); // [0,i,j] Boundary Values from Edge [1,i,j] Values.
+			x0i *= -1.0f;
+			grid->setdata_y(x0i, 0, i, j);
 
-		// X+ Edge Boundary
-		float xNi = grid->getdata_y(N_dim, i, i); // [N+1,i,i] Boundary Values from Edge [N,i,i] Values.
-		xNi *= -1.0f;
-		grid->setdata_y(xNi, (N_dim + 1), i, i);
+			// X+ Edge Boundary
+			float xNi = grid->getdata_y(N_dim, i, j); // [N+1,i,j] Boundary Values from Edge [N,i,j] Values.
+			xNi *= -1.0f;
+			grid->setdata_y(xNi, (N_dim + 1), i, j);
 
-		// Y -/+ Face Cells, Reflect X Velocity Component -
+			// Y -/+ Face Cells, Reflect X Velocity Component -
 
-		// Y- Edge Boundary
-		float y0i = grid->getdata_x(i, 1, i); // [i, 0, i] Boundary Values from Edge [i, 1, i] Values.
-		y0i *= -1.0f; 
-		grid->setdata_x(y0i, i, 0, i);
+			// Y- Edge Boundary
+			float y0i = grid->getdata_x(i, 1, i); // [i, 0, i] Boundary Values from Edge [i, 1, j] Values.
+			y0i *= -1.0f;
+			grid->setdata_x(y0i, i, 0, j);
 
-		// Y+ Edge Boundary
-		float yNi = grid->getdata_x(i, N_dim, i); // [i, N+1, i] Boundary Values from Edge [i,N,i] Values.
-		yNi *= -1.0f; 
-		grid->setdata_y(yNi, i, N_dim + 1, i);
+			// Y+ Edge Boundary
+			float yNi = grid->getdata_x(i, N_dim, j); // [i, N+1, j] Boundary Values from Edge [i,N,j] Values.
+			yNi *= -1.0f;
+			grid->setdata_y(yNi, i, N_dim + 1, j);
 
-		// Z -/+ Face Cells, Reflect Z Velocity Component -
+			// Z -/+ Face Cells, Reflect Z Velocity Component -
 
-		// Z- Edge Boundary
-		float z0i = grid->getdata_z(i, i, 1); // [i, i, 0] Boundary Values from Edge [i,i,1] Values.
-		z0i *= -1.0f; 
-		grid->setdata_z(z0i, i, i, 0);
+			// Z- Edge Boundary
+			float z0i = grid->getdata_z(i, j, 1); // [i, j, 0] Boundary Values from Edge [i,j,1] Values.
+			z0i *= -1.0f;
+			grid->setdata_z(z0i, i, j, 0);
 
-		// Z+ Edge Boundary
-		float zNi = grid->getdata_z(i, i, N_dim); // [i, i, N+1] Boundary Values from Edge [i, i, N] Values.
-		zNi *= -1.0f; 
-		grid->setdata_z(zNi, i, i, N_dim + 1);
+			// Z+ Edge Boundary
+			float zNi = grid->getdata_z(i, j, N_dim); // [i, j, N+1] Boundary Values from Edge [i, j, N] Values.
+			zNi *= -1.0f;
+			grid->setdata_z(zNi, i, j, N_dim + 1);
+		}
 	}
 
 	// Corner Cell Interoplation/Averaging of Adjacent Neighbours for Ux,Vy,Wz Velocity Components -  
