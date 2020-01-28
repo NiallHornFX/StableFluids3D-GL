@@ -84,12 +84,12 @@ int main()
 	test_fluidsolver.Parms.p_Do_Dens_Disp = true; 
 	test_fluidsolver.Parms.p_Do_Vel_Disp = false; 
 
-	test_fluidsolver.Parms.p_ProjectionType = test_fluidsolver.Parms.Project_GaussSeidel_SOR; 
-	test_fluidsolver.Parms.p_SOR_alpha = 1.9f;
-	test_fluidsolver.Parms.p_GS_Proj_iter = 10; 
+	//test_fluidsolver.Parms.p_ProjectionType = test_fluidsolver.Parms.Project_GaussSeidel_SOR; 
+	//test_fluidsolver.Parms.p_SOR_alpha = 1.9f;
+	//test_fluidsolver.Parms.p_GS_Proj_iter = 5; 
 
-	//test_fluidsolver.Parms.p_ProjectionType = test_fluidsolver.Parms.Project_Jacobi;
-	//test_fluidsolver.Parms.p_Jacobi_Proj_Iter = 100; 
+	test_fluidsolver.Parms.p_ProjectionType = test_fluidsolver.Parms.Project_Jacobi;
+	test_fluidsolver.Parms.p_Jacobi_Proj_Iter = 25; 
 
 	test_fluidsolver.Parms.p_AdvectionType = test_fluidsolver.Parms.Advect_SL_BackTrace_Euler;
 	//test_fluidsolver.Parms.p_AdvectionType = test_fluidsolver.Parms.Advect_SL_BackTrace_RK2;
@@ -102,7 +102,7 @@ int main()
 	test_fluidsolver.set_window(render_c.get_window());
 
 	// Call Solve Step Loop to start simulation and rendering - 
-	test_fluidsolver.solve_step(true, false, false, 0.0001f, 0.001f, 10, 8, solve_steps);
+	test_fluidsolver.solve_step(true, false, false, 0.0001f, 0.001f, 10, 5, solve_steps);
 
 	return 0;
 }

@@ -123,8 +123,10 @@ void fluidsolver_3::edge_bounds(grid3_scalar<float> *grid)
 
 	// bool do_mt = Parms.p_MT_Global & Parms.p_MT_Global;
 	//!MT #pragma omp parallel for num_threads(omp_get_max_threads())
+	#pragma omp parallel for 
 	for (int j = 1; j <= N_dim; j++)
 	{
+		#pragma omp parallel for 
 		for (int i = 1; i <= N_dim; i++)
 		{
 			// X- Face Boundary 
@@ -219,8 +221,10 @@ void fluidsolver_3::edge_bounds(grid3_vector<vec3<float>> *grid)
 	
 	// !MT #pragma omp parallel for num_threads(omp_get_max_threads())
 
+	#pragma omp parallel for
 	for (int j = 1; j <= N_dim; j++)
 	{
+		#pragma omp parallel for
 		for (int i = 1; i <= N_dim; i++)
 		{
 			// X -/+ Face Cells, Reflect Y Velocity Component -
@@ -331,10 +335,13 @@ void fluidsolver_3::sphere_bounds_set(float radius, float col_iso, const vec3<fl
 
 	//!MT #pragma omp parallel for num_threads(omp_get_max_threads())	
 
+	#pragma omp parallel for
 	for (int k = 1; k < N_dim; k++)
 	{
+		#pragma omp parallel for
 		for (int j = 1; j <= N_dim; j++)
 		{
+			#pragma omp parallel for
 			for (int i = 1; i <= N_dim; i++)
 			{
 				// Implicit Sphere/sphere Function: x^2 + y^2 + z^2 - r . >= 0 <= Thresh == Surface. > Thresh = Exterior. < 0 = Interior. Cells. 
@@ -360,10 +367,13 @@ void fluidsolver_3::sphere_bounds_eval(grid3_scalar<float> *grid, float col_iso)
 	
 	//!MT #pragma omp parallel for num_threads(omp_get_max_threads())	
 
+	#pragma omp parallel for
 	for (int k = 1; k < N_dim; k++)
 	{
+		#pragma omp parallel for
 		for (int j = 1; j <= N_dim; j++)
 		{
+			#pragma omp parallel for
 			for (int i = 1; i <= N_dim; i++)
 			{
 				// Lookup Sphere/sphere SDF At CurCell i,j. 
@@ -417,10 +427,13 @@ void fluidsolver_3::sphere_bounds_eval(grid3_vector<vec3<float>> *grid, float co
 	float h = 1.0f / N_dim; // Grid Spacing, Recoprical of One Dim Size (N). 
 
 	//!MT #pragma omp parallel for num_threads(omp_get_max_threads())
+	#pragma omp parallel for
 	for (int k = 1; k < N_dim; k++)
 	{
+		#pragma omp parallel for
 		for (int j = 1; j <= N_dim; j++)
 		{
+			#pragma omp parallel for
 			for (int i = 1; i <= N_dim; i++)
 			{
 				// Lookup Sphere/sphere SDF At CurCell i,j. 
@@ -496,6 +509,8 @@ void fluidsolver_3::sphere_bounds_eval(grid3_vector<vec3<float>> *grid, float co
    ==================================================== */
 
 // ** DIFFUSION-SCALAR-FIELD-LINSOLVE IMPLEMENTATION ** \\ - 
+
+// Gauss-Seidel Based Diffusion, not Thread Safe Possible Race Condtion of Neighbour Cells own diffusion.
 
 void fluidsolver_3::diffuse(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1, float diff, ushort iter)
 {
@@ -605,6 +620,8 @@ void fluidsolver_3::diffuse(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3
 // BackTrace Done in Index Space
 // Dt Scaled to Index Space Dim Size - 
 
+// Thread Safe, Read from Prev, Write to Cur. Per Cell Operations Only depend on Single Iteration Interoplated Neighbours, not progessivly Relaxed over l iterations. 
+
 void fluidsolver_3::advect_sl(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1)
 {
 
@@ -614,10 +631,13 @@ void fluidsolver_3::advect_sl(grid3_scalar<float> *grid_0, grid3_scalar<float> *
 
 	//!MT#pragma omp parallel for num_threads(omp_get_max_threads()) 
 
+	#pragma omp parallel for
 	for (int k = 1; k <= N_dim; k++)
 	{
+		#pragma omp parallel for
 		for (int j = 1; j <= N_dim; j++)
 		{
+			#pragma omp parallel for
 			for (int i = 1; i <= N_dim; i++)
 			{
 				float u = f3obj->vel->getdata_x(i, j, k);
@@ -678,6 +698,7 @@ void fluidsolver_3::advect_sl(grid3_scalar<float> *grid_0, grid3_scalar<float> *
 
 				// TriLinear Interoplation Of Sampled Scalar Field Neighbours at BackTraced Postion - 
 
+				// !TODO - SIMD 
 				float L_000_001_t = solver_utils::lerp(grid_0->getdata(i0, j0, k0), grid_0->getdata(i0, j0, k1), t1);
 				float L_010_011_t = solver_utils::lerp(grid_0->getdata(i0, j1, k0), grid_0->getdata(i0, j1, k1), t1);
 				float L_100_101_s = solver_utils::lerp(grid_0->getdata(i1, j0, k0), grid_0->getdata(i1, j0, k1), t1);
@@ -714,10 +735,13 @@ void fluidsolver_3::advect_sl(grid3_vector<vec3<float>> *grid_0, grid3_vector<ve
 
 	//!MT#pragma omp parallel for num_threads(omp_get_max_threads())
 
+	#pragma omp parallel for
 	for (int k = 1; k <= N_dim; k++)
 	{
+		#pragma omp parallel for
 		for (int j = 1; j <= N_dim; j++)
 		{
+			#pragma omp parallel for
 			for (int i = 1; i <= N_dim; i++)
 			{
 				float u0 = f3obj->prev_vel->getdata_x(i, j, k);
@@ -793,6 +817,7 @@ void fluidsolver_3::advect_sl(grid3_vector<vec3<float>> *grid_0, grid3_vector<ve
 				grid_1->setdata(new_vec, i, j);
 				*/
 
+				// !TODO - SIMD
 				// Interoplate Neighbours - for Velocity comp (U/x). 
 				float U_000_001_t = solver_utils::lerp(grid_0->getdata_x(i0, j0, k0), grid_0->getdata_x(i0, j0, k1), t1);
 				float U_010_011_t = solver_utils::lerp(grid_0->getdata_x(i0, j1, k0), grid_0->getdata_x(i0, j1, k1), t1);
@@ -853,10 +878,13 @@ void fluidsolver_3::advect_sl_mp(grid3_scalar<float> *grid_0, grid3_scalar<float
 
 	//!MT#pragma omp parallel for num_threads(omp_get_max_threads()) 
 
+	#pragma omp parallel for
 	for (int k = 1; k <= N_dim; k++)
 	{
+		#pragma omp parallel for
 		for (int j = 1; j <= N_dim; j++)
 		{
+			#pragma omp parallel for
 			for (int i = 1; i <= N_dim; i++)
 			{
 				// Vel at Cur Cell Postion. 
@@ -963,10 +991,13 @@ void fluidsolver_3::advect_sl_mp(grid3_vector<vec3<float>> *grid_0, grid3_vector
 
 	//!MT#pragma omp parallel for num_threads(omp_get_max_threads()) 
 
+	#pragma omp parallel for
 	for (int k = 1; k <= N_dim; k++)
 	{
+		#pragma omp parallel for
 		for (int j = 1; j <= N_dim; j++)
 		{
+			#pragma omp parallel for
 			for (int i = 1; i <= N_dim; i++)
 			{
 				// Vel at Cur Cell Postion. 
@@ -1407,12 +1438,14 @@ void fluidsolver_3::project(int iter)
 	// DIVERGENCE FIELD CALC \\ -
 	// Compute Divergence Field, from Velocity Field - 
 
-	//!MT#pragma omp parallel for num_threads(omp_get_max_threads())
-
+	// Thread Safe, Per Cell Operations. 
+	#pragma omp parallel for
 	for (int k = 1; k <= N_dim; k++)
 	{
+		#pragma omp parallel for
 		for (int j = 1; j <= N_dim; j++)
 		{
+			#pragma omp parallel for
 			for (int i = 1; i <= N_dim; i++)
 			{
 				// Init to 0 
@@ -1446,6 +1479,7 @@ void fluidsolver_3::project(int iter)
 	// PRESSURE FIELD LINEAR SOLVE \\ 
 
 	// (Iterativly Compute Inverse of Divergence Grid/Matrix) Gauss-Seidel, Solve Discrete Poission Of Pressure Field, using Linear System. 
+	// Gauss-Seidel Rexlation, Not ThreadSafe, as Neighbours on sepreate threads may converge at diffrent rates. Ie Race Condtions. 
 	for (int l = 0; l < iter; l++)
 	{
 		double error = 0.0f; 
@@ -1512,11 +1546,14 @@ void fluidsolver_3::project(int iter)
 	
 	// SUBTRACT PRESSURE GRADEINT FROM VELOCITY FIELD \\  
 
-	//!MT#pragma omp parallel for num_threads(omp_get_max_threads()) 
+	// Thread Safe, Per Cell Operations. 
+	#pragma omp parallel for
 	for (int k = 1; k <= N_dim; k++)
 	{
+		#pragma omp parallel for
 		for (int j = 1; j <= N_dim; j++)
 		{
+			#pragma omp parallel for
 			for (int i = 1; i <= N_dim; i++)
 			{
 				// 3 Methods Equivalent. 
@@ -1919,9 +1956,6 @@ void fluidsolver_3::density_step(int diff_iter, float diffA, bool dodiff)
 		f3obj->dens->swap(f3obj->prev_dens); // Swap Density With Prev_Density. 
 		// Gauss-Seidel Iterative Density (Scalar) Diffusion - 
 		diffuse(f3obj->prev_dens, f3obj->dens, diffA, diff_iter);
-
-		// Finite Diffrence Unstable Density (Scalar) Diffusion - 
-		//diffuse_scalar_FDM(f3obj->prev_dens, f3obj->dens, diffA);
 		f3obj->dens->swap(f3obj->prev_dens); // Re-Swap Density With Prev_Density. 
 	}
 	else if (Parms.p_Do_Dens_Diff == false)
@@ -2079,7 +2113,7 @@ void fluidsolver_3::solve_step(bool solve, bool do_diffdens, bool do_diffvel, fl
 		//if (glfwGetKey(winptr, GLFW_KEY_C) == GLFW_PRESS) { Parms.p_InteroplationType == Parms.Interoplation_Cosine; };
 
 		// Get CurFrame Mouse Pos And Update Mouse Vel. Repos this call to avoid sleep delay. 
-		std::this_thread::sleep_for(std::chrono::milliseconds(5)); // Hold main thread to allow for delta mouse position (VelCalc). 5ms works fine  10ms
+	//	std::this_thread::sleep_for(std::chrono::milliseconds(5)); // Hold main thread to allow for delta mouse position (VelCalc). 5ms works fine  10ms
 		updt_mousepos(step::STEP_CUR); updt_mouseposNorm(step::STEP_CUR); updt_mouseposRange(step::STEP_CUR);
 		updt_mousevel(); 
 
