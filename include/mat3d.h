@@ -6,7 +6,7 @@
 
 /*	Matrix Info -
 	Matrix 4x4 Implementation, Template and or Inline Def in Header. 
-	Row Major Order. Multipcation with Vector is Post Multiplicative. v * M = v. Thus no M * / *= v overloads here. 
+	Row Major Order. Multipcation with Vector is Post Multiplicative. v * M = v. Thus no M * / *= v overloads here. (Transpose for OGL)
 	Matrix is Explcitlly Stored in 1D Array form, and mapped to 2D Indices using i + N * j, where N = 4. Iterate in Row Major (j,i) order. 
 */
 
@@ -81,6 +81,10 @@ public:
 	inline matrix_4x4& translate(const vec3<T> &tv);
 	inline matrix_4x4& rotate(const vec3<T> &axis, T angle);
 	inline matrix_4x4& scale(const vec3<T> &sv);
+
+	// Matrix Camera Operations - 
+	static inline matrix_4x4 make_lookAt(const vec3<T> &cam_P, const vec3<T> &look_P, const vec3<T> &up);
+	static inline matrix_4x4 make_perspective(T const fov, T const ar, T const near, T const far);
 
 	// Matrix Members - Default Inclass Initalized. 
 	const static std::size_t m_size = 16;
@@ -322,6 +326,24 @@ inline matrix_4x4<T>& matrix_4x4<T>::scale(const vec3<T> &sv)
 	comp[0] *= sv.x, comp[5] *= sv.y, comp[11] *= sv.z;
 	return *this; 
 }
+
+// Matrix Camera Operations - 
+
+// LookAt Static, Return new mat_4x4<T> with Lookat Basis Vectors - 
+template <class T>
+inline matrix_4x4<T> matrix_4x4<T>::make_lookAt(const vec3<T> &cam_P, const vec3<T> &look_P, const vec3<T> &up)
+{
+	vec3<T> lp_n = look_P, cp_n = cam_P; 
+	vec3<T> zz = lp_n.normalize() - cp_n.normalize();
+	vec3<T> xx = vec3<T>::cross(zz, up);
+	vec3<T> yy = vec3<T>::cross(xx.normalize(), zz.normalize());
+
+	return matrix_4x4<T>(xx.x, xx.y, xx.z, 0.0f, yy.x, yy.y, yy.z, 0.0f, zz.x, zz.y, zz.z, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+}
+
+// PerspProj Static, Return new mat_4x4<T> with Perspective Projected Basis's - 
+
+// [..]
 
 // Static MFs - Indexers - 
 

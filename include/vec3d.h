@@ -49,6 +49,10 @@ public:
 	inline vec3& operator/= (const vec3 &b); 
 	inline vec3& operator*= (T scalar); // Vector Mult with Scalar Constant. Modifty Cur vec3. 
 
+	// Cross Product Return new vec3<T> c = a x b
+	static inline vec3 cross(const vec3 &a, const vec3 &b);
+
+	// Conversion
 	static inline float degtoRad(float deg);
 	static inline float radtoDeg(float rad);
 
@@ -196,6 +200,16 @@ vec3<T>& vec3<T>::operator/=(const vec3 &b)
 {
 	x /= b.x, y /= b.y, z /= b.z;
 	return *this;
+}
+
+// Static Cross Product --> c = a x b
+template <class T>
+inline vec3<T> vec3<T>::cross(const vec3 &a, const vec3 &b)
+{
+	float cx = (a.y * b.z) - (a.z * b.y);
+	float cy = (a.z * b.x) - (a.x * b.z);
+	float cz = (a.x * b.y) - (a.y * b.x);
+	return vec3<T>(cx, cy, cz);
 }
 
 // Static vec3 (Utility) Member Functions \\
