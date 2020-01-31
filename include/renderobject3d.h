@@ -53,6 +53,7 @@ protected:
 };
 
 // OpenGL Render Object 2D -
+// Additonal Implementation of DVR Within Local Cube Space. 
 class renderobject_3D_OGL : public renderobject_3D
 {
 // FCs
@@ -72,29 +73,42 @@ protected:
 	virtual void render_loop(rend_state dbg) override final;
 
 	// OGL Specfic MFuncs. 
-	void shader_checkCompile(const char *type);
-	void shader_checkLink(); 
+	void shader_checkCompile(const char *type, int shader);
+	void shader_checkLink(int shader_prog); 
+
+	// DVR Setup - 
+	void cube_setup(); 
+	void cube_fbo(); 
 
 	// DBG - 
 	void print_GL_error(); 
 
-
 private:
 	// Buffers -
-	GLuint Quad_VBO, Quad_VAO, Quad_EBO;
+	GLuint CFront_VAO, CBack_VAO, Quad_VAO;
+	GLuint CFront_VBO, CBack_VBO, Quad_VBO;
+	GLuint Quad_EBO, Cube_FBO;
+
 	// Shaders -
-	GLuint vert_shader, frag_shader, shader_prog;
+	GLuint cube_vert_shader, cube_frag_shader, quad_vert_shader, quad_frag_shader; // 0Cube(vs|fs), 1Quad(vs|fs)
+	GLuint cube_shader_prog, quad_shader_prog; // 0Cube, 1Quad
+	int cur_shader = 0; // Hacky to avoid changing Base shaderload Parms.  
+
+	// 2D Textures - 
+	GLuint tex_CFront, tex_CBack; 
+
 	// 3D Textures - 
 	GLuint tex_dens, tex_vel;
+
 	// Geo Arrays
-	GLfloat *vertices = nullptr; 
-	GLuint *indices = nullptr; 
+	GLfloat *CFront_vertices, *CBack_vertices, *quad_vertices; 
+	GLuint *quad_indices; 
 
 	// RenderContext (GLFW) Window Pointer
 	GLFWwindow *window_ptr = nullptr; 
 
 	// Shader Code Buffers - 
-	const char *vert_shader_code, *frag_shader_code;
+	const char *cube_vert_shader_code, *cube_frag_shader_code, *quad_vert_shader_code, *quad_frag_shader_code;
 };
 
 

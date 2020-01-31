@@ -1,0 +1,164 @@
+#version 400 core 
+
+in vec4 vpos; 
+in vec4 gl_FragCoord; 
+
+out vec4 frag_color; 
+
+// Grid Texture Samplers - 
+
+// Density Grid - 
+uniform sampler3D d_tex; // Texture Unit 0
+uniform sampler3D v_tex; // Texture Unit 1 (Packed x,y,z vel comps). 
+
+// Constant Uniforms - 
+// Util Uniforms - 
+uniform int W_Size; // Window Size to Get GLFragCoords -> UV Space for Inital XY RayMarch Postions.
+uniform int Mode; // 0 = Render Density, 1 = Render Velocity. 
+uniform int Step; // Current Solve Step. 
+
+// Volume Uniforms - 
+uniform vec3 offset; // Sample Offset of Grid/3DTex. Pre Matrix Transformation Implementation. 
+
+
+// Light Uniforms - 
+struct pt_light 
+{
+	vec3 pos;
+	float radius, strength;
+	
+} light_00;
+
+// Render Uniforms - 
+
+
+/* ----------------------------------------------------------------- */
+
+// Util Functions - 
+float fit (float value, float min_a, float max_a, float min_b, float max_b)
+{
+	return min_b + (value - min_a)*(max_b - min_b) / (max_a - min_a);
+}
+
+float deg2rad (int deg)
+{
+	float PI = 3.14159265;
+	return deg * PI / 180.0; 
+}
+
+// Noise Functions - Patrico Gonzalez. 
+float rand(float n)
+{
+	return fract(sin(n) * 43758.5453123);
+}
+
+/*
+float noise(float p)
+{
+	float fl = floor(p);
+	float fc = fract(p);
+	return mix(rand(fl), rand(fl + 1.0), fc);
+}
+
+
+float noise(vec2 n)
+{
+	const vec2 d = vec2(0.0, 1.0);
+	vec2 b = floor(n), f = smoothstep(vec2(0.0), vec2(1.0), fract(n));
+	return mix(mix(rand(b), rand(b + d.yx), f.x), mix(rand(b + d.xy), rand(b + d.yy), f.x), f.y);
+}
+*/
+
+/* ----------------------------------------------------------------- */
+
+void main()
+{
+	// Use Constant Max Window Size so Fragment UV and thus Fragment Ray Origins, do not scale with Window Oppose to using passed W_Size. 
+	const int window_max = 512;
+	
+	// Map from 0-N FragCoord_Space to 0-1 UV Space. 
+	vec2 uv = (gl_FragCoord.xy - 0.0) / window_max; // / W_Size; (Currently NOT) With -0.5f Half Pixel Offset Subtracted off. 
+	
+	vec3 eye_pos = vec3(0.0, 0.0, 1.0); 
+	
+	// Sampler Acculumation - 
+	vec4 accv = vec4(0.0, 0.0, 0.0, 0.0); // Primary Ray - Accumalted Velocity.
+	vec4 acc = vec4(0.0, 0.0, 0.0, 0.0); // Primary Ray - Accumlated Density.
+	vec4 accsd = vec4(0.0, 0.0, 0.0, 0.0); // Shadow Ray - Accumlated Density. 
+	
+	float opac = 0.0; // Primary Ray - Accumlated Density. Scalar
+	float colR = 0.0; // Shadow Ray - Accumlated Density. Scalar
+	
+	// Single Light (fn) - 
+	light_00.pos = vec3(1.0, 1.25, 0.25); 
+	light_00.radius = 1.0; light_00.strength = 1.0; 
+		
+	// Basic RayMarching Inital - 
+	int max_steps = 50;
+	float step_size = 1.0 / max_steps;
+	//float step_size = 0.05;
+	vec3 dir = vec3(0.0, 0.0, -1.0); 
+	// 
+	vec3 fragP_ss = vec3(uv, 0.0); 
+	//vec3 dir = normalize(eye_pos - fragP_ss); 
+	
+	vec3 ray_P = vec3(uv, 0.0); 
+
+	
+	int total_i = 0; 
+	for (int i = 0; i < max_steps; i++)
+	{
+		// Primary Camera Ray (a)
+		opac += texture(d_tex, ray_P).x; // ray_P + offset
+		accv += texture(v_tex, ray_P); 
+			
+			
+		/*
+		// Secondary Shadow Ray (c) - 
+		vec3 sray_P = ray_P; 
+		// Is Ray Dir Inversed ? 
+		vec3 light_dir = normalize(light_00.pos - ray_P); 
+		//vec3 light_dir = normalize(ray_P - light_00.pos); 
+		for (int j = 0; j < 10; j++)
+		{
+			// For L in Lights
+			accsd += texture(d_tex, sray_P); // ray_P + offset
+			sray_P += light_dir * step_size; 
+			if (accsd.x >= 1.0) {break;} // Accumalted 1.0 Density, in Complete Shadow. 
+		}	
+			
+		// Check for Max Accumlated. 
+		if (acc.x >= 1.0) {break;}
+		*/
+		
+		// Increment Primary Ray
+		ray_P += dir * step_size; 
+		total_i++;	
+	}
+		
+	
+	if (Mode == 0)
+	{
+		frag_color = clamp(vec4(opac, opac, opac, 1.0), 0.0, 1.0); 
+		
+		//float f_dens = (accsd.x * 1.0) - acc.x; 
+		//frag_color = clamp(vec4(f_dens, f_dens, f_dens, 1.0), 0.0, 1.0); 
+		
+		//float viz = float(total_i) / float(max_steps); // float(max_steps);
+		// if (total_i <= 5)
+		// {
+			// frag_color = vec4(1.0, 0.0, 0.0, 1.0); 
+		// }
+		// Shade By Ray Step (Depth till >= 1.0 exit) Count. 
+		//frag_color = vec4((1.0-viz) * 5.0, (1.0-viz) * 5.0, (1.0-viz) * 5.0, 1.0); 
+			
+	}
+	else if (Mode == 1)
+	{
+		// Accumlated Velocity Per Fragment (Averaged). 
+		
+		frag_color = vec4(vec3(accv.xyz), 1.0); 
+
+	}
+	
+}
