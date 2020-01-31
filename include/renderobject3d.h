@@ -81,7 +81,7 @@ protected:
 
 private:
 	// Buffers -
-	GLuint VBO, VAO, EBO;
+	GLuint Quad_VBO, Quad_VAO, Quad_EBO;
 	// Shaders -
 	GLuint vert_shader, frag_shader, shader_prog;
 	// 3D Textures - 
