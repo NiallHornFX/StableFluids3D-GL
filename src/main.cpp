@@ -36,6 +36,7 @@
 #define GLMajor 4
 #define GLMinor 0
 
+// Move macros to utils header. Useless here. 
 #define DEBUG_MODE 0 
 #define USE_ASSERT 0
 

@@ -42,24 +42,8 @@ enum class step
 	STEP_PREV 
 };
 
-// Solver Utils Container, Useful static - Lambdas, Functors, FreeFuncs, Enums etc. 
-struct solver_utils
-{
-	solver_utils() = delete; 
 
-	// Value Remapping - 
-	static std::function<float(float, float, float)> clamp;
-	static std::function<float(float, float, float, float, float)> fit;
-
-	// Interoplation - 
-	// 1D
-	static std::function<float(float, float, float)> lerp;
-	static std::function<float(float, float, float)> cosinterp; 
-
-};
-
-
-// 2D Fluid Solver Class - Interface/Decleration. 
+// 3D Fluid Solver Class - Interface/Decleration. 
 
 class fluidsolver_3
 {
@@ -211,14 +195,17 @@ protected:
 	void updt_mousevel();
 	void sphere_rad_test();
 
-	// Sourcing/Collison Setters ... 
-	//void set_sourcepos(); // WIP Set in FluidObj would still need passing?
-	//void set_spherebounds_pos(vec2 &offset);
+	// Static Utill - 
+	// Clamp,Fit,LERP,CosInterp .. TMP these maybe. 
+	static float clamp(float val, float min, float max);
+	static float fitRange(float val, float a_min, float a_max, float b_min, float b_max);
+	static float lerp(float val_0, float val_1, float bias);
+	static float cosinterp(float val_0, float val_1, float bias);
 
 	// TEMP / DBG \\ - 
 	void fill_test(int x);  // DBG - Iteration test.
 
-	// Manually Delete Temp Grids
+	// Delete Temp Grids
 	void del_pressure();
 	void del_divergence();
 

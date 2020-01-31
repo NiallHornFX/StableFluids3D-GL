@@ -681,9 +681,9 @@ void fluidsolver_3::advect_sl(grid3_scalar<float> *grid_0, grid3_scalar<float> *
 					//new_dens = s0 * (t0*grid_0->getdata(i0, j0) + t1 * grid_0->getdata(i0, j1))
 					//+ s1 * (t0 * grid_0->getdata(i1, j0) + t1 * grid_0->getdata(i1, j1));
 
-					float lerpi_A = solver_utils::lerp(grid_0->getdata(i0, j0), grid_0->getdata(i0, j1), t1);
-					float lerpi_B = solver_utils::lerp(grid_0->getdata(i1, j0), grid_0->getdata(i1, j1), t1);
-					new_dens = solver_utils::lerp(lerpi_A, lerpi_B, s1);
+					float lerpi_A = lerp(grid_0->getdata(i0, j0), grid_0->getdata(i0, j1), t1);
+					float lerpi_B = lerp(grid_0->getdata(i1, j0), grid_0->getdata(i1, j1), t1);
+					new_dens = lerp(lerpi_A, lerpi_B, s1);
 				}
 				else if (Parms.p_InteroplationType == Parms.Interoplation_Cosine)
 				{
@@ -699,13 +699,13 @@ void fluidsolver_3::advect_sl(grid3_scalar<float> *grid_0, grid3_scalar<float> *
 				// TriLinear Interoplation Of Sampled Scalar Field Neighbours at BackTraced Postion - 
 
 				// !TODO - SIMD 
-				float L_000_001_t = solver_utils::lerp(grid_0->getdata(i0, j0, k0), grid_0->getdata(i0, j0, k1), t1);
-				float L_010_011_t = solver_utils::lerp(grid_0->getdata(i0, j1, k0), grid_0->getdata(i0, j1, k1), t1);
-				float L_100_101_s = solver_utils::lerp(grid_0->getdata(i1, j0, k0), grid_0->getdata(i1, j0, k1), t1);
-				float L_110_111_t = solver_utils::lerp(grid_0->getdata(i1, j1, k0), grid_0->getdata(i1, j1, k1), t1);
-				float L_A = solver_utils::lerp(L_000_001_t, L_010_011_t, s1);
-				float L_B = solver_utils::lerp(L_100_101_s, L_110_111_t, s1);
-				float L_F = solver_utils::lerp(L_A, L_B, r1);
+				float L_000_001_t = lerp(grid_0->getdata(i0, j0, k0), grid_0->getdata(i0, j0, k1), t1);
+				float L_010_011_t = lerp(grid_0->getdata(i0, j1, k0), grid_0->getdata(i0, j1, k1), t1);
+				float L_100_101_s = lerp(grid_0->getdata(i1, j0, k0), grid_0->getdata(i1, j0, k1), t1);
+				float L_110_111_t = lerp(grid_0->getdata(i1, j1, k0), grid_0->getdata(i1, j1, k1), t1);
+				float L_A = lerp(L_000_001_t, L_010_011_t, s1);
+				float L_B = lerp(L_100_101_s, L_110_111_t, s1);
+				float L_F = lerp(L_A, L_B, r1);
 				float new_dens = L_F; 
 
 				// Set New Cur Density to Current Frame Density Grid cell value - 
@@ -789,14 +789,14 @@ void fluidsolver_3::advect_sl(grid3_vector<vec3<float>> *grid_0, grid3_vector<ve
 					//	+ s1 * (t0 * grid_0->getdata_y(i1, j0) + t1 * grid_0->getdata_y(i1, j1));
 
 					// Bilinear Interp (U/x Component)
-					float U_lerpi_A = solver_utils::lerp(grid_0->getdata_x(i0, j0), grid_0->getdata_x(i0, j1), t1);
-					float U_lerpi_B = solver_utils::lerp(grid_0->getdata_x(i1, j0), grid_0->getdata_x(i1, j1), t1);
-					new_u = solver_utils::lerp(U_lerpi_A, U_lerpi_B, s1);
+					float U_lerpi_A = lerp(grid_0->getdata_x(i0, j0), grid_0->getdata_x(i0, j1), t1);
+					float U_lerpi_B = lerp(grid_0->getdata_x(i1, j0), grid_0->getdata_x(i1, j1), t1);
+					new_u = lerp(U_lerpi_A, U_lerpi_B, s1);
 
 					// Bilinear Interp (V/y Component)
-					float V_lerpi_A = solver_utils::lerp(grid_0->getdata_y(i0, j0), grid_0->getdata_y(i0, j1), t1);
-					float V_lerpi_B = solver_utils::lerp(grid_0->getdata_y(i1, j0), grid_0->getdata_y(i1, j1), t1);
-					new_v = solver_utils::lerp(V_lerpi_A, V_lerpi_B, s1);
+					float V_lerpi_A = lerp(grid_0->getdata_y(i0, j0), grid_0->getdata_y(i0, j1), t1);
+					float V_lerpi_B = lerp(grid_0->getdata_y(i1, j0), grid_0->getdata_y(i1, j1), t1);
+					new_v = lerp(V_lerpi_A, V_lerpi_B, s1);
 				}
 				else if (Parms.p_InteroplationType == Parms.Interoplation_Cosine)
 				{
@@ -819,31 +819,31 @@ void fluidsolver_3::advect_sl(grid3_vector<vec3<float>> *grid_0, grid3_vector<ve
 
 				// !TODO - SIMD
 				// Interoplate Neighbours - for Velocity comp (U/x). 
-				float U_000_001_t = solver_utils::lerp(grid_0->getdata_x(i0, j0, k0), grid_0->getdata_x(i0, j0, k1), t1);
-				float U_010_011_t = solver_utils::lerp(grid_0->getdata_x(i0, j1, k0), grid_0->getdata_x(i0, j1, k1), t1);
-				float U_100_101_s = solver_utils::lerp(grid_0->getdata_x(i1, j0, k0), grid_0->getdata_x(i1, j0, k1), t1);
-				float U_110_111_t = solver_utils::lerp(grid_0->getdata_x(i1, j1, k0), grid_0->getdata_x(i1, j1, k1), t1);
-				float U_A = solver_utils::lerp(U_000_001_t, U_010_011_t, s1);
-				float U_B = solver_utils::lerp(U_100_101_s, U_110_111_t, s1);
-				float U_F = solver_utils::lerp(U_A, U_B, r1);
+				float U_000_001_t = lerp(grid_0->getdata_x(i0, j0, k0), grid_0->getdata_x(i0, j0, k1), t1);
+				float U_010_011_t = lerp(grid_0->getdata_x(i0, j1, k0), grid_0->getdata_x(i0, j1, k1), t1);
+				float U_100_101_s = lerp(grid_0->getdata_x(i1, j0, k0), grid_0->getdata_x(i1, j0, k1), t1);
+				float U_110_111_t = lerp(grid_0->getdata_x(i1, j1, k0), grid_0->getdata_x(i1, j1, k1), t1);
+				float U_A = lerp(U_000_001_t, U_010_011_t, s1);
+				float U_B = lerp(U_100_101_s, U_110_111_t, s1);
+				float U_F = lerp(U_A, U_B, r1);
 
 				// Interoplate Neighbours - for Velocity comp (V/y). 
-				float V_000_001_t = solver_utils::lerp(grid_0->getdata_y(i0, j0, k0), grid_0->getdata_y(i0, j0, k1), t1);
-				float V_010_011_t = solver_utils::lerp(grid_0->getdata_y(i0, j1, k0), grid_0->getdata_y(i0, j1, k1), t1);
-				float V_100_101_s = solver_utils::lerp(grid_0->getdata_y(i1, j0, k0), grid_0->getdata_y(i1, j0, k1), t1);
-				float V_110_111_t = solver_utils::lerp(grid_0->getdata_y(i1, j1, k0), grid_0->getdata_y(i1, j1, k1), t1);
-				float V_A = solver_utils::lerp(V_000_001_t, V_010_011_t, s1);
-				float V_B = solver_utils::lerp(V_100_101_s, V_110_111_t, s1);
-				float V_F = solver_utils::lerp(V_A, V_B, r1);
+				float V_000_001_t = lerp(grid_0->getdata_y(i0, j0, k0), grid_0->getdata_y(i0, j0, k1), t1);
+				float V_010_011_t = lerp(grid_0->getdata_y(i0, j1, k0), grid_0->getdata_y(i0, j1, k1), t1);
+				float V_100_101_s = lerp(grid_0->getdata_y(i1, j0, k0), grid_0->getdata_y(i1, j0, k1), t1);
+				float V_110_111_t = lerp(grid_0->getdata_y(i1, j1, k0), grid_0->getdata_y(i1, j1, k1), t1);
+				float V_A = lerp(V_000_001_t, V_010_011_t, s1);
+				float V_B = lerp(V_100_101_s, V_110_111_t, s1);
+				float V_F = lerp(V_A, V_B, r1);
 
 				// Interoplate Neighbours - for Velocity comp (W/z). 
-				float W_000_001_t = solver_utils::lerp(grid_0->getdata_z(i0, j0, k0), grid_0->getdata_z(i0, j0, k1), t1);
-				float W_010_011_t = solver_utils::lerp(grid_0->getdata_z(i0, j1, k0), grid_0->getdata_z(i0, j1, k1), t1);
-				float W_100_101_s = solver_utils::lerp(grid_0->getdata_z(i1, j0, k0), grid_0->getdata_z(i1, j0, k1), t1);
-				float W_110_111_t = solver_utils::lerp(grid_0->getdata_z(i1, j1, k0), grid_0->getdata_z(i1, j1, k1), t1);
-				float W_A = solver_utils::lerp(W_000_001_t, W_010_011_t, s1);
-				float W_B = solver_utils::lerp(W_100_101_s, W_110_111_t, s1);
-				float W_F = solver_utils::lerp(W_A, W_B, r1);
+				float W_000_001_t = lerp(grid_0->getdata_z(i0, j0, k0), grid_0->getdata_z(i0, j0, k1), t1);
+				float W_010_011_t = lerp(grid_0->getdata_z(i0, j1, k0), grid_0->getdata_z(i0, j1, k1), t1);
+				float W_100_101_s = lerp(grid_0->getdata_z(i1, j0, k0), grid_0->getdata_z(i1, j0, k1), t1);
+				float W_110_111_t = lerp(grid_0->getdata_z(i1, j1, k0), grid_0->getdata_z(i1, j1, k1), t1);
+				float W_A = lerp(W_000_001_t, W_010_011_t, s1);
+				float W_B = lerp(W_100_101_s, W_110_111_t, s1);
+				float W_F = lerp(W_A, W_B, r1);
 
 				// Set New Cur Velocity (grid_1) - 
 				grid_1->setdata(vec3<float>(U_F, V_F, W_F), i, j, k);
@@ -914,31 +914,31 @@ void fluidsolver_3::advect_sl_mp(grid3_scalar<float> *grid_0, grid3_scalar<float
 
 				// Get Mid Point Velocity (Trilinear Interoplation of Velocity Components u,v,w At Midpoint Postion) - 
 				// Interoplate Neighbours - for Velocity comp (U/x). 
-				float Um_000_001_t = solver_utils::lerp(f3obj->vel->getdata_x(i_mid, j_mid, k_mid), f3obj->vel->getdata_x(i_mid, j_mid, k_mid_1), tm1);
-				float Um_010_011_t = solver_utils::lerp(f3obj->vel->getdata_x(i_mid, j_mid_1, k_mid), f3obj->vel->getdata_x(i_mid, j_mid_1, k_mid), tm1);
-				float Um_100_101_s = solver_utils::lerp(f3obj->vel->getdata_x(i_mid_1, j_mid, k_mid), f3obj->vel->getdata_x(i_mid_1, j_mid, k_mid_1), tm1);
-				float Um_110_111_t = solver_utils::lerp(f3obj->vel->getdata_x(i_mid_1, j_mid_1, k_mid), f3obj->vel->getdata_x(i_mid_1, j_mid_1, k_mid_1), tm1);
-				float Um_A = solver_utils::lerp(Um_000_001_t, Um_010_011_t, sm1);
-				float Um_B = solver_utils::lerp(Um_100_101_s, Um_110_111_t, sm1);
+				float Um_000_001_t = lerp(f3obj->vel->getdata_x(i_mid, j_mid, k_mid), f3obj->vel->getdata_x(i_mid, j_mid, k_mid_1), tm1);
+				float Um_010_011_t = lerp(f3obj->vel->getdata_x(i_mid, j_mid_1, k_mid), f3obj->vel->getdata_x(i_mid, j_mid_1, k_mid), tm1);
+				float Um_100_101_s = lerp(f3obj->vel->getdata_x(i_mid_1, j_mid, k_mid), f3obj->vel->getdata_x(i_mid_1, j_mid, k_mid_1), tm1);
+				float Um_110_111_t = lerp(f3obj->vel->getdata_x(i_mid_1, j_mid_1, k_mid), f3obj->vel->getdata_x(i_mid_1, j_mid_1, k_mid_1), tm1);
+				float Um_A = lerp(Um_000_001_t, Um_010_011_t, sm1);
+				float Um_B = lerp(Um_100_101_s, Um_110_111_t, sm1);
 				// Interoplate Neighbours - for Velocity comp (V/y). 
-				float Vm_000_001_t = solver_utils::lerp(f3obj->vel->getdata_y(i_mid, j_mid, k_mid), f3obj->vel->getdata_y(i_mid, j_mid, k_mid_1), tm1);
-				float Vm_010_011_t = solver_utils::lerp(f3obj->vel->getdata_y(i_mid, j_mid_1, k_mid), f3obj->vel->getdata_y(i_mid, j_mid_1, k_mid_1), tm1);
-				float Vm_100_101_s = solver_utils::lerp(f3obj->vel->getdata_y(i_mid_1, j_mid, k_mid), f3obj->vel->getdata_y(i_mid_1, j_mid, k_mid_1), tm1);
-				float Vm_110_111_t = solver_utils::lerp(f3obj->vel->getdata_y(i_mid_1, j_mid_1, k_mid), f3obj->vel->getdata_y(i_mid_1, j_mid_1, k_mid_1), tm1);
-				float Vm_A = solver_utils::lerp(Vm_000_001_t, Vm_010_011_t, sm1);
-				float Vm_B = solver_utils::lerp(Vm_100_101_s, Vm_110_111_t, sm1);
+				float Vm_000_001_t = lerp(f3obj->vel->getdata_y(i_mid, j_mid, k_mid), f3obj->vel->getdata_y(i_mid, j_mid, k_mid_1), tm1);
+				float Vm_010_011_t = lerp(f3obj->vel->getdata_y(i_mid, j_mid_1, k_mid), f3obj->vel->getdata_y(i_mid, j_mid_1, k_mid_1), tm1);
+				float Vm_100_101_s = lerp(f3obj->vel->getdata_y(i_mid_1, j_mid, k_mid), f3obj->vel->getdata_y(i_mid_1, j_mid, k_mid_1), tm1);
+				float Vm_110_111_t = lerp(f3obj->vel->getdata_y(i_mid_1, j_mid_1, k_mid), f3obj->vel->getdata_y(i_mid_1, j_mid_1, k_mid_1), tm1);
+				float Vm_A = lerp(Vm_000_001_t, Vm_010_011_t, sm1);
+				float Vm_B = lerp(Vm_100_101_s, Vm_110_111_t, sm1);
 				// Interoplate Neighbours - for Velocity comp (W/z). 
-				float Wm_000_001_t = solver_utils::lerp(f3obj->vel->getdata_z(i_mid, j_mid, k_mid), f3obj->vel->getdata_z(i_mid, j_mid, k_mid_1), tm1);
-				float Wm_010_011_t = solver_utils::lerp(f3obj->vel->getdata_z(i_mid, j_mid_1, k_mid), f3obj->vel->getdata_z(i_mid, j_mid_1, k_mid_1), tm1);
-				float Wm_100_101_s = solver_utils::lerp(f3obj->vel->getdata_z(i_mid_1, j_mid, k_mid), f3obj->vel->getdata_z(i_mid_1, j_mid, k_mid_1), tm1);
-				float Wm_110_111_t = solver_utils::lerp(f3obj->vel->getdata_z(i_mid_1, j_mid_1, k_mid), f3obj->vel->getdata_z(i_mid_1, j_mid_1, k_mid_1), tm1);
-				float Wm_A = solver_utils::lerp(Wm_000_001_t, Wm_010_011_t, sm1);
-				float Wm_B = solver_utils::lerp(Wm_100_101_s, Wm_110_111_t, sm1);
+				float Wm_000_001_t = lerp(f3obj->vel->getdata_z(i_mid, j_mid, k_mid), f3obj->vel->getdata_z(i_mid, j_mid, k_mid_1), tm1);
+				float Wm_010_011_t = lerp(f3obj->vel->getdata_z(i_mid, j_mid_1, k_mid), f3obj->vel->getdata_z(i_mid, j_mid_1, k_mid_1), tm1);
+				float Wm_100_101_s = lerp(f3obj->vel->getdata_z(i_mid_1, j_mid, k_mid), f3obj->vel->getdata_z(i_mid_1, j_mid, k_mid_1), tm1);
+				float Wm_110_111_t = lerp(f3obj->vel->getdata_z(i_mid_1, j_mid_1, k_mid), f3obj->vel->getdata_z(i_mid_1, j_mid_1, k_mid_1), tm1);
+				float Wm_A = lerp(Wm_000_001_t, Wm_010_011_t, sm1);
+				float Wm_B = lerp(Wm_100_101_s, Wm_110_111_t, sm1);
 				
 				// Interoplated Mid Point Velocity -
-				float u_mid = solver_utils::lerp(Um_A, Um_B, rm1);
-				float v_mid = solver_utils::lerp(Vm_A, Vm_B, rm1);
-				float w_mid = solver_utils::lerp(Wm_A, Wm_B, rm1);
+				float u_mid = lerp(Um_A, Um_B, rm1);
+				float v_mid = lerp(Vm_A, Vm_B, rm1);
+				float w_mid = lerp(Wm_A, Wm_B, rm1);
 
 				// BackTrace Along Negative Midpoint Vel - XG - dt0 * u(midpoint)
 				float xxp = i - dt0 * u_mid; 
@@ -959,13 +959,13 @@ void fluidsolver_3::advect_sl_mp(grid3_scalar<float> *grid_0, grid3_scalar<float
 				float tf1 = yym - j_mid; float tf = 1 - tf1;
 
 				// Trilinearly Sample Scalar Field at backtraced postion (via MidPoint vel) -
-				float L_000_001_t = solver_utils::lerp(grid_0->getdata(i_f, j_f, k_f), grid_0->getdata(i_f, j_f, k_f_1), tf1);
-				float L_010_011_t = solver_utils::lerp(grid_0->getdata(i_f, j_f_1, k_f), grid_0->getdata(i_f, j_f_1, k_f_1), tf1);
-				float L_100_101_s = solver_utils::lerp(grid_0->getdata(i_f_1, j_f, k_f), grid_0->getdata(i_f_1, j_f, k_f_1), tf1);
-				float L_110_111_t = solver_utils::lerp(grid_0->getdata(i_f_1, j_f_1, k_f), grid_0->getdata(i_f_1, j_f_1, k_f_1), tf1);
-				float L_A = solver_utils::lerp(L_000_001_t, L_010_011_t, sf1);
-				float L_B = solver_utils::lerp(L_100_101_s, L_110_111_t, sf1);
-				float L_F = solver_utils::lerp(L_A, L_B, rf1);
+				float L_000_001_t = lerp(grid_0->getdata(i_f, j_f, k_f), grid_0->getdata(i_f, j_f, k_f_1), tf1);
+				float L_010_011_t = lerp(grid_0->getdata(i_f, j_f_1, k_f), grid_0->getdata(i_f, j_f_1, k_f_1), tf1);
+				float L_100_101_s = lerp(grid_0->getdata(i_f_1, j_f, k_f), grid_0->getdata(i_f_1, j_f, k_f_1), tf1);
+				float L_110_111_t = lerp(grid_0->getdata(i_f_1, j_f_1, k_f), grid_0->getdata(i_f_1, j_f_1, k_f_1), tf1);
+				float L_A = lerp(L_000_001_t, L_010_011_t, sf1);
+				float L_B = lerp(L_100_101_s, L_110_111_t, sf1);
+				float L_F = lerp(L_A, L_B, rf1);
 
 				// Set Backtraced Scalar Value to Cur Cell in grid_1 -
 				grid_1->setdata(L_F, i, j, k);
@@ -1027,31 +1027,31 @@ void fluidsolver_3::advect_sl_mp(grid3_vector<vec3<float>> *grid_0, grid3_vector
 
 				// Get Mid Point Velocity (Trilinear Interoplation of Velocity Components u,v,w At Midpoint Postion (m)) - 
 				// Interoplate Neighbours - for Velocity comp (U/x). 
-				float Um_000_001_t = solver_utils::lerp(f3obj->vel->getdata_x(i_mid, j_mid, k_mid), f3obj->vel->getdata_x(i_mid, j_mid, k_mid_1), tm1);
-				float Um_010_011_t = solver_utils::lerp(f3obj->vel->getdata_x(i_mid, j_mid_1, k_mid), f3obj->vel->getdata_x(i_mid, j_mid_1, k_mid), tm1);
-				float Um_100_101_s = solver_utils::lerp(f3obj->vel->getdata_x(i_mid_1, j_mid, k_mid), f3obj->vel->getdata_x(i_mid_1, j_mid, k_mid_1), tm1);
-				float Um_110_111_t = solver_utils::lerp(f3obj->vel->getdata_x(i_mid_1, j_mid_1, k_mid), f3obj->vel->getdata_x(i_mid_1, j_mid_1, k_mid_1), tm1);
-				float Um_A = solver_utils::lerp(Um_000_001_t, Um_010_011_t, sm1);
-				float Um_B = solver_utils::lerp(Um_100_101_s, Um_110_111_t, sm1);
+				float Um_000_001_t = lerp(f3obj->vel->getdata_x(i_mid, j_mid, k_mid), f3obj->vel->getdata_x(i_mid, j_mid, k_mid_1), tm1);
+				float Um_010_011_t = lerp(f3obj->vel->getdata_x(i_mid, j_mid_1, k_mid), f3obj->vel->getdata_x(i_mid, j_mid_1, k_mid), tm1);
+				float Um_100_101_s = lerp(f3obj->vel->getdata_x(i_mid_1, j_mid, k_mid), f3obj->vel->getdata_x(i_mid_1, j_mid, k_mid_1), tm1);
+				float Um_110_111_t = lerp(f3obj->vel->getdata_x(i_mid_1, j_mid_1, k_mid), f3obj->vel->getdata_x(i_mid_1, j_mid_1, k_mid_1), tm1);
+				float Um_A = lerp(Um_000_001_t, Um_010_011_t, sm1);
+				float Um_B = lerp(Um_100_101_s, Um_110_111_t, sm1);
 				// Interoplate Neighbours - for Velocity comp (V/y). 
-				float Vm_000_001_t = solver_utils::lerp(f3obj->vel->getdata_y(i_mid, j_mid, k_mid), f3obj->vel->getdata_y(i_mid, j_mid, k_mid_1), tm1);
-				float Vm_010_011_t = solver_utils::lerp(f3obj->vel->getdata_y(i_mid, j_mid_1, k_mid), f3obj->vel->getdata_y(i_mid, j_mid_1, k_mid_1), tm1);
-				float Vm_100_101_s = solver_utils::lerp(f3obj->vel->getdata_y(i_mid_1, j_mid, k_mid), f3obj->vel->getdata_y(i_mid_1, j_mid, k_mid_1), tm1);
-				float Vm_110_111_t = solver_utils::lerp(f3obj->vel->getdata_y(i_mid_1, j_mid_1, k_mid), f3obj->vel->getdata_y(i_mid_1, j_mid_1, k_mid_1), tm1);
-				float Vm_A = solver_utils::lerp(Vm_000_001_t, Vm_010_011_t, sm1);
-				float Vm_B = solver_utils::lerp(Vm_100_101_s, Vm_110_111_t, sm1);
+				float Vm_000_001_t = lerp(f3obj->vel->getdata_y(i_mid, j_mid, k_mid), f3obj->vel->getdata_y(i_mid, j_mid, k_mid_1), tm1);
+				float Vm_010_011_t = lerp(f3obj->vel->getdata_y(i_mid, j_mid_1, k_mid), f3obj->vel->getdata_y(i_mid, j_mid_1, k_mid_1), tm1);
+				float Vm_100_101_s = lerp(f3obj->vel->getdata_y(i_mid_1, j_mid, k_mid), f3obj->vel->getdata_y(i_mid_1, j_mid, k_mid_1), tm1);
+				float Vm_110_111_t = lerp(f3obj->vel->getdata_y(i_mid_1, j_mid_1, k_mid), f3obj->vel->getdata_y(i_mid_1, j_mid_1, k_mid_1), tm1);
+				float Vm_A = lerp(Vm_000_001_t, Vm_010_011_t, sm1);
+				float Vm_B = lerp(Vm_100_101_s, Vm_110_111_t, sm1);
 				// Interoplate Neighbours - for Velocity comp (W/z). 
-				float Wm_000_001_t = solver_utils::lerp(f3obj->vel->getdata_z(i_mid, j_mid, k_mid), f3obj->vel->getdata_z(i_mid, j_mid, k_mid_1), tm1);
-				float Wm_010_011_t = solver_utils::lerp(f3obj->vel->getdata_z(i_mid, j_mid_1, k_mid), f3obj->vel->getdata_z(i_mid, j_mid_1, k_mid_1), tm1);
-				float Wm_100_101_s = solver_utils::lerp(f3obj->vel->getdata_z(i_mid_1, j_mid, k_mid), f3obj->vel->getdata_z(i_mid_1, j_mid, k_mid_1), tm1);
-				float Wm_110_111_t = solver_utils::lerp(f3obj->vel->getdata_z(i_mid_1, j_mid_1, k_mid), f3obj->vel->getdata_z(i_mid_1, j_mid_1, k_mid_1), tm1);
-				float Wm_A = solver_utils::lerp(Wm_000_001_t, Wm_010_011_t, sm1);
-				float Wm_B = solver_utils::lerp(Wm_100_101_s, Wm_110_111_t, sm1);
+				float Wm_000_001_t = lerp(f3obj->vel->getdata_z(i_mid, j_mid, k_mid), f3obj->vel->getdata_z(i_mid, j_mid, k_mid_1), tm1);
+				float Wm_010_011_t = lerp(f3obj->vel->getdata_z(i_mid, j_mid_1, k_mid), f3obj->vel->getdata_z(i_mid, j_mid_1, k_mid_1), tm1);
+				float Wm_100_101_s = lerp(f3obj->vel->getdata_z(i_mid_1, j_mid, k_mid), f3obj->vel->getdata_z(i_mid_1, j_mid, k_mid_1), tm1);
+				float Wm_110_111_t = lerp(f3obj->vel->getdata_z(i_mid_1, j_mid_1, k_mid), f3obj->vel->getdata_z(i_mid_1, j_mid_1, k_mid_1), tm1);
+				float Wm_A = lerp(Wm_000_001_t, Wm_010_011_t, sm1);
+				float Wm_B = lerp(Wm_100_101_s, Wm_110_111_t, sm1);
 
 				// Interoplated Mid Point Velocity -
-				float u_mid = solver_utils::lerp(Um_A, Um_B, rm1);
-				float v_mid = solver_utils::lerp(Vm_A, Vm_B, rm1);
-				float w_mid = solver_utils::lerp(Wm_A, Wm_B, rm1);
+				float u_mid = lerp(Um_A, Um_B, rm1);
+				float v_mid = lerp(Vm_A, Vm_B, rm1);
+				float w_mid = lerp(Wm_A, Wm_B, rm1);
 
 				// BackTrace Along Negative Midpoint Vel - XG - dt0 * u(midpoint) 
 				float xxp = i - dt0 * u_mid;
@@ -1073,31 +1073,31 @@ void fluidsolver_3::advect_sl_mp(grid3_vector<vec3<float>> *grid_0, grid3_vector
 
 				// Trilinearly Sample Velocity Components (u,v,w) at Back Traced Postion (f) 
 				// Interoplate Neighbours - for Velocity comp (U/x). 
-				float Uf_000_001_t = solver_utils::lerp(grid_0->getdata_x(i_f, j_f, k_f), grid_0->getdata_x(i_f, j_f, k_f_1), tf1);
-				float Uf_010_011_t = solver_utils::lerp(grid_0->getdata_x(i_f, j_f_1, k_f), grid_0->getdata_x(i_f, j_f_1, k_f), tf1);
-				float Uf_100_101_s = solver_utils::lerp(grid_0->getdata_x(i_f_1, j_f, k_f), grid_0->getdata_x(i_f_1, j_f, k_f_1), tf1);
-				float Uf_110_111_t = solver_utils::lerp(grid_0->getdata_x(i_f_1, j_f_1, k_f), grid_0->getdata_x(i_f_1, j_f_1, k_f_1), tf1);
-				float Uf_A = solver_utils::lerp(Um_000_001_t, Um_010_011_t, sm1);
-				float Uf_B = solver_utils::lerp(Um_100_101_s, Um_110_111_t, sm1);
+				float Uf_000_001_t = lerp(grid_0->getdata_x(i_f, j_f, k_f), grid_0->getdata_x(i_f, j_f, k_f_1), tf1);
+				float Uf_010_011_t = lerp(grid_0->getdata_x(i_f, j_f_1, k_f), grid_0->getdata_x(i_f, j_f_1, k_f), tf1);
+				float Uf_100_101_s = lerp(grid_0->getdata_x(i_f_1, j_f, k_f), grid_0->getdata_x(i_f_1, j_f, k_f_1), tf1);
+				float Uf_110_111_t = lerp(grid_0->getdata_x(i_f_1, j_f_1, k_f), grid_0->getdata_x(i_f_1, j_f_1, k_f_1), tf1);
+				float Uf_A = lerp(Um_000_001_t, Um_010_011_t, sm1);
+				float Uf_B = lerp(Um_100_101_s, Um_110_111_t, sm1);
 				// Interoplate Neighbours - for Velocity comp (V/y). 
-				float Vf_000_001_t = solver_utils::lerp(grid_0->getdata_y(i_f, j_f, k_f), grid_0->getdata_y(i_f, j_f, k_f_1), tf1);
-				float Vf_010_011_t = solver_utils::lerp(grid_0->getdata_y(i_f, j_f_1, k_f), grid_0->getdata_y(i_f, j_f_1, k_f_1), tf1);
-				float Vf_100_101_s = solver_utils::lerp(grid_0->getdata_y(i_f_1, j_f, k_f), grid_0->getdata_y(i_f_1, j_f, k_f_1), tf1);
-				float Vf_110_111_t = solver_utils::lerp(grid_0->getdata_y(i_f_1, j_f_1, k_f), grid_0->getdata_y(i_f_1, j_f_1, k_f_1), tf1);
-				float Vf_A = solver_utils::lerp(Vm_000_001_t, Vm_010_011_t, sm1);
-				float Vf_B = solver_utils::lerp(Vm_100_101_s, Vm_110_111_t, sm1);
+				float Vf_000_001_t = lerp(grid_0->getdata_y(i_f, j_f, k_f), grid_0->getdata_y(i_f, j_f, k_f_1), tf1);
+				float Vf_010_011_t = lerp(grid_0->getdata_y(i_f, j_f_1, k_f), grid_0->getdata_y(i_f, j_f_1, k_f_1), tf1);
+				float Vf_100_101_s = lerp(grid_0->getdata_y(i_f_1, j_f, k_f), grid_0->getdata_y(i_f_1, j_f, k_f_1), tf1);
+				float Vf_110_111_t = lerp(grid_0->getdata_y(i_f_1, j_f_1, k_f), grid_0->getdata_y(i_f_1, j_f_1, k_f_1), tf1);
+				float Vf_A = lerp(Vm_000_001_t, Vm_010_011_t, sm1);
+				float Vf_B = lerp(Vm_100_101_s, Vm_110_111_t, sm1);
 				// Interoplate Neighbours - for Velocity comp (W/z). 
-				float Wf_000_001_t = solver_utils::lerp(grid_0->getdata_z(i_f, j_f, k_f), grid_0->getdata_z(i_f, j_f, k_f_1), tf1);
-				float Wf_010_011_t = solver_utils::lerp(grid_0->getdata_z(i_f, j_f_1, k_f), grid_0->getdata_z(i_f, j_f_1, k_f_1), tf1);
-				float Wf_100_101_s = solver_utils::lerp(grid_0->getdata_z(i_f_1, j_f, k_f), grid_0->getdata_z(i_f_1, j_f, k_f_1), tf1);
-				float Wf_110_111_t = solver_utils::lerp(grid_0->getdata_z(i_f_1, j_f_1, k_f), grid_0->getdata_z(i_f_1, j_f_1, k_f_1), tf1);
-				float Wf_A = solver_utils::lerp(Wm_000_001_t, Wm_010_011_t, sf1);
-				float Wf_B = solver_utils::lerp(Wm_100_101_s, Wm_110_111_t, sf1);
+				float Wf_000_001_t = lerp(grid_0->getdata_z(i_f, j_f, k_f), grid_0->getdata_z(i_f, j_f, k_f_1), tf1);
+				float Wf_010_011_t = lerp(grid_0->getdata_z(i_f, j_f_1, k_f), grid_0->getdata_z(i_f, j_f_1, k_f_1), tf1);
+				float Wf_100_101_s = lerp(grid_0->getdata_z(i_f_1, j_f, k_f), grid_0->getdata_z(i_f_1, j_f, k_f_1), tf1);
+				float Wf_110_111_t = lerp(grid_0->getdata_z(i_f_1, j_f_1, k_f), grid_0->getdata_z(i_f_1, j_f_1, k_f_1), tf1);
+				float Wf_A = lerp(Wm_000_001_t, Wm_010_011_t, sf1);
+				float Wf_B = lerp(Wm_100_101_s, Wm_110_111_t, sf1);
 
 				// Final Sampled Interoplated Back Traced Point Velocity -
-				float U_f = solver_utils::lerp(Uf_A, Uf_B, rf1);
-				float V_f = solver_utils::lerp(Vf_A, Vf_B, rf1);
-				float W_f = solver_utils::lerp(Wf_A, Wf_B, rf1);
+				float U_f = lerp(Uf_A, Uf_B, rf1);
+				float V_f = lerp(Vf_A, Vf_B, rf1);
+				float W_f = lerp(Wf_A, Wf_B, rf1);
 
 				// Set Final Advected Velocity to cur grid - 
 				grid_1->setdata(vec3<float>(U_f, V_f, W_f), i, j, k);
@@ -2259,8 +2259,8 @@ void fluidsolver_3::updt_mouseposRange(const step step_id)
 		glfwGetCursorPos(winptr, &xpos_1_R, &ypos_1_R);
 		xpos_1_R /= N_dim; ypos_1_R /= N_dim;
 
-		xpos_1_R = solver_utils::fit(xpos_1_R, 0.0f, 1.0f, -1.0f, 1.0f);
-		ypos_1_R = solver_utils::fit(ypos_1_R, 0.0f, 1.0f, -1.0f, 1.0f);
+		xpos_1_R = fitRange(xpos_1_R, 0.0f, 1.0f, -1.0f, 1.0f);
+		ypos_1_R = fitRange(ypos_1_R, 0.0f, 1.0f, -1.0f, 1.0f);
 
 		// Window Bounds - 
 		if (!glfwGetWindowAttrib(winptr, GLFW_HOVERED)) xpos_1_R = 0.0f, ypos_1_R = 0.0f;
@@ -2270,8 +2270,8 @@ void fluidsolver_3::updt_mouseposRange(const step step_id)
 		glfwGetCursorPos(winptr, &xpos_0_R, &ypos_0_R);
 		xpos_0_R /= N_dim; ypos_0_R /= N_dim;
 
-		xpos_0_R = solver_utils::fit(xpos_1_R, 0.0f, 1.0f, -1.0f, 1.0f);
-		ypos_0_R = solver_utils::fit(ypos_1_R, 0.0f, 1.0f, -1.0f, 1.0f);
+		xpos_0_R = fitRange(xpos_1_R, 0.0f, 1.0f, -1.0f, 1.0f);
+		ypos_0_R = fitRange(ypos_1_R, 0.0f, 1.0f, -1.0f, 1.0f);
 
 		// Window Bounds - 
 		if (!glfwGetWindowAttrib(winptr, GLFW_HOVERED)) xpos_0_R = 0.0f, ypos_0_R = 0.0f;
@@ -2299,7 +2299,7 @@ void fluidsolver_3::updt_mousevel()
 void fluidsolver_3::dissipate(grid3_scalar<float> *grid, float disp_mult, float dt)
 {
 	//disp_mult = std::max(0.0f, std::min(disp_mult, 1.0f)); // Enforce 0-1 Mult. 
-	disp_mult = solver_utils::clamp(disp_mult, 0.0f, 1.0f); 
+	disp_mult = clamp(disp_mult, 0.0f, 1.0f); 
 
 	#pragma omp parallel for
 	for (int k = 1; k <= N_dim; k++)
@@ -2322,7 +2322,7 @@ void fluidsolver_3::dissipate(grid3_scalar<float> *grid, float disp_mult, float 
 
 void fluidsolver_3::dissipate(grid3_vector<vec3<float>> *grid, float disp_mult, float dt)
 {
-	disp_mult = solver_utils::clamp(disp_mult, 0.0f, 1.0f);
+	disp_mult = clamp(disp_mult, 0.0f, 1.0f);
 	#pragma omp parallel for
 	for (int k = 1; k <= N_dim; k++)
 	{
@@ -2344,39 +2344,36 @@ void fluidsolver_3::dissipate(grid3_vector<vec3<float>> *grid, float disp_mult, 
 
 
 /*	====================================================
-Solver Utils Implementation (Lambda Utility Funcs) -
+Static Utility Member Functions 
 ==================================================== */
 
-// Implement Static std::function stored Lambdas.
-
 // CLAMP: Between Min and Max Range Lambda (Stored in std::function). 
-std::function<float(float,float,float)> solver_utils::clamp = [&](float v, float min, float max) -> float
+float fluidsolver_3::clamp(float val, float min, float max)
 {
-	return std::max(min, std::min(v, max));
+	return std::max(min, std::min(val, max));
 };
 
-// FIT: Value From Some Range A to Some New Range B (Eg 0 to 1, to -1 to 1 0.5 becomes 0) Lambda (Stored in std::function). 
-std::function<float(float, float, float, float, float)> solver_utils::fit = [&](float val, float a_min, float a_max, float b_min, float b_max) -> float
+// FIT RANGE: Value From Some Range A to Some New Range B (Eg 0 to 1, to -1 to 1 0.5 becomes 0)
+float fluidsolver_3::fitRange(float val, float a_min, float a_max, float b_min, float b_max)
 {
 	return b_min + (val - a_min)*(b_max - b_min) / (a_max - a_min);
 };
 
 // LERP: From One Float Value to Another By 0-1 Bias Value. 
-std::function<float(float, float, float)> solver_utils::lerp = [&](float val_0, float val_1, float bias) -> float
+float fluidsolver_3::lerp(float val_0, float val_1, float bias)
 {
 	return (1.0f - bias) * val_0 + bias * val_1;
 };
 
-// 1D CosInterp. 
-std::function<float(float, float, float)> solver_utils::cosinterp = [&](float val_0, float val_1, float bias) -> float
+// 1D Cosine Interpolation. 
+float fluidsolver_3::cosinterp(float val_0, float val_1, float bias)
 {
 	float mu = (1.0f - std::cos(bias*PI)) / 2.0f;
 	return (float) (val_0*(1.0f - mu) + val_1 * mu);
 };
 
-
 /*	====================================================
-	DEBUG - Member FUnctions 
+	DEBUG - Member Functions 
 	==================================================== */
 
 void fluidsolver_3::fill_test(int x)
