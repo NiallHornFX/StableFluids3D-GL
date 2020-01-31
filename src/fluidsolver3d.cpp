@@ -1947,7 +1947,7 @@ void fluidsolver_3::project_SIMD(int iter)
 	==================================================== */
 // Implementation of Simulation Solve step of Density solve operations. 
 
-void fluidsolver_3::density_step(int diff_iter, float diffA, bool dodiff)
+void fluidsolver_3::density_step()
 {
 	// DIFFUSE Density - 
 	// If Using Diffusion, If Not Need to Manually set Cur to Prev, rather than swapping.
@@ -1955,10 +1955,10 @@ void fluidsolver_3::density_step(int diff_iter, float diffA, bool dodiff)
 	{
 		f3obj->dens->swap(f3obj->prev_dens); // Swap Density With Prev_Density. 
 		// Gauss-Seidel Iterative Density (Scalar) Diffusion - 
-		diffuse(f3obj->prev_dens, f3obj->dens, diffA, diff_iter);
+		diffuse(f3obj->prev_dens, f3obj->dens, Parms.p_Dens_Diffuse_Str, Parms.p_Dens_Diff_iter);
 		f3obj->dens->swap(f3obj->prev_dens); // Re-Swap Density With Prev_Density. 
 	}
-	else if (Parms.p_Do_Dens_Diff == false)
+	else 
 	{
 		// Use "SetCurToPrev" Funcs to Copy Grids, Oppose to via Diffusion - 
 		f3obj->setcurtoprev(f3obj->prev_dens, f3obj->dens);
@@ -1992,16 +1992,17 @@ void fluidsolver_3::density_step(int diff_iter, float diffA, bool dodiff)
 // Excluding Sourcing which will be done via user in FluidObject.
 // Removed Pre Advection Projection Calls, So I can use One Call Post Advection, With Higher Iter Counts.
 
-void fluidsolver_3::velocity_step(int diff_iter, int proj_iter, float diffA, bool dodiff)
+void fluidsolver_3::velocity_step()
 {
 	// If Using Diffusion, If Not Need to Manually set Cur to Prev, rather than swapping. 
-	if (dodiff == true)
+	if (Parms.p_Do_Vel_Diff == true)
 	{
 		f3obj->vel->swap(f3obj->prev_vel); // Swap Vel Field with Prev_VelField.
-		diffuse(f3obj->prev_vel, f3obj->vel, diffA, diff_iter);
+		// Gauss-Seidel Iterative Vector Diffusion - 
+		diffuse(f3obj->prev_vel, f3obj->vel, Parms.p_Vel_Diffuse_Str, Parms.p_Vel_Diff_iter);
 		f3obj->vel->swap(f3obj->prev_vel); // Re-Swap Vel With Prev_Vel. 
 	}
-	else if (dodiff == false)
+	else 
 	{
 		f3obj->setcurtoprev(f3obj->prev_vel, f3obj->vel);
 	}
@@ -2135,12 +2136,11 @@ void fluidsolver_3::solve_step(bool solve, bool do_diffdens, bool do_diffvel, fl
 		//if (step_count <= 20) f3obj->radial_force(vec3<float>(0.499f, 0.499f), 0.8f, this->dt);
 
 		// STEP - SUB - SOLVER STEP OPERATIONS \\ -------------- 
-		velocity_step(diff_iter, proj_iter, vel_diff, do_diffvel);
-		density_step(diff_iter, dens_diff, do_diffdens);
+		velocity_step();
+		density_step();
 
 		// !!!! DebugStep - 
 		//debug_step();
-
 
 		// STEP - RENDER CALLS \\ ------------------
 		// Pass Cur Step - 

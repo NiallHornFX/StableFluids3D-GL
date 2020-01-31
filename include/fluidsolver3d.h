@@ -119,7 +119,8 @@ public:
 
 		// Diffusion Switches - 
 		bool p_Do_Vel_Diff = false, p_Do_Dens_Diff = true;
-		float p_densDiffuseSt, p_velDiffuseSt; 
+		int p_Vel_Diff_iter = 5, p_Dens_Diff_iter = 5;
+		float p_Vel_Diffuse_Str = 0.0f, p_Dens_Diffuse_Str = 0.001f;
 
 		// Dissipation Swtiches - 
 		bool p_Do_Dens_Disp = true, p_Do_Vel_Disp = false;
@@ -196,8 +197,8 @@ protected:
 	//void vorticity_confine_B(float strength);
 
 	// SOLVER - SUB SOLVERS \\ - 
-	void density_step(int lin_iter, float diff, bool dodiff);
-	void velocity_step(int diff_iter, int proj_iter, float diffA, bool dodiff);
+	void density_step();
+	void velocity_step();
 
 	void debug_step(); 
 
