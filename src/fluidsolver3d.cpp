@@ -2091,11 +2091,11 @@ void fluidsolver_3::solve_step(bool solve, bool do_diffdens, bool do_diffvel, fl
 
 	// Move this into RenderObject Initalization - 
 	// Set Render_Object Texture Units to Sampler Uniforms Pre Solve Loop - 
-	glUseProgram(render_obj->shader_prog); // Call Use (Shader) Program First. 
+	glUseProgram(render_obj->quad_shader_prog); // Call Use (Shader) Program First. 
 
 	// Set 3D Tex Sampler Uniforms, to matching Texture Units.
-	glUniform1i(glGetUniformLocation(render_obj->shader_prog, "d_tex"), 0); // Density = 0. 
-	glUniform1i(glGetUniformLocation(render_obj->shader_prog, "v_tex"), 1); // Density = 0. 
+	glUniform1i(glGetUniformLocation(render_obj->quad_shader_prog, "d_tex"), 0); // Density = 0. 
+	glUniform1i(glGetUniformLocation(render_obj->quad_shader_prog, "v_tex"), 1); // Density = 0. 
 
 	//Solve Step And Render - EXEC LOOP 
 	while (solve == true && step_count <= max_step) // Infinite Solve Loop For Now. Will need to link this to drawing/waiting etc. 

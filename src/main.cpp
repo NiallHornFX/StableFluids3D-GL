@@ -67,7 +67,8 @@ int main()
 {
 	// Create Render Context For OpenGL Context With Window Setup (in main thread). Window Dimensions Incl Edge Cell/Pixels. 
 	render_context_OGL render_c (win_size_xy, win_size_xy, short(GLMajor), short(GLMinor)); 
-	renderobject_3D_OGL("OpenGL", GLMajor, GLMinor, vec2<int>(win_size_xy, win_size_xy), vec3<int>(cube + edge, cube + edge, cube + edge), render_c.get_window(), 0);
+	renderobject_3D_OGL render_o ("OpenGL", GLMajor, GLMinor, vec2<int>(win_size_xy, win_size_xy), vec3<int>(cube + edge, cube + edge, cube + edge), render_c.get_window(), 0);
+	render_o.call_ren(rend_state::RENDER_DEBUG);
 
 	/*
 	// Create Fluid Object - Containing Fluid Grids and Data. 

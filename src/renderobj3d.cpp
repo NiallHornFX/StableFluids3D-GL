@@ -32,9 +32,9 @@ renderobject_3D_OGL::renderobject_3D_OGL(const char *api_name, int v_maj, int v_
 
 	int vr = vertex_setup(); 
 	cur_shader = 0; 
-	int sl_0 = shader_loader("shaders/CubeBake_Shader.vert", "shaders/CubeBake_Shader.frag"); 
+	int sl_0 = shader_loader("shaders/Cube_BakeShader.vert", "shaders/Cube_BakeShader.frag"); 
 	cur_shader = 1;
-	int sl_1 = shader_loader("shaders/Quad_RayMarchingShader.vert", "shaders/Quad_RayMarchingShader.frag");
+	int sl_1 = shader_loader("shaders/Quad_RayMarchingShader.vert", "shaders/Quad_RayMarchShader.frag");
 
 	// Gen 3D Textures -
 	glGenTextures(1, &tex_dens);
@@ -176,7 +176,7 @@ int renderobject_3D_OGL::vertex_setup()
 	// Front Cube (CFront_VAO, CFront_VBO) 
 	glBindVertexArray(CFront_VAO);
 	glBindBuffer(GL_ARRAY_BUFFER, CFront_VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * (18 * 6), CFront_vertices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * (18 * 6), CFront_vertices, GL_STATIC_DRAW);
 	// (float) XYZ-UVW (6 * sizeof(float) stride) 
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), 0);
 	glEnableVertexAttribArray(0); // Enable VAO Attrib 0 - Postion
@@ -190,7 +190,7 @@ int renderobject_3D_OGL::vertex_setup()
 	// Back Cube (CBack_VAO, CBack_VBO) 
 	glBindVertexArray(CBack_VAO);
 	glBindBuffer(GL_ARRAY_BUFFER, CBack_VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * (18 * 6), CBack_vertices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * (18 * 6), CBack_vertices, GL_STATIC_DRAW);
 	// (float) XYZ-UVW (6 * sizeof(float) stride) 
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), 0);
 	glEnableVertexAttribArray(0); // Enable VAO Attrib 0 - Postion
@@ -208,7 +208,7 @@ int renderobject_3D_OGL::vertex_setup()
 	glGenBuffers(1, &Quad_VBO);
 	glBindVertexArray(Quad_VAO);
 	glBindBuffer(GL_ARRAY_BUFFER, Quad_VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 12, quad_vertices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 12, quad_vertices, GL_STATIC_DRAW);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0); // VertPos
 	glEnableVertexAttribArray(0);
 	// UnBind
@@ -276,6 +276,7 @@ void renderobject_3D_OGL::shader_checkLink(int shader)
 {
 	GLuint cur_shader_prog;
 	if (shader == 0) { cur_shader_prog = cube_shader_prog; } else if (shader == 1) { cur_shader_prog = quad_shader_prog; }
+	std::cout << "SHADER " << shader << " PROG " << cur_shader_prog << "\n";
 	int sucess;
 	const int len = 512;
 	char err_log[len];
@@ -374,7 +375,7 @@ int renderobject_3D_OGL::shader_loader(const char *vert_path, const char *frag_p
 		glAttachShader(quad_shader_prog, quad_vert_shader); glAttachShader(quad_shader_prog, quad_frag_shader);
 		glLinkProgram(quad_shader_prog);
 
-		shader_checkLink(0);
+		shader_checkLink(1);
 	}
 
 	return 0; 
