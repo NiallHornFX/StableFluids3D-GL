@@ -78,6 +78,7 @@ protected:
 
 	// DVR Setup - 
 	void cube_setup(); 
+	void cube_update(); 
 	void cube_fbo_setup();
 	void cube_fbo_attach(int tex); // 0 front | 1 back | 2 clear
 

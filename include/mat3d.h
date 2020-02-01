@@ -15,7 +15,7 @@ class matrix_4x4
 {
 public:
 	// Ctors
-	matrix_4x4() { clear(); }
+	matrix_4x4() { ident(); }
 
 	matrix_4x4(T aa, T ab, T ac, T ad, T ba, T bb, T bc, T bd, T ca, T cb, T cc, T cd, T da, T db, T dc, T dd)
 	{
@@ -77,12 +77,15 @@ public:
 	inline matrix_4x4& operator/= (const matrix_4x4 &b);
 	inline matrix_4x4& operator/= (const T s);
 
-	// Transformation Operations - 
+	// Transformation Operations (Modifiy and return this ref)- Is there any use in modifying this? 
 	inline matrix_4x4& translate(const vec3<T> &tv);
-	inline matrix_4x4& rotate(const vec3<T> &axis, T angle);
+	matrix_4x4& rotate(const vec3<T> &axis, T angle);
 	inline matrix_4x4& scale(const vec3<T> &sv);
 
-	// Matrix Camera Operations - 
+	// Matrix Transform Operation Builder MFs - 
+	static matrix_4x4 make_rotate(const vec3<T> &axis, T angle);
+
+	// Matrix Camera Builder MFs - 
 	static inline matrix_4x4 make_lookAt(const vec3<T> &cam_P, const vec3<T> &look_P, const vec3<T> &up);
 	static inline matrix_4x4 make_perspective(T const fov, T const ar, T const near, T const far);
 
@@ -147,6 +150,7 @@ inline void matrix_4x4<T>::print_mat()
 	{
 		for (int i = 0; i < 4; i++)
 		{
+			//std::cout << idx2Dto1D(i, j) << "\n";
 			std::cout << comp[idx2Dto1D(i, j)] << "|";
 		}
 		std::cout << "\n";
@@ -191,7 +195,7 @@ inline matrix_4x4<T> matrix_4x4<T>::operator* (const matrix_4x4<T> &b) const
 		{
 			for (int k = 0; k < 4; k++)
 			{
-				res.comp[idx2Dto1D(i, j)] += this->comp[idx2Dto1D(i, k)] * b.comp[idx2Dto1D(k, j)];
+				res.comp[idx2Dto1D(i, j)] = this->comp[idx2Dto1D(i, k)] * b.comp[idx2Dto1D(k, j)];
 			}
 		}
 	}
@@ -245,7 +249,7 @@ inline matrix_4x4<T>& matrix_4x4<T>::operator-= (const T s)
 }
 
 // this Matrix Multipcation - 
-
+// rm additive rotation of this ij... += ! = 
 template <class T>
 inline matrix_4x4<T>& matrix_4x4<T>::operator*= (const matrix_4x4<T> &b)
 {
@@ -255,7 +259,7 @@ inline matrix_4x4<T>& matrix_4x4<T>::operator*= (const matrix_4x4<T> &b)
 		{
 			for (int k = 0; k < 4; k++)
 			{
-				this->comp[idx2Dto1D(i, j)] += this->comp[idx2Dto1D(i, k)] * b.comp[idx2Dto1D(k, j)];
+				this->comp[idx2Dto1D(i, j)] = this->comp[idx2Dto1D(i, k)] * b.comp[idx2Dto1D(k, j)];
 			}
 		}
 	}
@@ -292,16 +296,20 @@ inline matrix_4x4<T>& matrix_4x4<T>::operator/= (const T s)
 }
 
 // Matrix Transformations - 
+// Assume Matrix (this) is in Identity State. 
 template <class T>
 inline matrix_4x4<T>& matrix_4x4<T>::translate(const vec3<T> &tv)
 {
-	comp[12] += tv.x, comp[13] += tv.y, comp[14] += tv.z;
+	comp[12] = tv.x, comp[13] = tv.y, comp[14] = tv.z;
 	return *this; 
 }
 
+// Returns Rotation Matrix to Rotate some Vector by some AngleAxis Rotation. 
+// Well Actually Multiples this by the result ... 
+// Maybe have MakeRotationMatrix Static MFunction as a builder. And Keep this as Build Rotation Matrix, and Multiply with Self...
 // Will Implement 3x3 Mats later, till then just use 4x4, with each 4th comp apart from [3][3] zero'd.
 template <class T>
-inline matrix_4x4<T>& matrix_4x4<T>::rotate(const vec3<T> &axis, T angle)
+matrix_4x4<T>& matrix_4x4<T>::rotate(const vec3<T> &axis, T angle)
 {
 	// X Rot
 	T x_ang = axis.x * angle; 
@@ -345,12 +353,34 @@ inline matrix_4x4<T> matrix_4x4<T>::make_lookAt(const vec3<T> &cam_P, const vec3
 
 // [..]
 
+
+// Rotation Matrix Builder MF (Return Created RotMat, oppose to multiplying with this, as matrix_4x4<T>::rotate() does)
+template<class T>
+matrix_4x4<T> matrix_4x4<T>::make_rotate(const vec3<T> &axis, T angle)
+{
+	// X Rot
+	T x_ang = axis.x * angle;
+	matrix_4x4<T> xrot(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, cosf(x_ang), -sinf(x_ang), 0.0f, 0.0f, sinf(x_ang), cosf(x_ang), 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+	// Y Rot
+	T y_ang = axis.y * angle;
+	matrix_4x4<T> yrot(cosf(y_ang), 0.0f, sinf(y_ang), 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, -sinf(y_ang), 0.0f, cosf(y_ang), 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+	// Z Rot
+	T z_ang = axis.z * angle;
+	matrix_4x4<T> zrot(cosf(z_ang), -sinf(z_ang), 0.0f, 0.0f, sinf(z_ang), cosf(z_ang), 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+
+	// x*y*z Rot Order. 
+	matrix_4x4<T> xy = xrot * yrot;
+	matrix_4x4<T> frot = xy * zrot; 
+
+	return frot; 
+}
+
 // Static MFs - Indexers - 
 
 template <class T>
 inline int matrix_4x4<T>::idx2Dto1D(int i, int j)
 {
-	return (int)i * 4 + j;
+	return (int)i + 4 * j;
 }
 
 template <class T>
