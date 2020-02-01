@@ -174,20 +174,22 @@ int renderobject_3D_OGL::vertex_setup()
 	// Cube Setup \\
 
 	// Front Cube (CFront_VAO, CFront_VBO) 
+	glGenVertexArrays(1, &CFront_VAO); glGenBuffers(1, &CFront_VBO);
 	glBindVertexArray(CFront_VAO);
 	glBindBuffer(GL_ARRAY_BUFFER, CFront_VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * (18 * 6), CFront_vertices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * (18 * 6), CFront_vertices, GL_STATIC_DRAW);
 	// (float) XYZ-UVW (6 * sizeof(float) stride) 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), 0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), 0);
 	glEnableVertexAttribArray(0); // Enable VAO Attrib 0 - Postion
 	// Vertex UV Attrib - (1) Start at float*3 offset of Postion Attribs. 
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (GLvoid*)(sizeof(float) * 3));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(sizeof(float) * 3));
 	glEnableVertexAttribArray(1);
 	// UnBind
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	// Back Cube (CBack_VAO, CBack_VBO) 
+	glGenVertexArrays(1, &CBack_VAO); glGenBuffers(1, &CBack_VBO);
 	glBindVertexArray(CBack_VAO);
 	glBindBuffer(GL_ARRAY_BUFFER, CBack_VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * (18 * 6), CBack_vertices, GL_STATIC_DRAW);
@@ -545,9 +547,10 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 			// Clear
 			// Draw Quad and RayMarch along Stored Cube Coordinates. 
 
+			//cube_setup();
 			glUseProgram(cube_shader_prog);
 			// Test Render Cube - 
-			glBindVertexArray(CFront_VAO);
+			glBindVertexArray(CBack_VAO);
 			glDrawArrays(GL_TRIANGLES, 0, 18);
 
 			glUseProgram(0);
@@ -617,8 +620,10 @@ void renderobject_3D_OGL::call_ren(rend_state rs)
 void renderobject_3D_OGL::print_GL_error()
 {
 	GLenum err;
-	while ((err = glGetError()) != GL_NO_ERROR)
+	int i = 0;
+	while ((err = glGetError()) != GL_NO_ERROR && i < 5)
 	{
 		std::cout << "ERROR::RENDER_OBJECT_OGL:: " << err << "\n";
+		i++; 
 	}
 }
