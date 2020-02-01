@@ -24,7 +24,8 @@ renderobject_3D::renderobject_3D(const char *api_name, int v_maj, int v_min, con
 
 // RenderObject_2D_OGL Constructor - 
 renderobject_3D_OGL::renderobject_3D_OGL(const char *api_name, int v_maj, int v_min, const vec2<int> &ws, const vec3<int> &gs, GLFWwindow *winptr, short rmode)
-	: renderobject_3D(api_name, v_maj, v_min, ws, gs, rmode), window_ptr(winptr)  // Initalize ABC Members Via Its Own Constructor. 
+	: renderobject_3D(api_name, v_maj, v_min, ws, gs, rmode), window_ptr(winptr),  // Initalize RenObj ABC Members Via Its Own Constructor. 
+	cube_model(), cube_view(), cube_persp(), cam_target(0.0f, 0.0f, 0.0f) // 0 Initalize Cube Transformation Matrix and Vector Members
 {
 	std::cout << "DBG::RenderObject_3D Created For Render API: " << api_name << " " << v_maj << "." << v_min << "\n \n";
 	// Call Setup MFuncs
@@ -44,26 +45,49 @@ renderobject_3D_OGL::renderobject_3D_OGL(const char *api_name, int v_maj, int v_
 // RenderObject_2D_OGL Destructor -
 renderobject_3D_OGL::~renderobject_3D_OGL()
 {
-	if (vert_shader || vert_shader != NULL) {
-		glDeleteShader(vert_shader);
-		vert_shader = NULL;
+	// Dealloc Cube 
+
+	if (cube_vert_shader || cube_vert_shader != NULL) {
+		glDeleteShader(cube_vert_shader);
+		cube_vert_shader = NULL;
 	}
 
-	if (frag_shader || frag_shader != NULL) {
-		glDeleteShader(frag_shader);
-		frag_shader = NULL;
+	if (cube_frag_shader || cube_frag_shader != NULL) {
+		glDeleteShader(cube_frag_shader);
+		cube_frag_shader = NULL;
 	}
 
-	if (shader_prog || shader_prog != NULL) {
-		glDeleteProgram(shader_prog);
-		shader_prog = NULL; 
+	if (cube_shader_prog || cube_shader_prog != NULL) {
+		glDeleteProgram(cube_shader_prog);
+		cube_shader_prog = NULL;
+	}
+
+	delete CFront_vertices; CFront_vertices = nullptr;
+	delete CBack_vertices;  CBack_vertices = nullptr;
+	delete cube_vert_shader_code; cube_vert_shader_code = nullptr;
+	delete cube_frag_shader_code; cube_frag_shader_code = nullptr;
+
+	// Dealloc Quad 
+
+	if (quad_vert_shader || quad_vert_shader != NULL) {
+		glDeleteShader(quad_vert_shader);
+		quad_vert_shader = NULL;
+	}
+
+	if (quad_frag_shader || quad_frag_shader != NULL) {
+		glDeleteShader(quad_frag_shader);
+		quad_frag_shader = NULL;
+	}
+
+	if (quad_shader_prog || quad_shader_prog != NULL) {
+		glDeleteProgram(quad_shader_prog);
+		quad_shader_prog = NULL; 
 	}
 
 	delete quad_vertices; quad_vertices = nullptr; 
 	delete quad_indices; quad_indices = nullptr; 
-
-	delete quad_vert_shader_code; vert_shader_code = nullptr; 
-	delete quad_frag_shader_code; frag_shader_code = nullptr; 
+	delete quad_vert_shader_code; quad_vert_shader_code = nullptr; 
+	delete quad_frag_shader_code; quad_frag_shader_code = nullptr; 
 }
 
 /* RenderObject_2D_OGL Vertex Setup Implementation - Setup Quad and Cube Buffers and Arrays Here */ 
@@ -71,7 +95,7 @@ int renderobject_3D_OGL::vertex_setup()
 {
 	// Cube Vertex Arrays - 
 	
-	GLfloat cube_verts_front[18 * 6] =
+	CFront_vertices = new GLfloat[18 * 6]
 	{
 		// Face 0
 		0.5, -0.5, 0.5, 1.0, 0.0, 1.0,
@@ -102,7 +126,7 @@ int renderobject_3D_OGL::vertex_setup()
 	};
 
 	// Cube Back Faces (Triangle Vertices)
-	GLfloat cube_verts_back[18 * 6] =
+	 CBack_vertices = new GLfloat[18 * 6]
 	{
 		// Face 3
 		-0.5,-0.5,-0.5, 0.0, 0.0, 0.0,
@@ -152,7 +176,7 @@ int renderobject_3D_OGL::vertex_setup()
 	// Front Cube (CFront_VAO, CFront_VBO) 
 	glBindVertexArray(CFront_VAO);
 	glBindBuffer(GL_ARRAY_BUFFER, CFront_VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(cube_verts_front), cube_verts_front, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * (18 * 6), CFront_vertices, GL_STATIC_DRAW);
 	// (float) XYZ-UVW (6 * sizeof(float) stride) 
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), 0);
 	glEnableVertexAttribArray(0); // Enable VAO Attrib 0 - Postion
@@ -166,7 +190,7 @@ int renderobject_3D_OGL::vertex_setup()
 	// Back Cube (CBack_VAO, CBack_VBO) 
 	glBindVertexArray(CBack_VAO);
 	glBindBuffer(GL_ARRAY_BUFFER, CBack_VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(cube_verts_back), cube_verts_back, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * (18 * 6), CBack_vertices, GL_STATIC_DRAW);
 	// (float) XYZ-UVW (6 * sizeof(float) stride) 
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), 0);
 	glEnableVertexAttribArray(0); // Enable VAO Attrib 0 - Postion
@@ -352,15 +376,13 @@ int renderobject_3D_OGL::shader_loader(const char *vert_path, const char *frag_p
 
 		shader_checkLink(0);
 	}
-	
-
 
 	return 0; 
 }
 
 void renderobject_3D_OGL::shader_pipe(fluidobj_3d *f3obj)
 {
-	// Shader Piper is Passing to Quad Shader Only (ie 3D Texs for RayMarching) 
+	// Shader Pipe is Passing to Quad Shader Only (ie 3D Texs for RayMarching) After Cube Render Steps. 
 	// UNIFORM CONSTANTS (Per Step) \\
 
 	// Pass Window Size to GL Uniform. // Could be done after Shader Compile (Once.?)
@@ -431,12 +453,79 @@ void renderobject_3D_OGL::shader_pipe(fluidobj_3d *f3obj)
 	delete vel3D; vel3D = nullptr; 
 }
 
+// RenderObject_3D_OGL Cube Setup - Setup Cube Transforms (Initalize, and then updt in RLoop?)
+void renderobject_3D_OGL::cube_setup()
+{
+	// Inital Cube Transform Setup to pass to GPU - 
+	cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), matrix_4x4<float>::degtoRad(25.0f));
+	cube_view.translate(vec3<float>(0.0f, 0.0f, -2.0f)); // No LA Yet. Just Move Back on -z (ie cam "moved" along +z)
+	//cube_persp
 
-// RenderObject_2D_OGL Shader Loader Implementation -
+	glUseProgram(cube_shader_prog);
+	// Pass Matrix_4x4<T>.comp Data Array. NOTE Transpose = GL_TRUE (As stored on host in RowMajor)
+	glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "model"), 1, GL_TRUE, cube_model.comp);
+	glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "view"), 1, GL_TRUE, cube_view.comp);
+	//glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "persp"), 1, GL_TRUE, cube_persp.comp);
+	glUseProgram(0);
+}
+
+// RenderObject_3D_OGL Cube FrameBuffer Setup - For Baking Rasterized Cube to - 
+void renderobject_3D_OGL::cube_fbo_setup()
+{
+	// Gen FBO 
+	glGenFramebuffers(1, &Cube_FBO);
+	glBindBuffer(GL_FRAMEBUFFER, Cube_FBO);
+
+	// Front Back Texture Setup Pass NULL data - 
+	// Front 
+	glGenTextures(1, &tex_CFront);
+	glBindTexture(GL_TEXTURE_2D, tex_CFront);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, window_size.x, window_size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	// Back
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glGenTextures(1, &tex_CBack);
+	glBindTexture(GL_TEXTURE_2D, tex_CBack);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, window_size.x, window_size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	// Leave FBO Texture Unbound. 
+	glBindBuffer(GL_FRAMEBUFFER, 0); // Clear Bound FBO state. 
+
+}
+
+// RenderObject_3D_OGL Cube FrameBuffer Attach - Call During Render to Switch/Clear FrameBuffer Attachments.
+void renderobject_3D_OGL::cube_fbo_attach(int tex)
+{
+	if (tex == 0) // FBO --> Cube Front Texture Attachment
+	{
+		glBindBuffer(GL_FRAMEBUFFER, Cube_FBO);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex_CFront, 0);
+		glBindFramebuffer(GL_FRAMEBUFFER, Cube_FBO);
+	}
+	else if (tex == 1) // FBO --> Cube Back Texture Attachemnt
+	{
+		glBindBuffer(GL_FRAMEBUFFER, Cube_FBO);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex_CBack, 0);
+		glBindFramebuffer(GL_FRAMEBUFFER, Cube_FBO);
+	}
+	else if (tex == 2) // FBO Unbind Texture Attachemnt, and FBO. 
+	{
+		// Clear FrameBuffer Attachment And Revert to Default FrameBuffer (For RM) 
+		glBindBuffer(GL_FRAMEBUFFER, 0);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	}
+}
+
+// RenderObject_3D_OGL Shader Loader Implementation -
 void renderobject_3D_OGL::render_loop(rend_state rs)
 {
-	// IF DBG Then Use While Loop Here - (As Assume NOT CALLED FROM INSIDE SOLVER LOOP (per step))
-	// DBG Mode assumes RenderObject Setup/Debugging outside of a FluidSolver Instance eg from main for dbg sake. 
+	/* IF DBG Then Use While Loop Here - (As Assume NOT CALLED FROM INSIDE SOLVER LOOP (per step))
+	   DBG Mode assumes RenderObject Setup/Debugging outside of a FluidSolver Instance eg from main for dbg sake. 
+	   Test Render Code in Render_Debug State. */ 
+
 	if (rs == rend_state::RENDER_DEBUG)
 	{
 		while (!glfwWindowShouldClose(window_ptr))
@@ -445,7 +534,25 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 
 			//glPolygonMode(GL_FRONT, GL_LINE);
 			glClearColor(0.0f, 0.0f, 1.0f, 0.0f);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+			// Set FBO To Front Tex 
+			// Draw Front Faces (to FBO)
+			// Clear
+			// Set FBO to Back Tex
+			// Draw Back Faces (to FBO)
+			// Clear
+			// Draw Quad and RayMarch along Stored Cube Coordinates. 
+
+			glUseProgram(cube_shader_prog);
+			// Test Render Cube - 
+			glBindVertexArray(CFront_VAO);
+			glDrawArrays(GL_TRIANGLES, 0, 18);
+
+			glUseProgram(0);
+			glBindVertexArray(0);
+
+			/*
 			// Active and Bind Textures. 
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, tex_dens);
@@ -458,6 +565,7 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 			glBindVertexArray(VAO);
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+			*/
 
 			glfwSwapBuffers(window_ptr);
 			glfwPollEvents();
@@ -466,8 +574,7 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 	}
 	else // Assume Called INSIDE SOLVE LOOP. Thus RENDER_ACTIVE dbg state. 
 	{
-		//So Just do In Loop Operations (Because there already called within a (solve) loop) -	
-		//Input Polling done within Solver Solve_Step Loop for more freedom of inputs vars. 
+		/* ! TESTING IN DEBUG MODE FIRST. OLD RLOOP HERE ! 
 
 		// Render Loop \\
 
@@ -493,6 +600,7 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 		glfwSwapInterval(0); // No VSync !
 		glfwSwapBuffers(window_ptr);
 		glfwPollEvents();
+		*/
 	}
 
 }

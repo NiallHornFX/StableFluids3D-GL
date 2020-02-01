@@ -78,7 +78,8 @@ protected:
 
 	// DVR Setup - 
 	void cube_setup(); 
-	void cube_fbo(); 
+	void cube_fbo_setup();
+	void cube_fbo_attach(int tex); // 0 front | 1 back | 2 clear
 
 	// DBG - 
 	void print_GL_error(); 
@@ -103,6 +104,12 @@ private:
 	// Geo Arrays
 	GLfloat *CFront_vertices, *CBack_vertices, *quad_vertices; 
 	GLuint *quad_indices; 
+
+	// Cube Transform - 
+	matrix_4x4<float> cube_model, cube_view, cube_persp;
+	vec3<float> cam_target;
+
+	
 
 	// RenderContext (GLFW) Window Pointer
 	GLFWwindow *window_ptr = nullptr; 
