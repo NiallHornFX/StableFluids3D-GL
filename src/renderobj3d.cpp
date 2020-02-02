@@ -480,11 +480,17 @@ void renderobject_3D_OGL::cube_setup()
 // TEST need Better Functionality ...
 void renderobject_3D_OGL::cube_update()
 {
-	glUseProgram(cube_shader_prog);
+	// Update Transforms
 	cube_model.rotate(vec3<float>(1.0f, 1.0f, 0.0f), matrix_4x4<float>::degtoRad(0.5f));
 	cube_model.print_mat();
+
+	// Transpose (via MF or gl TransposeFlag ) and pass to Uniform - 
+	glUseProgram(cube_shader_prog);
+	// Model - 
 	matrix_4x4<float> cube_model_tp = cube_model.transpose(); // Dont transpose orginal Mat. 
-	glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "model"), 1, GL_FALSE, cube_model_tp.comp);
+	//glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "model"), 1, GL_FALSE, cube_model_tp.comp);
+	glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "model"), 1, GL_TRUE, cube_model.comp);
+
 	glUseProgram(0);
 }
 
