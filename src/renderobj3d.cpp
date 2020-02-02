@@ -460,14 +460,15 @@ void renderobject_3D_OGL::shader_pipe(fluidobj_3d *f3obj)
 void renderobject_3D_OGL::cube_setup()
 {
 	// Inital Cube Transform Setup to pass to GPU - 
-	cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), matrix_4x4<float>::degtoRad(25.0f));
-	cube_view.translate(vec3<float>(0.0f, 0.0f, -2.0f)); // No LA Yet. Just Move Back on -z (ie cam "moved" along +z)
+	cube_model.ident();
+	//cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), matrix_4x4<float>::degtoRad(25.0f));
+	cube_model.translate(vec3<float>(0.0f, 0.0f, -10.0f)); // No LA Yet. Just Move Back on -z (ie cam "moved" along +z)
+	cube_model.print_mat();
+	cube_model.transpose();
 	//cube_persp
-
 	glUseProgram(cube_shader_prog);
-	// Pass Matrix_4x4<T>.comp Data Array. NOTE Transpose = GL_TRUE (As stored on host in RowMajor)
-	glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "model"), 1, GL_TRUE, cube_model.comp);
-	glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "view"), 1, GL_TRUE, cube_view.comp);
+	glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "model"), 1, GL_FALSE, cube_model.comp);
+	glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "view"), 1, GL_FALSE, cube_view.comp);
 	//glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "persp"), 1, GL_TRUE, cube_persp.comp);
 	glUseProgram(0);
 }
@@ -531,6 +532,7 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 
 	if (rs == rend_state::RENDER_DEBUG)
 	{
+		cube_setup();
 		while (!glfwWindowShouldClose(window_ptr))
 		{
 			// Render Loop 

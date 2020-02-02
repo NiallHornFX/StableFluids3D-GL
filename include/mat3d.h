@@ -51,7 +51,7 @@ public:
 	inline void print_mat();
 
 	inline matrix_4x4& ident(); 
-	inline matrix_4x4& transpose();
+	inline matrix_4x4 transpose();
 
 	static inline float degtoRad(float deg);
 	static inline float radtoDeg(float rad);
@@ -125,18 +125,21 @@ inline matrix_4x4<T>& matrix_4x4<T>::ident()
 	return *this; 
 }
 
+// Return Transpose of Current Matrix. Does not Modifiy this matrix elements. 
 template <class T>
-inline matrix_4x4<T>& matrix_4x4<T>::transpose()
+inline matrix_4x4<T> matrix_4x4<T>::transpose()
 {
+	matrix_4x4<T> tp; 
+
 	for (int j = 0; j < 4; j++)
 	{
 		for (int i = 0; i < 4; i++)
 		{
-			comp[idx2Dto1D(i, j)] = comp[idx2Dto1D(j, i)];
+			tp.comp[idx2Dto1D(i, j)] = this->comp[idx2Dto1D(j, i)];
 		}
 	}
 
-	return *this;
+	return tp; 
 }
 
 template <class T>
@@ -168,6 +171,7 @@ inline matrix_4x4<T> matrix_4x4<T>::operator+ (const matrix_4x4<T> &b) const
 	return res;
 }
 
+// Matrix C = Matrix A - Matrix B
 template <class T>
 inline matrix_4x4<T> matrix_4x4<T>::operator- (const matrix_4x4<T> &b) const
 {
@@ -179,7 +183,7 @@ inline matrix_4x4<T> matrix_4x4<T>::operator- (const matrix_4x4<T> &b) const
 	return res;
 }
 
-// Matrix A x Matrix B (DP of RxC)
+// Matrix C = Matrix A * Matrix B (DP of this*b)
 template <class T>
 inline matrix_4x4<T> matrix_4x4<T>::operator* (const matrix_4x4<T> &b) const
 {
@@ -195,6 +199,7 @@ inline matrix_4x4<T> matrix_4x4<T>::operator* (const matrix_4x4<T> &b) const
 			}
 		}
 	}
+	std::cout << "Called \n";
 
 	return res;
 }
@@ -350,7 +355,7 @@ inline matrix_4x4<T> matrix_4x4<T>::make_lookAt(const vec3<T> &cam_P, const vec3
 template <class T>
 inline int matrix_4x4<T>::idx2Dto1D(int i, int j)
 {
-	return (int)i * 4 + j;
+	return (int)i + 4 * j;
 }
 
 template <class T>
@@ -378,5 +383,6 @@ inline float matrix_4x4<T>::radtoDeg(float rad)
 {
 	return (float)rad * (180.0f / PI);
 }
+
 
 #endif

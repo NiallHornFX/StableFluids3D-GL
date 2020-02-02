@@ -65,10 +65,25 @@ float const timestep = 1.0f / 60.0f;  // dt = 0.0166f
 
 int main()
 {
+	matrix_4x4<float> M_a(0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f);
+	matrix_4x4<float> M_b; M_b.ident();
+	matrix_4x4<float> res = M_a + M_b;
+
+
+	/*
+	test.rotate(vec3<float>(0.0f, 1.0f, 0.0f), matrix_4x4<float>::degtoRad(10.0f));
+	//test.rotate(vec3<float>(0.0f, 1.0f, 0.0f), matrix_4x4<float>::degtoRad(10.0f));
+	test.print_mat();
+	*/
+
+	
+
+	/*
 	// Create Render Context For OpenGL Context With Window Setup (in main thread). Window Dimensions Incl Edge Cell/Pixels. 
 	render_context_OGL render_c (win_size_xy, win_size_xy, short(GLMajor), short(GLMinor)); 
 	renderobject_3D_OGL render_o ("OpenGL", GLMajor, GLMinor, vec2<int>(win_size_xy, win_size_xy), vec3<int>(cube + edge, cube + edge, cube + edge), render_c.get_window(), 0);
 	render_o.call_ren(rend_state::RENDER_DEBUG);
+	*/
 
 	/*
 	// Create Fluid Object - Containing Fluid Grids and Data. 

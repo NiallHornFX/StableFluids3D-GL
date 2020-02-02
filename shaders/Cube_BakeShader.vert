@@ -13,7 +13,7 @@ out vec3 vtc;
 void main()
 {
 	//gl_Position = view * model * vec4(vPos, 1.0);
-	gl_Position = vec4(vPos, 1.0); 
+	gl_Position = model * vec4(vPos, 1.0); 
 
 	// Marshall TexCoord to Fragment. 
 	vtc = vTC; 
