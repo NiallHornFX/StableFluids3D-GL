@@ -463,8 +463,8 @@ void renderobject_3D_OGL::cube_setup()
 	cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), matrix_4x4<float>::degtoRad(1.0f));
 	//cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), offs);
 	//cube_view.translate(vec3<float>(0.0f, 0.0f, -2.0f)); // No LA Yet. Just Move Back on -z (ie cam "moved" along +z)
-	//cube_persp
 
+	//cube_persp
 	glUseProgram(cube_shader_prog);
 	/* Pass Matrix_4x4<T>.comp Data Array. 
 	   matrx_4x4<T> Stores Elements in RowMajor order, so transpoe = GL_TRUE ... Issues Try Own Transp MF...*/ 
@@ -548,7 +548,6 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 	if (rs == rend_state::RENDER_DEBUG)
 	{
 		cube_setup();
-
 		while (!glfwWindowShouldClose(window_ptr))
 		{
 			// Render Loop 

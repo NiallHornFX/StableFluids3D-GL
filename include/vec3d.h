@@ -229,7 +229,7 @@ inline float vec3<T>::radtoDeg(float rad)
 }
 
 
-// RHS vec3 Operand overloads Free Functions \\
+// _RHS vec3 Operand Global Operator Overload Free Functions \\ 
 
 // s1 * v1 ---> v1;
 template <class T>
@@ -246,6 +246,5 @@ inline vec3<T>& operator+ (float add, vec3<T> &vec)
 	vec.x += add, vec.y += add, vec.z += add;
 	return vec;
 }
-
 
 #endif
