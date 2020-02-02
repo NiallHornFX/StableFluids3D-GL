@@ -65,6 +65,11 @@ float const timestep = 1.0f / 60.0f;  // dt = 0.0166f
 
 int main()
 {
+	//matrix_4x4<float> foo; 
+	//foo.print_mat();
+	//foo = foo.rotate(vec3<float>(0.0f, 1.0f, 0.0f), matrix_4x4<float>::degtoRad(25.0f));
+	//foo.print_mat();
+
 	// Create Render Context For OpenGL Context With Window Setup (in main thread). Window Dimensions Incl Edge Cell/Pixels. 
 	render_context_OGL render_c (win_size_xy, win_size_xy, short(GLMajor), short(GLMinor)); 
 	renderobject_3D_OGL render_o ("OpenGL", GLMajor, GLMinor, vec2<int>(win_size_xy, win_size_xy), vec3<int>(cube + edge, cube + edge, cube + edge), render_c.get_window(), 0);

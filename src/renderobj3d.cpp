@@ -481,7 +481,7 @@ void renderobject_3D_OGL::cube_setup()
 void renderobject_3D_OGL::cube_update()
 {
 	glUseProgram(cube_shader_prog);
-	cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), matrix_4x4<float>::degtoRad(0.5f));
+	cube_model.rotate(vec3<float>(1.0f, 1.0f, 0.0f), matrix_4x4<float>::degtoRad(0.5f));
 	cube_model.print_mat();
 	matrix_4x4<float> cube_model_tp = cube_model.transpose(); // Dont transpose orginal Mat. 
 	glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "model"), 1, GL_FALSE, cube_model_tp.comp);
@@ -564,7 +564,7 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 			// Clear
 			// Draw Quad and RayMarch along Stored Cube Coordinates. 
 
-			//cube_update();
+			cube_update();
 			glUseProgram(cube_shader_prog);
 			// Test Render Cube - 
 			glBindVertexArray(CBack_VAO);

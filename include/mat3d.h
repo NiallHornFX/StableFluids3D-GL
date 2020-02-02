@@ -62,19 +62,18 @@ public:
 
 	// Math Operators - 
 
-	// MAT A +/- MAT B = MAT C --> Matrix C. (Return New Instance, dont Modifiy this)  
+	// MAT A +/- MAT B = MAT C --> Matrix C. (Return New Instance, doesnt modifiy this)  
 	inline matrix_4x4 operator+ (const matrix_4x4 &b) const;
 	inline matrix_4x4 operator- (const matrix_4x4 &b) const;
 	inline matrix_4x4 operator* (const matrix_4x4 &b) const;
 
 	// Matrix Arithmetic (Modifiy and return ref to this)
 	inline matrix_4x4& operator+= (const matrix_4x4 &b);
-	inline matrix_4x4& operator+= (const T s);
 	inline matrix_4x4& operator-= (const matrix_4x4 &b);
+
+	inline matrix_4x4& operator+= (const T s);
 	inline matrix_4x4& operator-= (const T s);
-	inline matrix_4x4& operator*= (const matrix_4x4 &b);
 	inline matrix_4x4& operator*= (const T s);
-	inline matrix_4x4& operator/= (const matrix_4x4 &b);
 	inline matrix_4x4& operator/= (const T s);
 
 	// Transformation Operations (Modifiy and return this ref)- Is there any use in modifying this? 
@@ -187,7 +186,7 @@ inline matrix_4x4<T> matrix_4x4<T>::operator- (const matrix_4x4<T> &b) const
 	return res;
 }
 
-// Matrix C = Matrix A * Matrix B (DP of this*b)
+// Matrix C = Matrix A * Matrix B (DP of this*b) in RM Order. Return New Result Matrix Instance.
 template <class T>
 inline matrix_4x4<T> matrix_4x4<T>::operator* (const matrix_4x4<T> &b) const
 {
@@ -197,13 +196,14 @@ inline matrix_4x4<T> matrix_4x4<T>::operator* (const matrix_4x4<T> &b) const
 	{
 		for (int i = 0; i < 4; i++)
 		{
+			res.comp[idx2Dto1D(i, j)] = 0.0f; // Esnure Res Elements are 0 before there mult res is calculated.
 			for (int k = 0; k < 4; k++)
 			{
-				res.comp[idx2Dto1D(i, j)] = this->comp[idx2Dto1D(i, k)] * b.comp[idx2Dto1D(k, j)];
+				// RM Mult and Additon of each A,B Element. 
+				res.comp[idx2Dto1D(i, j)] += this->comp[idx2Dto1D(i, k)] * b.comp[idx2Dto1D(k, j)];
 			}
 		}
 	}
-	std::cout << "Called \n";
 
 	return res;
 }
@@ -253,24 +253,8 @@ inline matrix_4x4<T>& matrix_4x4<T>::operator-= (const T s)
 	return *this;
 }
 
-// this Matrix Multipcation - 
-// rm additive rotation of this ij... += ! = 
-template <class T>
-inline matrix_4x4<T>& matrix_4x4<T>::operator*= (const matrix_4x4<T> &b)
-{
-	for (int j = 0; j < 4; j++)
-	{
-		for (int i = 0; i < 4; i++)
-		{
-			for (int k = 0; k < 4; k++)
-			{
-				this->comp[idx2Dto1D(i, j)] = this->comp[idx2Dto1D(i, k)] * b.comp[idx2Dto1D(k, j)];
-			}
-		}
-	}
 
-	return *this;
-}
+// this Matrix Multipcation With Scalar s. Modifiy and Return this ref. 
 template <class T>
 inline matrix_4x4<T>& matrix_4x4<T>::operator*= (const T s)
 {
@@ -282,13 +266,7 @@ inline matrix_4x4<T>& matrix_4x4<T>::operator*= (const T s)
 	return *this;
 }
 
-// this Matrix Division - 
-
-template <class T>
-inline matrix_4x4<T>& matrix_4x4<T>::operator/= (const matrix_4x4<T> &b)
-{
-
-}
+// Divide Matrix Componets by Scalar. 
 template <class T>
 inline matrix_4x4<T>& matrix_4x4<T>::operator/= (const T s)
 {
@@ -309,10 +287,8 @@ inline matrix_4x4<T>& matrix_4x4<T>::translate(const vec3<T> &tv)
 	return *this; 
 }
 
-// Returns Rotation Matrix to Rotate some Vector by some AngleAxis Rotation. 
-// Well Actually Multiples this by the result ... 
-// Maybe have MakeRotationMatrix Static MFunction as a builder. And Keep this as Build Rotation Matrix, and Multiply with Self...
-// Will Implement 3x3 Mats later, till then just use 4x4, with each 4th comp apart from [3][3] zero'd.
+// Modifies this Matrix to Rotate some Vector by some AngleAxis Rotation. This Result is multiplied ontop of current this matrix values.
+// See Make_Rotate() Static MF to build and return a new rotation matrix instead.
 template <class T>
 matrix_4x4<T>& matrix_4x4<T>::rotate(const vec3<T> &axis, T angle)
 {
@@ -327,10 +303,9 @@ matrix_4x4<T>& matrix_4x4<T>::rotate(const vec3<T> &axis, T angle)
 	matrix_4x4<T> zrot(cosf(z_ang), -sinf(z_ang), 0.0f, 0.0f, sinf(z_ang), cosf(z_ang), 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
 
 	// x*y*z Rot Order. 
-	matrix_4x4<T> xy = xrot * yrot;
+	matrix_4x4<T> xy = xrot * yrot; 
 	matrix_4x4<T> frot = xy * zrot; 
-
-	return operator*=(frot);
+	return *this = *this * frot; 
 }
 
 template <class T>
