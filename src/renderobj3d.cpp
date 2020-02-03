@@ -529,7 +529,7 @@ void renderobject_3D_OGL::cube_fbo_setup()
 	// Create RBO
 	glGenRenderbuffers(1, &Cube_RBO);
 	glBindRenderbuffer(GL_RENDERBUFFER, Cube_RBO);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, 512, 512);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, window_size.x, window_size.y);
 	glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
 	// Unbind Texture
@@ -612,8 +612,6 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 			// Render Loop 
 
 
-			glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 			// Set FBO To Front Tex 
 			// Draw Front Faces (to FBO)
@@ -630,6 +628,8 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 
 			glBindFramebuffer(GL_FRAMEBUFFER, Cube_FBO);
 			glEnable(GL_DEPTH_TEST);
+			glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 			glUseProgram(cube_shader_prog);
 			// Set FBO -
@@ -638,7 +638,7 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 			glBindVertexArray(CFront_VAO);
 			glDrawArrays(GL_TRIANGLES, 0, 18);
 
-			/*
+			
 			// Reset FBO
 			glBindFramebuffer(GL_FRAMEBUFFER, 0); // Default FBO.
 			glDisable(GL_DEPTH_TEST);
@@ -653,8 +653,8 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 			// Render Screen Quad - 
 
 			glUseProgram(quad_shader_prog);
-			glUniform1i(glGetUniformLocation(quad_shader_prog, "c_tex"), 0); // Set Sampler. 
 
+			glUniform1i(glGetUniformLocation(quad_shader_prog, "c_tex"), 0); // Set Sampler. 
 			// Active and Bind Textures. 
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, tex_CFront);
@@ -665,8 +665,6 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 			glBindVertexArray(Quad_VAO);
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Quad_EBO);
 			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-			*/
-
 
 			glfwSwapBuffers(window_ptr);
 			glfwPollEvents();
