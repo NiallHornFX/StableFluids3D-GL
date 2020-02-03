@@ -526,7 +526,7 @@ void renderobject_3D_OGL::cube_fbo_setup()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	// Create RBO
+	// Gen RBO
 	glGenRenderbuffers(1, &Cube_RBO);
 	glBindRenderbuffer(GL_RENDERBUFFER, Cube_RBO);
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, window_size.x, window_size.y);
@@ -621,24 +621,19 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 			// Clear
 			// Draw Quad and RayMarch along Stored Cube Coordinates. 
 
-			//cube_update();
+			//cube_update(); Transforms
 
-			//glBindBuffer(GL_FRAMEBUFFER, Cube_FBO);
-			//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex_CFront, 0);
-
+			// Bind and Clear Cube FrameBuffer. 
 			glBindFramebuffer(GL_FRAMEBUFFER, Cube_FBO);
 			glEnable(GL_DEPTH_TEST);
 			glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 			glUseProgram(cube_shader_prog);
-			// Set FBO -
-			//cube_fbo_attach(0);
-			// Test Render Cube - 
+			// Draw Cube Front -
 			glBindVertexArray(CFront_VAO);
 			glDrawArrays(GL_TRIANGLES, 0, 18);
 
-			
 			// Reset FBO
 			glBindFramebuffer(GL_FRAMEBUFFER, 0); // Default FBO.
 			glDisable(GL_DEPTH_TEST);
@@ -654,14 +649,18 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 
 			glUseProgram(quad_shader_prog);
 
-			glUniform1i(glGetUniformLocation(quad_shader_prog, "c_tex"), 0); // Set Sampler. 
 			// Active and Bind Textures. 
+			// Cube Front
+			// Set Sampler to Tex Unit 0 .
+			glUniform1i(glGetUniformLocation(quad_shader_prog, "c_tex"), 0); // Set Sampler. 
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, tex_CFront);
+			// Cube Back
+			//glUniform1i(...)
 			//glActiveTexture(GL_TEXTURE1);
-			//glBindTexture(GL_TEXTURE_2D, tex_vel);
+			//glBindTexture(GL_TEXTURE_2D, tex_CBack);
 
-			// Draw Triangle in Render Loop
+			// Draw Full Screen Quad to Default FrameBuffer. 
 			glBindVertexArray(Quad_VAO);
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Quad_EBO);
 			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
