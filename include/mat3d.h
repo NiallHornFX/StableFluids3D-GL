@@ -283,7 +283,7 @@ inline matrix_4x4<T>& matrix_4x4<T>::operator/= (const T s)
 template <class T>
 inline matrix_4x4<T>& matrix_4x4<T>::translate(const vec3<T> &tv)
 {
-	comp[12] = tv.x, comp[13] = tv.y, comp[14] = tv.z;
+	comp[3] += tv.x, comp[7] += tv.y, comp[11] += tv.z;
 	return *this; 
 }
 
@@ -311,7 +311,7 @@ matrix_4x4<T>& matrix_4x4<T>::rotate(const vec3<T> &axis, T angle)
 template <class T>
 inline matrix_4x4<T>& matrix_4x4<T>::scale(const vec3<T> &sv)
 {
-	comp[0] *= sv.x, comp[5] *= sv.y, comp[11] *= sv.z;
+	comp[0] *= sv.x, comp[5] *= sv.y, comp[10] *= sv.z;
 	return *this; 
 }
 

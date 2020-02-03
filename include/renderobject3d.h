@@ -89,7 +89,7 @@ private:
 	// Buffers -
 	GLuint CFront_VAO, CBack_VAO, Quad_VAO;
 	GLuint CFront_VBO, CBack_VBO, Quad_VBO;
-	GLuint Quad_EBO, Cube_FBO;
+	GLuint Quad_EBO, Cube_FBO, Cube_RBO;
 
 	// Shaders -
 	GLuint cube_vert_shader, cube_frag_shader, quad_vert_shader, quad_frag_shader; // 0Cube(vs|fs), 1Quad(vs|fs)

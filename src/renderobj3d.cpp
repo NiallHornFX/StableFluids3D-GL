@@ -459,21 +459,30 @@ void renderobject_3D_OGL::shader_pipe(fluidobj_3d *f3obj)
 // RenderObject_3D_OGL Cube Setup - Setup Cube Transforms (Initalize, and then updt in RLoop?)
 void renderobject_3D_OGL::cube_setup()
 {
-	// Inital Cube Transform Setup to pass to GPU - 
-	cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), matrix_4x4<float>::degtoRad(1.0f));
+	// Inital Cube Transform Setup to pass to GPU \\ 
+
+	// Model-World Matrix - 
+	cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), matrix_4x4<float>::degtoRad(125.0f));
 	//cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), offs);
-	//cube_view.translate(vec3<float>(0.0f, 0.0f, -2.0f)); // No LA Yet. Just Move Back on -z (ie cam "moved" along +z)
+	//cube_model.translate(vec3<float>(-0.4f, 0.0f, 0.0f));
+	//cube_model.scale(vec3<float>(0.2f, 1.5f, 0.2f));
+	cube_model.print_mat();
 
-	//cube_persp
-	glUseProgram(cube_shader_prog);
+	// View Matrix - 
+	//cube_view.translate(vec3<float>(0.0f, 1.0f, 0.0f)); // No LA Yet. Just Move Back on -z (ie cam "moved" along +z)
+	//cube_view.print_mat();
+
+	// Perspective Proj Matrix - 
+	//
+
 	/* Pass Matrix_4x4<T>.comp Data Array. 
-	   matrx_4x4<T> Stores Elements in RowMajor order, so transpoe = GL_TRUE ... Issues Try Own Transp MF...*/ 
+	   matrx_4x4<T> Stores Elements in RowMajor order, so transpoe = GL_TRUE */ 
+	glUseProgram(cube_shader_prog);
 
-	matrix_4x4<float> cube_model_tp = cube_model.transpose(); // Dont transpose orginal Mat. 
-	glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "model"), 1, GL_FALSE, cube_model_tp.comp);
-
-	//glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "view"), 1, GL_FALSE, cube_view.comp);
+	glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "model"), 1, GL_TRUE, cube_model.comp);
+	//glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "view"), 1, GL_TRUE, cube_view.comp);
 	//glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "persp"), 1, GL_TRUE, cube_persp.comp);
+
 	glUseProgram(0);
 }
 
@@ -481,8 +490,9 @@ void renderobject_3D_OGL::cube_setup()
 void renderobject_3D_OGL::cube_update()
 {
 	// Update Transforms
-	cube_model.rotate(vec3<float>(1.0f, 1.0f, 0.0f), matrix_4x4<float>::degtoRad(0.5f));
-	cube_model.print_mat();
+	cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), matrix_4x4<float>::degtoRad(0.5f));
+	//cube_model.translate(vec3<float>(0.0f, 0.001f, 0.00f));
+	//cube_model.print_mat();
 
 	// Transpose (via MF or gl TransposeFlag ) and pass to Uniform - 
 	glUseProgram(cube_shader_prog);
@@ -516,8 +526,23 @@ void renderobject_3D_OGL::cube_fbo_setup()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	// Leave FBO Texture Unbound. 
+	// Create RBO
+	glGenRenderbuffers(1, &Cube_RBO);
+	glBindRenderbuffer(GL_RENDERBUFFER, Cube_RBO);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, 512, 512);
+	glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+	// Unbind Texture
+	glBindTexture(GL_TEXTURE_2D, 0); 
+
+	// Bind Tex and RBO to FBO. 
+	glBindFramebuffer(GL_FRAMEBUFFER, Cube_FBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex_CFront, 0); // Tex Colour
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, Cube_RBO); // RBO DepthStenicll.
+
+	// Unbind.
 	glBindBuffer(GL_FRAMEBUFFER, 0); // Clear Bound FBO state. 
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 }
 
@@ -526,21 +551,37 @@ void renderobject_3D_OGL::cube_fbo_attach(int tex)
 {
 	if (tex == 0) // FBO --> Cube Front Texture Attachment
 	{
+		// Attach Texture To FBO
 		glBindBuffer(GL_FRAMEBUFFER, Cube_FBO);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex_CFront, 0);
 		glBindFramebuffer(GL_FRAMEBUFFER, Cube_FBO);
+
+		//GLenum DrawBuffers[1] = { GL_COLOR_ATTACHMENT0 };
+		//glDrawBuffers(1, DrawBuffers); // "1" is the size of DrawBuffers
+		//glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+		//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		// Attach To RBO to FBO (so FB Is FB Complete)
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, Cube_RBO);
+
+		//if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) std::cout << "NOT COMPLETE FRAME BUFFER \n";
 	}
 	else if (tex == 1) // FBO --> Cube Back Texture Attachemnt
 	{
 		glBindBuffer(GL_FRAMEBUFFER, Cube_FBO);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex_CBack, 0);
 		glBindFramebuffer(GL_FRAMEBUFFER, Cube_FBO);
+		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	}
 	else if (tex == 2) // FBO Unbind Texture Attachemnt, and FBO. 
 	{
 		// Clear FrameBuffer Attachment And Revert to Default FrameBuffer (For RM) 
 		glBindBuffer(GL_FRAMEBUFFER, 0);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		// Clear Buffer. 
+		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	}
 }
 
@@ -553,8 +594,15 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 	
 	// Constant GL State - 
 	//glPolygonMode(GL_FRONT, GL_LINE);
+
+
+	cube_setup();
+	cube_fbo_setup();
+
+
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	glEnable(GL_DEPTH_TEST);
+	//glEnable(GL_DEPTH_TEST);
+
 
 	if (rs == rend_state::RENDER_DEBUG)
 	{
@@ -575,29 +623,50 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 			// Clear
 			// Draw Quad and RayMarch along Stored Cube Coordinates. 
 
-			cube_update();
+			//cube_update();
+
+			//glBindBuffer(GL_FRAMEBUFFER, Cube_FBO);
+			//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex_CFront, 0);
+
+			glBindFramebuffer(GL_FRAMEBUFFER, Cube_FBO);
+			glEnable(GL_DEPTH_TEST);
+
 			glUseProgram(cube_shader_prog);
+			// Set FBO -
+			//cube_fbo_attach(0);
 			// Test Render Cube - 
-			glBindVertexArray(CBack_VAO);
+			glBindVertexArray(CFront_VAO);
 			glDrawArrays(GL_TRIANGLES, 0, 18);
 
+			/*
+			// Reset FBO
+			glBindFramebuffer(GL_FRAMEBUFFER, 0); // Default FBO.
+			glDisable(GL_DEPTH_TEST);
+			glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+			glClear(GL_COLOR_BUFFER_BIT);
+
+			// Reset Render State
 			glUseProgram(0);
 			glBindVertexArray(0);
+			//cube_fbo_attach(2); // Detach Bound FBO and Clear
 
-			/*
+			// Render Screen Quad - 
+
+			glUseProgram(quad_shader_prog);
+			glUniform1i(glGetUniformLocation(quad_shader_prog, "c_tex"), 0); // Set Sampler. 
+
 			// Active and Bind Textures. 
 			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, tex_dens);
-			glActiveTexture(GL_TEXTURE1);
-			glBindTexture(GL_TEXTURE_2D, tex_vel);
-
-			glUseProgram(shader_prog);
+			glBindTexture(GL_TEXTURE_2D, tex_CFront);
+			//glActiveTexture(GL_TEXTURE1);
+			//glBindTexture(GL_TEXTURE_2D, tex_vel);
 
 			// Draw Triangle in Render Loop
-			glBindVertexArray(VAO);
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+			glBindVertexArray(Quad_VAO);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Quad_EBO);
 			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 			*/
+
 
 			glfwSwapBuffers(window_ptr);
 			glfwPollEvents();
