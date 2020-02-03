@@ -550,6 +550,11 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 	/* IF DBG Then Use While Loop Here - (As Assume NOT CALLED FROM INSIDE SOLVER LOOP (per step))
 	   DBG Mode assumes RenderObject Setup/Debugging outside of a FluidSolver Instance eg from main for dbg sake. 
 	   Test Render Code in Render_Debug State. */ 
+	
+	// Constant GL State - 
+	//glPolygonMode(GL_FRONT, GL_LINE);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glEnable(GL_DEPTH_TEST);
 
 	if (rs == rend_state::RENDER_DEBUG)
 	{
@@ -558,8 +563,8 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 		{
 			// Render Loop 
 
-			//glPolygonMode(GL_FRONT, GL_LINE);
-			glClearColor(0.0f, 0.0f, 1.0f, 0.0f);
+
+			glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 			// Set FBO To Front Tex 

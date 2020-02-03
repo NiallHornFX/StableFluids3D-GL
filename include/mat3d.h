@@ -294,17 +294,17 @@ matrix_4x4<T>& matrix_4x4<T>::rotate(const vec3<T> &axis, T angle)
 {
 	// X Rot
 	T x_ang = axis.x * angle; 
-	matrix_4x4<T> xrot(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, cosf(x_ang), -sinf(x_ang), 0.0f, 0.0f, sinf(x_ang), cosf(x_ang), 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+	matrix_4x4<T> x_r(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, cosf(x_ang), sinf(x_ang), 0.0f, 0.0f, -sinf(x_ang), cosf(x_ang), 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
 	// Y Rot
 	T y_ang = axis.y * angle;
-	matrix_4x4<T> yrot(cosf(y_ang), 0.0f, sinf(y_ang), 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, -sinf(y_ang), 0.0f, cosf(y_ang), 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+	matrix_4x4<T> y_r(cosf(y_ang), 0.0f, -sinf(y_ang), 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, sinf(y_ang), 0.0f, cosf(y_ang), 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
 	// Z Rot
 	T z_ang = axis.z * angle;
-	matrix_4x4<T> zrot(cosf(z_ang), -sinf(z_ang), 0.0f, 0.0f, sinf(z_ang), cosf(z_ang), 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+	matrix_4x4<T> z_r(cosf(z_ang), sinf(z_ang), 0.0f, 0.0f, -sinf(z_ang), cosf(z_ang), 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
 
 	// x*y*z Rot Order. 
-	matrix_4x4<T> xy = xrot * yrot; 
-	matrix_4x4<T> frot = xy * zrot; 
+	matrix_4x4<T> xy = x_r * y_r; 
+	matrix_4x4<T> frot = xy * z_r; 
 	return *this = *this * frot; 
 }
 

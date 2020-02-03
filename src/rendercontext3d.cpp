@@ -40,6 +40,7 @@ void render_context_OGL::window_context()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, gl_ver_minor);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE); // Fixed Window Size. 
+	glfwWindowHint(GLFW_SAMPLES, 4); // MSAA.
 
 	window = glfwCreateWindow(wind_x, wind_y, "Stable Fluids 3D - OGL", NULL, NULL);
 
