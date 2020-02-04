@@ -148,7 +148,7 @@ inline matrix_4x4<T> matrix_4x4<T>::transpose()
 template <class T>
 inline void matrix_4x4<T>::print_mat()
 {
-	std::cout << "DEBUG::MATRIX OUPUT BEGIN : \n";
+	std::cout << "\n--------------------\nDEBUG::MATRIX OUPUT BEGIN : \n";
 	if (label != nullptr) std::cout << "MATRIX = " << label << "\n";
 	for (int j = 0; j < 4; j++)
 	{
@@ -159,7 +159,7 @@ inline void matrix_4x4<T>::print_mat()
 		}
 		std::cout << "\n";
 	}
-	std::cout << "DEBUG::MATRIX OUPUT END. \n";
+	std::cout << "\nDEBUG::MATRIX OUPUT END. \n--------------------\n";
 }
 
 // matrix_4x4 Math Operators \\
@@ -340,7 +340,9 @@ inline matrix_4x4<T> matrix_4x4<T>::make_perspective(T fov, T ar, T near, T far)
 	float b = 2.0f*far*near / (far - near);
 	float c = t / ar; // Div by AR if non square. 
 
-	matrix_4x4<T> M_p(c, 0.0f, 0.0f, 0.0f, 0.0f, t, 0.0f, 0.0f, 0.0f, 0.0f, -a, -b, 0.0f, 0.0f, -1.0f, 0.0f);
+	// Need to Transpose Right Col and Bot Row ... 
+	// matrix_4x4<T> M_p(c, 0.0f, 0.0f, 0.0f, 0.0f, t, 0.0f, 0.0f, 0.0f, 0.0f, -a, -b, 0.0f, 0.0f, -1.0f, 0.0f); 
+	matrix_4x4<T> M_p(c, 0.0f, 0.0f, 0.0f, 0.0f, t, 0.0f, 0.0f, 0.0f, 0.0f, -a, -1.0f, 0.0f, 0.0f, -b, 0.0f);
 
 	return M_p; 
 }

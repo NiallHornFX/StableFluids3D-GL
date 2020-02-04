@@ -493,11 +493,9 @@ void renderobject_3D_OGL::cube_setup()
 	/* Pass Matrix_4x4<T>.comp Data Array. 
 	   matrx_4x4<T> Stores Elements in RowMajor order, so transpoe = GL_TRUE */ 
 	glUseProgram(cube_shader_prog);
-
 	glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "model"), 1, GL_TRUE, cube_model.comp);
 	glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "view"), 1, GL_TRUE, cube_view.comp);
 	glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "persp"), 1, GL_TRUE, cube_persp.comp);
-
 	glUseProgram(0);
 }
 
@@ -608,15 +606,16 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 	   DBG Mode assumes RenderObject Setup/Debugging outside of a FluidSolver Instance eg from main for dbg sake. 
 	   Test Render Code in Render_Debug State. */ 
 	
-	// Intial Cube Transform Setup
-	cube_setup();
-	// Inital FBO Setup 
-	cube_fbo_setup();
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
 
 	if (rs == rend_state::RENDER_DEBUG)
 	{
+		// Intial Cube Transform Setup
 		cube_setup();
+		// Inital FBO Setup 
+		cube_fbo_setup();
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
 		while (!glfwWindowShouldClose(window_ptr))
 		{
 			// Render Loop 
