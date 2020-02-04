@@ -474,26 +474,29 @@ void renderobject_3D_OGL::cube_setup()
 	// Inital Cube Transform Setup to pass to GPU \\ 
 
 	// Model-World Matrix - 
-	cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), matrix_4x4<float>::degtoRad(125.0f));
-	//cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), offs);
+	cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), 1.1f);
 	//cube_model.translate(vec3<float>(-0.4f, 0.0f, 0.0f));
 	//cube_model.scale(vec3<float>(0.2f, 1.5f, 0.2f));
+	cube_model.label = "Cube Model";
 	cube_model.print_mat();
 
 	// View Matrix - 
-	//cube_view.translate(vec3<float>(0.0f, 1.0f, 0.0f)); // No LA Yet. Just Move Back on -z (ie cam "moved" along +z)
-	//cube_view.print_mat();
+	cube_view.translate(vec3<float>(0.0f, 0.0f, 2.0f)); // No LA Yet. Just Move Back on -z (ie cam "moved" along +z)
+	cube_view.label = "Cube View";
+	cube_view.print_mat();
 
 	// Perspective Proj Matrix - 
-	//
+	cube_persp = matrix_4x4<float>::make_perspective(0.5f, 1.0f, 0.1f, 100.0f);
+	cube_persp.label = "Cube Persp";
+	cube_persp.print_mat();
 
 	/* Pass Matrix_4x4<T>.comp Data Array. 
 	   matrx_4x4<T> Stores Elements in RowMajor order, so transpoe = GL_TRUE */ 
 	glUseProgram(cube_shader_prog);
 
 	glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "model"), 1, GL_TRUE, cube_model.comp);
-	//glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "view"), 1, GL_TRUE, cube_view.comp);
-	//glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "persp"), 1, GL_TRUE, cube_persp.comp);
+	glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "view"), 1, GL_TRUE, cube_view.comp);
+	glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "persp"), 1, GL_TRUE, cube_persp.comp);
 
 	glUseProgram(0);
 }
@@ -618,24 +621,11 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 		{
 			// Render Loop 
 
-
-
-			// Set FBO To Front Tex 
-			// Draw Front Faces (to FBO)
-			// Clear
-			// Set FBO to Back Tex
-			// Draw Back Faces (to FBO)
-			// Clear
-			// Draw Quad and RayMarch along Stored Cube Coordinates. 
-
 			// CUBE UPDATE 
 			//cube_update(); Transforms
 
 			// CUBE FRONT 
-
-			// Set Colour Texture Attachment to Cube FBO - 
-			cube_fbo_attach(CUBE_FRONT); // Cfront. 
-			// Bind and Clear Cube FrameBuffer. 
+			cube_fbo_attach(CUBE_FRONT);
 			bindclear_fbo(FBO_CUBE);
 
 			glUseProgram(cube_shader_prog);
@@ -646,16 +636,12 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 			// CUBE BACK - 
 			cube_fbo_attach(CUBE_BACK); // Cback. 
 			bindclear_fbo(FBO_CUBE); // BindClear Cube FBO
-
 			// Draw Cube Back -
 			glBindVertexArray(CBack_VAO);
 			glDrawArrays(GL_TRIANGLES, 0, 18);
 
-			// FOR QUAD
-
-			// Bidng and Clear Default FrameBuffer. 
+			// SCREEN QUAD
 			bindclear_fbo(FBO_DEFAULT);
-
 			// Reset Render State
 			glUseProgram(0);
 			glBindVertexArray(0);
@@ -680,6 +666,8 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Quad_EBO);
 			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
+
+			// POST OP - 
 
 			// Clear Render State. 
 			glUseProgram(0);

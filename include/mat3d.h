@@ -6,7 +6,7 @@
 
 /*	Matrix Info -
 	Matrix 4x4 Implementation, Template and or Inline Def in Header. 
-	Row Major Order. Multipcation with Vector is Post Multiplicative. v * M = v. Thus no M * / *= v overloads here. (Transpose for OGL)
+	Row Major Order. Multipcation with Vector is Post Multiplicative. v * M = v. (Transpose for OGL)
 	Matrix is Explcitlly Stored in 1D Array form, and mapped to 2D Indices using i + N * j, where N = 4. Iterate in Row Major (j,i) order. 
 */
 
@@ -71,27 +71,28 @@ public:
 	inline matrix_4x4& operator+= (const matrix_4x4 &b);
 	inline matrix_4x4& operator-= (const matrix_4x4 &b);
 
-	inline matrix_4x4& operator+= (const T s);
-	inline matrix_4x4& operator-= (const T s);
-	inline matrix_4x4& operator*= (const T s);
-	inline matrix_4x4& operator/= (const T s);
+	inline matrix_4x4& operator+= (T s);
+	inline matrix_4x4& operator-= (T s);
+	inline matrix_4x4& operator*= (T s);
+	inline matrix_4x4& operator/= (T s);
 
-	// Transformation Operations (Modifiy and return this ref)- Is there any use in modifying this? 
+	// Transformation Operations (Modifiy and return this ref)
 	inline matrix_4x4& translate(const vec3<T> &tv);
 	matrix_4x4& rotate(const vec3<T> &axis, T angle);
 	inline matrix_4x4& scale(const vec3<T> &sv);
 
-	// Matrix Transform Operation Builder MFs - 
+	// Matrix Transform Operation Builder MFs (return new instance) - 
 	static matrix_4x4 make_rotate(const vec3<T> &axis, T angle);
 
 	// Matrix Camera Builder MFs - 
 	static inline matrix_4x4 make_lookAt(const vec3<T> &cam_P, const vec3<T> &look_P, const vec3<T> &up);
-	static inline matrix_4x4 make_perspective(T const fov, T const ar, T const near, T const far);
+	static inline matrix_4x4 make_perspective(T fov, T ar, T near, T far);
 
-	// Matrix Members - Default Inclass Initalized. 
+	// Matrix Members - DICI Default Inclass Initalized. 
 	const static std::size_t m_size = 16;
 	T comp[m_size] = { 0.0f }; // Matrix Component Array. 
 	T *start = comp; T *end = start + (m_size - 1); // Start/End Pointers. 
+	const char* label = nullptr; 
 };
 
 // ------------------------------------------------- \\
@@ -148,6 +149,7 @@ template <class T>
 inline void matrix_4x4<T>::print_mat()
 {
 	std::cout << "DEBUG::MATRIX OUPUT BEGIN : \n";
+	if (label != nullptr) std::cout << "MATRIX = " << label << "\n";
 	for (int j = 0; j < 4; j++)
 	{
 		for (int i = 0; i < 4; i++)
@@ -220,7 +222,7 @@ inline matrix_4x4<T>& matrix_4x4<T>::operator+= (const matrix_4x4<T> &b)
 	return *this;
 }
 template <class T>
-inline matrix_4x4<T>& matrix_4x4<T>::operator+= (const T s)
+inline matrix_4x4<T>& matrix_4x4<T>::operator+= (T s)
 {
 	for (int i = 0; i < 16; i++)
 	{
@@ -243,7 +245,7 @@ inline matrix_4x4<T>& matrix_4x4<T>::operator-= (const matrix_4x4<T> &b)
 	return *this;
 }
 template <class T>
-inline matrix_4x4<T>& matrix_4x4<T>::operator-= (const T s)
+inline matrix_4x4<T>& matrix_4x4<T>::operator-= (T s)
 {
 	for (int i = 0; i < 16; i++)
 	{
@@ -256,7 +258,7 @@ inline matrix_4x4<T>& matrix_4x4<T>::operator-= (const T s)
 
 // this Matrix Multipcation With Scalar s. Modifiy and Return this ref. 
 template <class T>
-inline matrix_4x4<T>& matrix_4x4<T>::operator*= (const T s)
+inline matrix_4x4<T>& matrix_4x4<T>::operator*= (T s)
 {
 	for (int i = 0; i < 16; i++)
 	{
@@ -268,7 +270,7 @@ inline matrix_4x4<T>& matrix_4x4<T>::operator*= (const T s)
 
 // Divide Matrix Componets by Scalar. 
 template <class T>
-inline matrix_4x4<T>& matrix_4x4<T>::operator/= (const T s)
+inline matrix_4x4<T>& matrix_4x4<T>::operator/= (T s)
 {
 	for (int i = 0; i < 16; i++)
 	{
@@ -329,28 +331,37 @@ inline matrix_4x4<T> matrix_4x4<T>::make_lookAt(const vec3<T> &cam_P, const vec3
 	return matrix_4x4<T>(xx.x, xx.y, xx.z, 0.0f, yy.x, yy.y, yy.z, 0.0f, zz.x, zz.y, zz.z, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
 }
 
-// PerspProj Static, Return new mat_4x4<T> with Perspective Projected Basis's - 
+// Build and Return a new Perspective Projection Matrix Instance, based on Parms. 
+template <class T>
+inline matrix_4x4<T> matrix_4x4<T>::make_perspective(T fov, T ar, T near, T far)
+{
+	float t = 1.0f / tanf(fov * 0.5f * (PI / 180.0f));
+	float a = (far + near) / (far - near);
+	float b = 2.0f*far*near / (far - near);
+	float c = t / ar; // Div by AR if non square. 
 
-// [..]
+	matrix_4x4<T> M_p(c, 0.0f, 0.0f, 0.0f, 0.0f, t, 0.0f, 0.0f, 0.0f, 0.0f, -a, -b, 0.0f, 0.0f, -1.0f, 0.0f);
 
+	return M_p; 
+}
 
-// Rotation Matrix Builder MF (Return Created RotMat, oppose to multiplying with this, as matrix_4x4<T>::rotate() does)
+// Rotation Matrix Builder Static MF (Return Created RotMat, oppose to multiplying with this, as matrix_4x4<T>::rotate() does)
 template<class T>
 matrix_4x4<T> matrix_4x4<T>::make_rotate(const vec3<T> &axis, T angle)
 {
 	// X Rot
 	T x_ang = axis.x * angle;
-	matrix_4x4<T> xrot(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, cosf(x_ang), -sinf(x_ang), 0.0f, 0.0f, sinf(x_ang), cosf(x_ang), 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+	matrix_4x4<T> x_r(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, cosf(x_ang), sinf(x_ang), 0.0f, 0.0f, -sinf(x_ang), cosf(x_ang), 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
 	// Y Rot
 	T y_ang = axis.y * angle;
-	matrix_4x4<T> yrot(cosf(y_ang), 0.0f, sinf(y_ang), 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, -sinf(y_ang), 0.0f, cosf(y_ang), 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+	matrix_4x4<T> y_r(cosf(y_ang), 0.0f, -sinf(y_ang), 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, sinf(y_ang), 0.0f, cosf(y_ang), 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
 	// Z Rot
 	T z_ang = axis.z * angle;
-	matrix_4x4<T> zrot(cosf(z_ang), -sinf(z_ang), 0.0f, 0.0f, sinf(z_ang), cosf(z_ang), 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+	matrix_4x4<T> z_r(cosf(z_ang), sinf(z_ang), 0.0f, 0.0f, -sinf(z_ang), cosf(z_ang), 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
 
 	// x*y*z Rot Order. 
-	matrix_4x4<T> xy = xrot * yrot;
-	matrix_4x4<T> frot = xy * zrot; 
+	matrix_4x4<T> xy = x_r * y_r;
+	matrix_4x4<T> frot = xy * z_r;
 
 	return frot; 
 }
