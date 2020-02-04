@@ -30,11 +30,13 @@ renderobject_3D_OGL::renderobject_3D_OGL(const char *api_name, int v_maj, int v_
 	std::cout << "DBG::RenderObject_3D Created For Render API: " << api_name << " " << v_maj << "." << v_min << "\n \n";
 	// Call Setup MFuncs
 
-	int vr = vertex_setup(); 
-	cur_shader = 0; 
-	int sl_0 = shader_loader("shaders/Cube_BakeShader.vert", "shaders/Cube_BakeShader.frag"); 
+	cur_shader = 0;
+	int sl_0 = shader_loader("shaders/Cube_BakeShader.vert", "shaders/Cube_BakeShader.frag");
 	cur_shader = 1;
 	int sl_1 = shader_loader("shaders/Quad_RayMarchingShader.vert", "shaders/Quad_RayMarchShader.frag");
+
+	int vr = vertex_setup(); 
+
 
 	// Gen 3D Textures -
 	glGenTextures(1, &tex_dens);
@@ -223,6 +225,16 @@ int renderobject_3D_OGL::vertex_setup()
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint) * 6, quad_indices, GL_STATIC_DRAW);
 	// UnBind
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+	// QUAD Texture Sampler Units - 
+	glUseProgram(quad_shader_prog);
+	// Set Quad Shader 2D Texture Sampler Units (Cube Front Face and Back Face 0,1) -
+	glUniform1i(glGetUniformLocation(quad_shader_prog, "cf_tex"), 0); // Set Sampler TU0. 
+	glUniform1i(glGetUniformLocation(quad_shader_prog, "cb_tex"), 1); // Set Sampler TU1. 
+	// Set Quad Shader 3D Texture Sampler Units (Density, Velocity Grid Textures 2,3) - 
+	glUniform1i(glGetUniformLocation(quad_shader_prog, "d_tex"), 2); // Density = 0. 
+	glUniform1i(glGetUniformLocation(quad_shader_prog, "v_tex"), 3); // Density = 0. 
+	glUseProgram(0);
 
 	return 0;
 }
@@ -643,7 +655,11 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 
 			// FOR BACK - 
 			cube_fbo_attach(1); // Cback. 
-			bindclear_fbo(0);
+			bindclear_fbo(0); // BindClear Cube FBO
+
+			// Draw Cube Back -
+			glBindVertexArray(CBack_VAO);
+			glDrawArrays(GL_TRIANGLES, 0, 18);
 
 			// FOR QUAD
 
@@ -653,7 +669,6 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 			// Reset Render State
 			glUseProgram(0);
 			glBindVertexArray(0);
-			//cube_fbo_attach(2); // Detach Bound FBO and Clear
 
 			// Render Screen Quad - 
 
@@ -661,11 +676,11 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 
 			// Active and Bind Textures. 
 			// Cube Front
-			glUniform1i(glGetUniformLocation(quad_shader_prog, "cf_tex"), 0); // Set Sampler TU0. 
+			//glUniform1i(glGetUniformLocation(quad_shader_prog, "cf_tex"), 0); // Set Sampler TU0. 
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, tex_CFront);
 			// Cube Back
-			glUniform1i(glGetUniformLocation(quad_shader_prog, "cb_tex"), 1); // Set Sampler TU1. 
+			//glUniform1i(glGetUniformLocation(quad_shader_prog, "cb_tex"), 1); // Set Sampler TU1. 
 			glActiveTexture(GL_TEXTURE1);
 			glBindTexture(GL_TEXTURE_2D, tex_CBack);
 
@@ -688,10 +703,10 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 		glClearColor(0.0f, 0.0f, 1.0f, 0.0f);
 
 		// Active and Bind Textures. (Multiple Texture/Units) - 
-		glActiveTexture(GL_TEXTURE0);
+		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_3D, tex_dens);
 
-		glActiveTexture(GL_TEXTURE1);
+		glActiveTexture(GL_TEXTURE3);
 		glBindTexture(GL_TEXTURE_3D, tex_vel);
 
 		// Call Shader Program. (Is also called in SolveStep on RenderObj Instance). 
