@@ -504,7 +504,7 @@ void renderobject_3D_OGL::cube_setup()
 void renderobject_3D_OGL::cube_update()
 {
 	// Update Model Transfor, 
-	cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), matrix_4x4<float>::degtoRad(0.25f));
+	cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), matrix_4x4<float>::degtoRad(10.0 * dt));
 
 	// If Camera Changed Update View Mat. 
 
@@ -600,6 +600,15 @@ void renderobject_3D_OGL::cube_fbo_attach(use_cube tex)
 	}
 }
 
+void renderobject_3D_OGL::get_FPS()
+{
+	step++;
+	t1 = glfwGetTime();
+	dt = t1 - t0;
+	t0 = t1;
+	if (step % 50 == 0) std::cout << 1.0f / dt << " FPS" << "\n"; // !TOD Logger Class / Utilsh. 
+}
+
 // RenderObject_3D_OGL Shader Loader Implementation -
 void renderobject_3D_OGL::render_loop(rend_state rs)
 {
@@ -617,16 +626,12 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 		cube_fbo_setup();
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		glEnable(GL_MULTISAMPLE);
-		double t0 = 0.0, t1 = 0.0f, dt = 0.0;
 
 		while (!glfwWindowShouldClose(window_ptr))
 		{
 			// Render Loop 
+			get_FPS();
 
-			t1 = glfwGetTime();
-			dt = t1 - t0;
-			t0 = t1;
-			std::cout << 1.0f / dt << " FPS" << "\n"; // !TOD Logger Class / Utilsh. 
 			// CUBE UPDATE 
 			cube_update(); // Transforms
 
@@ -681,6 +686,7 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 			// Swap and Poll - 
+			glfwSwapInterval(0); // Disable vsync. 
 			glfwSwapBuffers(window_ptr);
 			glfwPollEvents();
 		}

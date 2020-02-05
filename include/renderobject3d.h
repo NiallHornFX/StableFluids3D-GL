@@ -99,6 +99,7 @@ protected:
 
 	// DBG - 
 	void print_GL_error(); 
+	void get_FPS();
 
 private:
 	// Buffers -
@@ -125,10 +126,12 @@ private:
 	matrix_4x4<float> cube_model, cube_view, cube_persp;
 	vec3<float> cam_target;
 
-	
-
 	// RenderContext (GLFW) Window Pointer
 	GLFWwindow *window_ptr = nullptr; 
+
+	// Util Members
+	double t0 = 0.0, t1 = 0.0, dt = 0.0; 
+	uint64_t step = 0;
 
 	// Shader Code Buffers - 
 	const char *cube_vert_shader_code, *cube_frag_shader_code, *quad_vert_shader_code, *quad_frag_shader_code;
