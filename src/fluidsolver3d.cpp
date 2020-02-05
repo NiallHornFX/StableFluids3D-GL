@@ -24,6 +24,7 @@
 vec3<float> spherebound_offset(0.0f, 0.0f, 0.0f);  
 const float spherebound_coliso = 0.0025f; 
 float spherebound_radius = 0.005f; 
+float impsource_radius = 0.01f;
 
 extern int win_size_xy;
 extern short verbose; // Get Verbose Global from main. 
@@ -2098,8 +2099,8 @@ void fluidsolver_3::solve_step(bool solve, bool do_diffdens, bool do_diffvel, fl
 
 		// STEP INPUT OPERATIONS \\ ----------------
 		// Interactive Sourcing ... 
-		// Interactive Sphere Bounds Radius Eval. 
-		sphere_rad_test(); // Can Cause Pressure Solver Crashes. 
+		// Interactive Implicit Source Scaling Basic. 
+		sphere_rad_test(); 
 
 		// Interp Switching.
 		//if (glfwGetKey(winptr, GLFW_KEY_I) == GLFW_PRESS) { Parms.p_InteroplationType == Parms.Interoplation_Linear; };
@@ -2122,7 +2123,7 @@ void fluidsolver_3::solve_step(bool solve, bool do_diffdens, bool do_diffvel, fl
 		//vec3 anim_offset(0.4 + (float(sin(float(step_count) / float(max_step) * 50.0f))) * 0.1f, 0.4 + (float(cos(float(step_count) / float(max_step) * (float(step_count) / float(max_step) * 10.0f)))) * 0.2f);
 		//vec2<float> offs ((sin(((float)step_count / (float)max_step) * 5.0) * 0.5f), (cos(((float)step_count / (float)max_step) * 5.0) * 0.5f));
 		float offs = sin(((float)step_count / (float)max_step) * 500.0f) * 0.1f;
-		f3obj->implicit_sphere_source(0.1f, vec3<float>(0.0f, 1.0f, 0.55f), vec3<float>(offs + 0.4f, 0.1f, 0.5f), 0.01f); // vec3<float>(0.4f + a_offset, 0.25f, 0.0f), 0.01f);
+		f3obj->implicit_sphere_source(0.1f, vec3<float>(0.0f, 1.0f, 0.55f), vec3<float>(offs + 0.4f, 0.1f, 0.5f), impsource_radius); // 0.01f
 
 		// Forces- 
 		//if (step_count <= 20) f3obj->radial_force(vec3<float>(0.499f, 0.499f), 0.8f, this->dt);
@@ -2394,12 +2395,12 @@ void fluidsolver_3::sphere_rad_test()
 {
 	if (glfwGetKey(winptr, GLFW_KEY_PAGE_UP) == GLFW_PRESS)
 	{
-		spherebound_radius += 0.001f; 
+		impsource_radius += 0.001f; 
 	}
 
 	if (glfwGetKey(winptr, GLFW_KEY_PAGE_DOWN) == GLFW_PRESS)
 	{
-		spherebound_radius -= 0.0001f;
+		impsource_radius -= 0.0001f;
 	}
 
 	if (spherebound_radius <= 0.0001) spherebound_radius = 0.0001;

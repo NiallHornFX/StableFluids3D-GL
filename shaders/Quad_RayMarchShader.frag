@@ -55,19 +55,25 @@ void main()
 	{
 		dens += texture(dens_tex, ray_P).x;
 		ray_P += ray_dir * step_size;
+		
+		// Shadow/Light Ray Prep
 		float l = 0.0; 
 		vec3 lray_P = ray_P; 
+		vec3 lpos = vec3(mx, my, -0.8); 
+		vec3 ldir = normalize(lpos - ray_P); 
 		for (int j = 0; j < l_step_count; j++) // Basic Shadow Ray...
 		{
 			//vec3 lpos = vec3(0.9, 1.0, -0.2);
 			//vec3 lpos = vec3(mx, my, -clamp(mx+my, 0.0, 1.0)); 
-			vec3 lpos = vec3(mx, my, -0.8); 
-			vec3 ldir = normalize(lpos - ray_P); 
+			
+			
 			l += texture(dens_tex, lray_P).x * 0.25;
 			lray_P += ldir * step_size; 
 			if (l >= 0.99) {break;}
 		}
-		
+		float l_dist = length(lpos - ray_P);
+		//float phase = pow(l_dist, 2.0); 
+		//dens -= l_dist * 0.001; 
 		l /= l_step_count; l = clamp(l, 0.0, 1.0); // Hacky Clamping... Scaled into SDR.
 		dens -= l * 1.0; // Subtract ShadowRay Accumlated Density. In Primary Ray Loop. 
 		

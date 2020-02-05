@@ -593,11 +593,11 @@ void renderobject_3D_OGL::cube_update()
 	// If Camera Changed Update View Mat. 
 
 	// Testing Camera Translation like beahviour. 
-	if (glfwGetKey(window_ptr, GLFW_KEY_PAGE_UP) == GLFW_PRESS)
+	if (glfwGetKey(window_ptr, GLFW_KEY_W) == GLFW_PRESS)
 	{
 		cube_view.translate(vec3<float>(0.0f, 0.0f, 0.1f));
 	}
-	if (glfwGetKey(window_ptr, GLFW_KEY_PAGE_DOWN) == GLFW_PRESS)
+	if (glfwGetKey(window_ptr, GLFW_KEY_S) == GLFW_PRESS)
 	{
 		cube_view.translate(vec3<float>(0.0f, 0.0f, -0.1f));
 	}
