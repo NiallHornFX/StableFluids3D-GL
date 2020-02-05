@@ -2400,8 +2400,8 @@ void fluidsolver_3::sphere_rad_test()
 
 	if (glfwGetKey(winptr, GLFW_KEY_PAGE_DOWN) == GLFW_PRESS)
 	{
-		impsource_radius -= 0.0001f;
+		impsource_radius -= 0.001f;
 	}
 
-	if (spherebound_radius <= 0.0001) spherebound_radius = 0.0001;
+	//if (spherebound_radius <= 0.001) spherebound_radius = 0.001;
 }

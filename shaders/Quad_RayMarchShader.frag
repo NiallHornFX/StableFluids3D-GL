@@ -47,13 +47,14 @@ void main()
 	//ray_P_b = clamp(ray_P_b, 0.0, 1.0); 
 
 	// Map 3D Texture Space Cube Local Space Texture Sampled Locations.
-	float dens = 0.0; 
+	float dens = 0.0; vec3 vel = vec3(0.0, 0.0, 0.0); 
 	int step_count = 100, l_step_count = 30; 
 	float step_size = 0.01; /// step_count; 
 	
 	for (int i = 0; i < step_count; i++)
 	{
 		dens += texture(dens_tex, ray_P).x;
+		vel += texture(vel_tex, ray_P).xyz; 
 		ray_P += ray_dir * step_size;
 		
 		// Shadow/Light Ray Prep
@@ -83,15 +84,18 @@ void main()
 	}	
 
 	//dens /= (step_count / 10); //dens = clamp(dens, 0.0, 1.0); 
-	dens *= 0.75f; // Oppose to div by stepcount. 
+	vel /= step_count; vel *= clamp(dens, 0.0, 1.0); 
+	dens *= 0.25f; // Oppose to div by stepcount. 
 	float dens_a = dens; //dens_f + dens_b;
 	
-	vec3 dens_vec = vec3(dens_a, dens_a, dens_a); 
+	vec3 dens_vec = vec3(dens_a + vel.x, dens_a + vel.y, dens_a + vel.z); 
 	vec3 cv_0 = mix(samp_cf_start.xyz, samp_cb_end.xyz, 0.5);
-	cv_0 = desat(cv_0, 1.0).xyz; cv_0.xy += 0.8 * length(cv_0); cv_0 *= 0.1; // cv_0.x += 0.1;
+	cv_0 = desat(cv_0, 1.0).xyz; cv_0.xy += 0.1 * length(cv_0); cv_0 *= 0.4; // cv_0.x += 0.1;
 	vec3 cv_1 = mix(cv_0, dens_vec, 0.5); 
 	frag_color = vec4(clamp(cv_1, 0.0, 1.0), 1.0); 
 	
+	
+	//frag_color = vec4(vel.x, vel.y, vel.z, 1.0); 
 	//frag_color = vec4(mix(samp_cf.xyz, samp_cb.xyz, 0.5), 1.0); // Check Cube Faces Blended. 
 	//vec3 dens_vec = vec3(dens, dens, dens); 
 	//vec3 add_both = (ray_P_f + ray_P_b) / 2.0f;

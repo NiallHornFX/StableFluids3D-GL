@@ -587,7 +587,7 @@ void renderobject_3D_OGL::cube_update()
 	// Update Model Transfor, 
 	//cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), matrix_4x4<float>::degtoRad(-(2.0 * dt)));
 	//float ang = matrix_4x4<float>::degtoRad( ((std::sinf(t1 * 2.0f) * 25.0f) - 5.0f) * dt);
-	float ang = matrix_4x4<float>::degtoRad( (std::sinf(t1 * 2.0f) * -20.0f) * dt); // Some Fake Camera/Grid Motion.
+	float ang = matrix_4x4<float>::degtoRad( (std::sinf(t1 * 1.5f) * -15.0f) * dt); // Some Fake Camera/Grid Motion.
 	cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), ang);
 
 	// If Camera Changed Update View Mat. 

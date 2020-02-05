@@ -42,7 +42,7 @@ void render_context_OGL::window_context()
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE); // Fixed Window Size. 
 	glfwWindowHint(GLFW_SAMPLES, 4); // MSAA.
 
-	window = glfwCreateWindow(wind_x, wind_y, "Stable Fluids 3D - OGL", NULL, NULL);
+	window = glfwCreateWindow(wind_x, wind_y, "Stable Fluids 3D Solver | Render_API: OGL | Max_Threads: 8", NULL, NULL);
 
 	if (window == NULL || window == nullptr)
 	{
