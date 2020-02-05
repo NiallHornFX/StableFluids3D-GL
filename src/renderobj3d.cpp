@@ -94,7 +94,7 @@ renderobject_3D_OGL::~renderobject_3D_OGL()
 /* RenderObject_2D_OGL Vertex Setup Implementation - Setup Quad and Cube Buffers and Arrays Here */ 
 int renderobject_3D_OGL::vertex_setup()
 {
-	// Cube Vertex Arrays - 
+	// Cube Vertex Arrays - (!TODO Move these to assets.h?)
 	
 	CFront_vertices = new GLfloat[18 * 6]
 	{
@@ -156,6 +156,64 @@ int renderobject_3D_OGL::vertex_setup()
 		-0.5,-0.5,-0.5, 0.0, 0.0, 0.0,
 		-0.5,-0.5,0.5, 0.0, 0.0, 1.0
 	};
+
+	// Full Cube - 
+	 float cube_verts[36 * 6] =
+	 {
+		 // FACE 0
+		 -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 0.0f,
+		 0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f,
+		 0.5f,  0.5f, -0.5f, 1.0f, 1.0f, 0.0f,
+
+		 0.5f,  0.5f, -0.5f, 1.0f, 1.0f, 0.0f,
+		 -0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
+		 -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 0.0f,
+
+		 // FACE 1
+		 -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f,
+		 0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 1.0f,
+		 0.5f,  0.5f, 0.5f, 1.0f, 1.0f, 1.0f,
+
+		 0.5f,  0.5f, 0.5f, 1.0f, 1.0f, 1.0f,
+		 -0.5f,  0.5f, 0.5f, 0.0f, 1.0f, 1.0f,
+		 -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f,
+
+		 // FACE 2
+		 -0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f,
+		 -0.5f,  0.5f, -0.5f, 1.0f, 1.0f, 0.0f,
+		 -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
+
+		 -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
+		 -0.5f, -0.5f,  0.5f, 0.0f, 0.0f, 1.0f,
+		 -0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f,
+
+		 // FACE 3
+		 0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f,
+		 0.5f,  0.5f, -0.5f, 1.0f, 1.0f, 0.0f,
+		 0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
+
+		 0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
+		 0.5f, -0.5f,  0.5f, 0.0f, 0.0f, 1.0f,
+		 0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f,
+
+		 // FACE 4
+		 -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
+		 0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 0.0f,
+		 0.5f, -0.5f,  0.5f, 1.0f, 0.0f, 1.0f,
+
+		 0.5f, -0.5f,  0.5f, 1.0f, 0.0f, 1.0f,
+		 -0.5f, -0.5f,  0.5f, 0.0f, 0.0f, 1.0f,
+		 -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
+
+		 // FACE 5
+		 -0.5f,  0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
+		 0.5f,  0.5f, -0.5f, 1.0f, 1.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f,
+
+		 0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f,
+		 -0.5f,  0.5f,  0.5f, 0.0f, 0.0f, 1.0f,
+		 -0.5f,  0.5f, -0.5f, 0.0f, 1.0f, 0.0f
+	 };
 
 	// Vertex Screen Quad Setup - 
 	quad_vertices = new GLfloat[12]
@@ -487,7 +545,7 @@ void renderobject_3D_OGL::cube_setup()
 	// Inital Cube Transform Setup to pass to GPU \\ 
 
 	// Model-World Matrix - 
-	cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), 0.5f);
+	cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), 0.25f);
 	//cube_model.translate(vec3<float>(-0.4f, 0.0f, 0.0f));
 	//cube_model.scale(vec3<float>(0.2f, 1.5f, 0.2f));
 	cube_model.label = "Cube Model";
@@ -517,7 +575,10 @@ void renderobject_3D_OGL::cube_setup()
 void renderobject_3D_OGL::cube_update()
 {
 	// Update Model Transfor, 
-	cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), matrix_4x4<float>::degtoRad(4.0 * dt));
+	//cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), matrix_4x4<float>::degtoRad(-(2.0 * dt)));
+	//float ang = matrix_4x4<float>::degtoRad( ((std::sinf(t1 * 2.0f) * 25.0f) - 5.0f) * dt);
+	float ang = matrix_4x4<float>::degtoRad( (std::sinf(t1 * 2.0f) * -20.0f) * dt); // Some Fake Camera/Grid Motion.
+	cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), ang);
 
 	// If Camera Changed Update View Mat. 
 
