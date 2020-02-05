@@ -37,7 +37,6 @@ renderobject_3D_OGL::renderobject_3D_OGL(const char *api_name, int v_maj, int v_
 
 	int vr = vertex_setup(); 
 
-
 	// Gen 3D Textures -
 	glGenTextures(1, &tex_dens);
 	glGenTextures(1, &tex_vel);
@@ -232,8 +231,8 @@ int renderobject_3D_OGL::vertex_setup()
 	glUniform1i(glGetUniformLocation(quad_shader_prog, "cf_tex"), 0); // Set Sampler TU0. 
 	glUniform1i(glGetUniformLocation(quad_shader_prog, "cb_tex"), 1); // Set Sampler TU1. 
 	// Set Quad Shader 3D Texture Sampler Units (Density, Velocity Grid Textures 2,3) - 
-	glUniform1i(glGetUniformLocation(quad_shader_prog, "d_tex"), 2); // Density = 0. 
-	glUniform1i(glGetUniformLocation(quad_shader_prog, "v_tex"), 3); // Density = 0. 
+	glUniform1i(glGetUniformLocation(quad_shader_prog, "d_tex"), 2); // Density (R) = TU2. 
+	glUniform1i(glGetUniformLocation(quad_shader_prog, "v_tex"), 3); // Velocity (RGB) = TU3. 
 	glUseProgram(0);
 
 	// Inital RenderState 
@@ -262,6 +261,7 @@ void renderobject_3D_OGL::shader_checkCompile(const char *type, int shader)
 		{
 			glGetShaderInfoLog(cur_vert_shader, len, NULL, err_log_v);
 			std::cerr << "ERR::VERTEX SHADER " << shader << " - " << cur_vert_shader << " COMPILE FAILED \n " << err_log_v << std::endl; 
+			std::terminate();
 		}
 		else if (verbose == 1)
 		{
@@ -280,6 +280,7 @@ void renderobject_3D_OGL::shader_checkCompile(const char *type, int shader)
 		{
 			glGetShaderInfoLog(cur_frag_shader, len, NULL, err_log_f);
 			std::cerr << "ERR::FRAGMENT SHADER " << shader << " - " << cur_frag_shader << " COMPILE FAILED \n " << err_log_f << std::endl;
+			std::terminate();
 		}
 		else if (verbose == 1)
 		{
@@ -304,8 +305,9 @@ void renderobject_3D_OGL::shader_checkLink(int shader)
 	if (!sucess)
 	{
 		glGetProgramInfoLog(cur_shader_prog, len, NULL, err_log);
-		std::cout << "ERR:SHADER-PROGRAM: " << shader << " - " << cur_shader_prog << " LINKAGE_FAILED" << std::endl;
-		std::cout << err_log << std::endl;
+		std::cerr << "ERR:SHADER-PROGRAM: " << shader << " - " << cur_shader_prog << " LINKAGE_FAILED" << std::endl;
+		std::cerr << err_log << std::endl;
+		std::terminate();
 	}
 	else if (verbose == 1)
 	{
@@ -342,8 +344,7 @@ int renderobject_3D_OGL::shader_loader(const char *vert_path, const char *frag_p
 	catch (std::ifstream::failure err)
 	{
 		std::cerr << "ERR::Shader Load Err: " << err.what() << "\n";
-		std::abort();
-		return 1; 
+		std::terminate();
 	}
 
 	if (cur_shader == 0) // Cube 
@@ -403,6 +404,9 @@ void renderobject_3D_OGL::shader_pipe(fluidobj_3d *f3obj)
 	// Shader Pipe is Passing to Quad Shader Only (ie 3D Texs for RayMarching) After Cube Render Steps. 
 	// UNIFORM CONSTANTS (Per Step) \\
 
+	glUseProgram(quad_shader_prog);
+
+	/*
 	// Pass Window Size to GL Uniform. // Could be done after Shader Compile (Once.?)
 	glUniform1i(glGetUniformLocation(quad_shader_prog, "W_Size"), window_size.x); // Window Size (Assume Square Dim, Used for Frag-UV Space)
 
@@ -421,13 +425,15 @@ void renderobject_3D_OGL::shader_pipe(fluidobj_3d *f3obj)
 
 	// Current Step Uniform (RenderObj BaseMember et passed in solvestep). Fix naughty Double-Int cast. 
 	glUniform1i(glGetUniformLocation(quad_shader_prog, "Step"), (GLint)et);
+	*/
 
 	// TEXTURE->SAMPLERS (Per Step) \\
 
 	// TEXTURE - DENSITY \\
 
 	// Pass Density Grid - grid_data vector, data array to 3D Texture. 4Bytes (32Bit) Float Per Grid Density Value.
-	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_3D, 0);
+	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_3D, tex_dens);
 	// Use Linear (Trilinear Texture Filtering HC'd) 
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -460,18 +466,22 @@ void renderobject_3D_OGL::shader_pipe(fluidobj_3d *f3obj)
 
 	// Now Pass Merged Flat 1D Array to 3D Velocity Texture -  
 	glBindTexture(GL_TEXTURE_3D, 0);
-	glActiveTexture(GL_TEXTURE1);
+	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_3D, tex_vel);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB, (GLint)grid_size.x, (GLint)grid_size.y, (GLint)grid_size.z, 0, GL_RGB, GL_FLOAT, vel3D); 
 
+	// Bound State Clear - 
+	glBindTexture(GL_TEXTURE_3D, 0);
+	glUseProgram(0);
+
 	// Delete Temp Arrays - 
 	delete vel3D; vel3D = nullptr; 
 }
 
-// RenderObject_3D_OGL Cube Setup - Setup Cube Transforms (Initalize, and then updt in RLoop?)
+// RenderObject_3D_OGL Cube Setup - Setup Cube Transforms (Initalize, and then cube_update() in RLoop?)
 void renderobject_3D_OGL::cube_setup()
 {
 	// Inital Cube Transform Setup to pass to GPU \\ 
@@ -507,7 +517,7 @@ void renderobject_3D_OGL::cube_setup()
 void renderobject_3D_OGL::cube_update()
 {
 	// Update Model Transfor, 
-	cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), matrix_4x4<float>::degtoRad(10.0 * dt));
+	cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), matrix_4x4<float>::degtoRad(4.0 * dt));
 
 	// If Camera Changed Update View Mat. 
 
@@ -618,7 +628,7 @@ void renderobject_3D_OGL::get_FPS()
 	t1 = glfwGetTime();
 	dt = t1 - t0;
 	t0 = t1;
-	if (step % 50 == 0) std::cout << 1.0f / dt << " FPS" << "\n"; // !TOD Logger Class / Utilsh. 
+	if (step % 1 == 0) std::cout << std::fixed << "DEBUG::RENDER_OBJ FPS = " << 1.0f / dt << " FPS" << "\n"; // !TOD Logger Class / Utilsh. 
 }
 
 // RenderObject_3D_OGL Shader Loader Implementation -
