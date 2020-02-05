@@ -495,7 +495,7 @@ void renderobject_3D_OGL::cube_setup()
 	glUseProgram(cube_shader_prog);
 	glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "model"), 1, GL_FALSE, cube_model.comp);
 	glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "view"), 1, GL_TRUE, cube_view.comp);
-	glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "persp"), 1, GL_TRUE, cube_persp.comp);
+	glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "persp"), 1, GL_FALSE, cube_persp.comp);
 	glUseProgram(0);
 }
 
@@ -504,15 +504,15 @@ void renderobject_3D_OGL::cube_setup()
 void renderobject_3D_OGL::cube_update()
 {
 	// Update Model Transfor, 
-	cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), matrix_4x4<float>::degtoRad(0.4f));
+	cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), matrix_4x4<float>::degtoRad(0.25f));
 
-	// If Camera Changed Update View. 
+	// If Camera Changed Update View Mat. 
 
-	// If FOV Changed Update Persp. 
+	// If FOV Changed Update Persp Mat. 
 
 	glUseProgram(cube_shader_prog);
 	// Model - 
-	//glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "model"), 1, GL_FALSE, cube_model.comp);
+	glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "model"), 1, GL_FALSE, cube_model.comp);
 	// View -
 	// Persp -
 	glUseProgram(0);
@@ -616,13 +616,19 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 		// Inital FBO Setup 
 		cube_fbo_setup();
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		glEnable(GL_MULTISAMPLE);
+		double t0 = 0.0, t1 = 0.0f, dt = 0.0;
 
 		while (!glfwWindowShouldClose(window_ptr))
 		{
 			// Render Loop 
 
+			t1 = glfwGetTime();
+			dt = t1 - t0;
+			t0 = t1;
+			std::cout << 1.0f / dt << " FPS" << "\n"; // !TOD Logger Class / Utilsh. 
 			// CUBE UPDATE 
-			//cube_update(); // Transforms
+			cube_update(); // Transforms
 
 			// CUBE FRONT 
 			cube_fbo_attach(CUBE_FRONT);
