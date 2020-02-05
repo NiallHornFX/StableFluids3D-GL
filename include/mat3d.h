@@ -341,8 +341,8 @@ inline matrix_4x4<T> matrix_4x4<T>::make_perspective(T fov, T ar, T near, T far)
 	float c = t / ar; // Div by AR if non square. 
 
 	// Need to Transpose Right Col and Bot Row ... 
-	// matrix_4x4<T> M_p(c, 0.0f, 0.0f, 0.0f, 0.0f, t, 0.0f, 0.0f, 0.0f, 0.0f, -a, -b, 0.0f, 0.0f, -1.0f, 0.0f); 
-	matrix_4x4<T> M_p(c, 0.0f, 0.0f, 0.0f, 0.0f, t, 0.0f, 0.0f, 0.0f, 0.0f, -a, -1.0f, 0.0f, 0.0f, -b, 0.0f);
+	matrix_4x4<T> M_p(c, 0.0f, 0.0f, 0.0f, 0.0f, t, 0.0f, 0.0f, 0.0f, 0.0f, -a, -b, 0.0f, 0.0f, -1.0f, 0.0f); // CM
+	//matrix_4x4<T> M_p(c, 0.0f, 0.0f, 0.0f, 0.0f, t, 0.0f, 0.0f, 0.0f, 0.0f, -a, -1.0f, 0.0f, 0.0f, -b, 0.0f);
 
 	return M_p; 
 }

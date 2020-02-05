@@ -474,46 +474,47 @@ void renderobject_3D_OGL::cube_setup()
 	// Inital Cube Transform Setup to pass to GPU \\ 
 
 	// Model-World Matrix - 
-	cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), 1.1f);
+	cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), 0.5f);
 	//cube_model.translate(vec3<float>(-0.4f, 0.0f, 0.0f));
 	//cube_model.scale(vec3<float>(0.2f, 1.5f, 0.2f));
 	cube_model.label = "Cube Model";
 	cube_model.print_mat();
 
 	// View Matrix - 
-	cube_view.translate(vec3<float>(0.0f, 0.0f, 2.0f)); // No LA Yet. Just Move Back on -z (ie cam "moved" along +z)
+	cube_view.translate(vec3<float>(0.0f, 0.0f, -3.0f)); // No LA Yet. Just Move Back on -z (ie cam "moved" along +z)
 	cube_view.label = "Cube View";
 	cube_view.print_mat();
 
 	// Perspective Proj Matrix - 
-	cube_persp = matrix_4x4<float>::make_perspective(0.5f, 1.0f, 0.1f, 100.0f);
+	cube_persp = matrix_4x4<float>::make_perspective(40.0f, 1.0f, 0.1f, 100.0f);
 	cube_persp.label = "Cube Persp";
 	cube_persp.print_mat();
 
 	/* Pass Matrix_4x4<T>.comp Data Array. 
 	   matrx_4x4<T> Stores Elements in RowMajor order, so transpoe = GL_TRUE */ 
 	glUseProgram(cube_shader_prog);
-	glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "model"), 1, GL_TRUE, cube_model.comp);
+	glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "model"), 1, GL_FALSE, cube_model.comp);
 	glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "view"), 1, GL_TRUE, cube_view.comp);
 	glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "persp"), 1, GL_TRUE, cube_persp.comp);
 	glUseProgram(0);
 }
 
-// TEST need Better Functionality ...
+// Update Transformation Matrices in Render loop 
+// Testing, Need to add Parms. 
 void renderobject_3D_OGL::cube_update()
 {
-	// Update Transforms
-	cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), matrix_4x4<float>::degtoRad(0.5f));
-	//cube_model.translate(vec3<float>(0.0f, 0.001f, 0.00f));
-	//cube_model.print_mat();
+	// Update Model Transfor, 
+	cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), matrix_4x4<float>::degtoRad(0.4f));
 
-	// Transpose (via MF or gl TransposeFlag ) and pass to Uniform - 
+	// If Camera Changed Update View. 
+
+	// If FOV Changed Update Persp. 
+
 	glUseProgram(cube_shader_prog);
 	// Model - 
-	matrix_4x4<float> cube_model_tp = cube_model.transpose(); // Dont transpose orginal Mat. 
-	//glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "model"), 1, GL_FALSE, cube_model_tp.comp);
-	glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "model"), 1, GL_TRUE, cube_model.comp);
-
+	//glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "model"), 1, GL_FALSE, cube_model.comp);
+	// View -
+	// Persp -
 	glUseProgram(0);
 }
 
@@ -621,7 +622,7 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 			// Render Loop 
 
 			// CUBE UPDATE 
-			//cube_update(); Transforms
+			//cube_update(); // Transforms
 
 			// CUBE FRONT 
 			cube_fbo_attach(CUBE_FRONT);
