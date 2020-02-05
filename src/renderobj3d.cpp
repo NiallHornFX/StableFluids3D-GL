@@ -231,8 +231,8 @@ int renderobject_3D_OGL::vertex_setup()
 	glUniform1i(glGetUniformLocation(quad_shader_prog, "cf_tex"), 0); // Set Sampler TU0. 
 	glUniform1i(glGetUniformLocation(quad_shader_prog, "cb_tex"), 1); // Set Sampler TU1. 
 	// Set Quad Shader 3D Texture Sampler Units (Density, Velocity Grid Textures 2,3) - 
-	glUniform1i(glGetUniformLocation(quad_shader_prog, "d_tex"), 2); // Density (R) = TU2. 
-	glUniform1i(glGetUniformLocation(quad_shader_prog, "v_tex"), 3); // Velocity (RGB) = TU3. 
+	glUniform1i(glGetUniformLocation(quad_shader_prog, "dens_tex"), 2); // Density (R) = TU2. 
+	glUniform1i(glGetUniformLocation(quad_shader_prog, "vel_tex"), 3); // Velocity (RGB) = TU3. 
 	glUseProgram(0);
 
 	// Inital RenderState 

@@ -17,7 +17,6 @@ uniform sampler3D vel_tex;  // 3
 
 
 /* ----------------------------------------------------------------- */
-
 void main()
 {
 	// Map from 0-N FragCoord_Space to 0-1 UV Space. 
@@ -27,13 +26,13 @@ void main()
 	vec4 samp_cf = texture(cf_tex, uv); 
 	vec4 samp_cb = texture(cb_tex, uv); 
 	
-	//vec3 ray_P = vec3(samp_cf.xyz); 
-	vec3 ray_P = vec3(uv, 0.0); 
+	vec3 ray_P = vec3(samp_cf.xyz); 
+	//vec3 ray_P = vec3(uv, 0.0); 
 	//vec3 ray_dir = normalize(samp_cb.xyz - samp_cf.xyz); // Dir From BackFaceCol - FrontFaceCol
 	vec3 ray_dir = vec3(0.0, 0.0, -1.0); 
 
 	float dens = 0.0; 
-	int step_count = 100;
+	int step_count = 50;
 	float step_size = 0.1 / step_count; 
 	
 	for (int i = 0; i < step_count; i++)
