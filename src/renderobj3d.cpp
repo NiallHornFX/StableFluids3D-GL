@@ -806,14 +806,6 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 
 }
 
-
-// Temp Implementation to allow public acess to call render (From FluidSolver_2 SolveStep).
-// FIX THIS HACKYNESS ! Why not Just Friend RenderObj to FluidSolver_3 ? 
-void renderobject_3D_OGL::call_ren(rend_state rs)
-{
-	render_loop(rs);
-}
-
 void renderobject_3D_OGL::print_GL_error()
 {
 	GLenum err;

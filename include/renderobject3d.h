@@ -37,11 +37,12 @@ public:
 	renderobject_3D(const char *api_name, int v_maj, int v_min, const vec2<int> &win_size, const vec3<int> &grd_size, short rmode);
 	virtual ~renderobject_3D() = default;
 
+	virtual void shader_pipe(fluidobj_3d *f3obj) = 0;
+	virtual void render_loop(rend_state rs) = 0;
+
 protected:
 	virtual int vertex_setup() = 0;
 	virtual int shader_loader(const char *vert_path , const char *frag_path) = 0; 
-	virtual void shader_pipe(fluidobj_3d *f3obj) = 0;
-	virtual void render_loop(rend_state rs) = 0;
 
 	const char* API_Name; 
 	int ver_major, ver_minor;
@@ -49,7 +50,6 @@ protected:
 	vec3<int> grid_size; 
 	short rendermode; 
 	double dt, et; 
-
 };
 
 // OpenGL Render Object 2D -
@@ -61,9 +61,9 @@ friend class fluidsolver_3;
 public:
 	renderobject_3D_OGL(const char *api_name, int v_maj, int v_min, const vec2<int> &w_s, const vec3<int> &g_s, GLFWwindow *winptr, short rmode);
 	~renderobject_3D_OGL();
-
-	// Publicly Callable Start Render. 
-	void call_ren(rend_state rs); 
+ 
+	virtual void shader_pipe(fluidobj_3d *f3obj) override final;
+	virtual void render_loop(rend_state dbg) override final;
 
 	// Util 
 
@@ -83,8 +83,6 @@ protected:
 	// RenderObject Virtual MFunc OVerrides - 
 	virtual int vertex_setup() override final;
 	virtual int shader_loader(const char *vert_path, const char *frag_path) override final;
-	virtual void shader_pipe(fluidobj_3d *f3obj) override final;
-	virtual void render_loop(rend_state dbg) override final;
 
 	// OGL Specfic MFuncs. 
 	void shader_checkCompile(const char *type, int shader);

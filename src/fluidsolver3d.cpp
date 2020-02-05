@@ -2144,7 +2144,7 @@ void fluidsolver_3::solve_step(bool solve, bool do_diffdens, bool do_diffvel, fl
 		// Uniform/Texture Set Calls (ShaderPipe) -
 		render_obj->shader_pipe(f3obj); // Pass Grids Via Friend Acess to shader_pipe() MF
 		// Render Operations Call - 
-		render_obj->call_ren(rend_state::RENDER_ACTIVE); // Call Render Step Ops here within solver loop, ie NON Debug Mode (Pass RENDER_ACTIVE).
+		render_obj->render_loop(rend_state::RENDER_ACTIVE); // Call Render Step Ops here within solver loop, ie NON Debug Mode (Pass RENDER_ACTIVE).
 
 
 		// STEP DEBUG CONSLE OPERATIONS \\ -------------------- 
