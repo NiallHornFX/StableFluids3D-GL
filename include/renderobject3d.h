@@ -91,6 +91,7 @@ protected:
 	void shader_checkLink(int shader_prog); 
 
 	// DVR Setup - 
+	void inital_renderstate(); // Called Once Only (in ctor).
 	void cube_setup(); 
 	void cube_update(); 
 	void cube_fbo_setup();

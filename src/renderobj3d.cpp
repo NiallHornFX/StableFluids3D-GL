@@ -236,6 +236,9 @@ int renderobject_3D_OGL::vertex_setup()
 	glUniform1i(glGetUniformLocation(quad_shader_prog, "v_tex"), 3); // Density = 0. 
 	glUseProgram(0);
 
+	// Inital RenderState 
+	inital_renderstate();
+
 	return 0;
 }
 
@@ -600,6 +603,15 @@ void renderobject_3D_OGL::cube_fbo_attach(use_cube tex)
 	}
 }
 
+// Only Call this Once on Robj Initalization, After Vertex/Shader setup in RObj Ctor.
+void renderobject_3D_OGL::inital_renderstate()
+{
+	cube_setup(); // Intial Cube Transform Setup
+	cube_fbo_setup(); // Inital FBO Setup 
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glEnable(GL_MULTISAMPLE);
+}
+
 void renderobject_3D_OGL::get_FPS()
 {
 	step++;
@@ -615,21 +627,18 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 	/* IF DBG Then Use While Loop Here - (As Assume NOT CALLED FROM INSIDE SOLVER LOOP (per step))
 	   DBG Mode assumes RenderObject Setup/Debugging outside of a FluidSolver Instance eg from main for dbg sake. 
 	   Test Render Code in Render_Debug State. */ 
-	
-
 
 	if (rs == rend_state::RENDER_DEBUG)
 	{
-		// Intial Cube Transform Setup
-		cube_setup();
-		// Inital FBO Setup 
-		cube_fbo_setup();
+		/* Inital State - NOW in Ctor
+		cube_setup(); // Intial Cube Transform Setup
+		cube_fbo_setup(); // Inital FBO Setup 
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		glEnable(GL_MULTISAMPLE);
-
+		*/
 		while (!glfwWindowShouldClose(window_ptr))
 		{
-			// Render Loop 
+			// PRE OP 
 			get_FPS();
 
 			// CUBE UPDATE 
@@ -644,14 +653,14 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 			glBindVertexArray(CFront_VAO);
 			glDrawArrays(GL_TRIANGLES, 0, 18);
 
-			// CUBE BACK - 
+			// CUBE BACK 
 			cube_fbo_attach(CUBE_BACK); // Cback. 
 			bindclear_fbo(FBO_CUBE); // BindClear Cube FBO
 			// Draw Cube Back -
 			glBindVertexArray(CBack_VAO);
 			glDrawArrays(GL_TRIANGLES, 0, 18);
 
-			// SCREEN QUAD
+			// SCREEN QUAD 
 			bindclear_fbo(FBO_DEFAULT);
 			// Reset Render State
 			glUseProgram(0);
@@ -677,8 +686,7 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Quad_EBO);
 			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-
-			// POST OP - 
+			// POST OP \\ 
 
 			// Clear Render State. 
 			glUseProgram(0);
@@ -692,35 +700,67 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 		}
 
 	}
-	else // Assume Called INSIDE SOLVE LOOP. Thus RENDER_ACTIVE dbg state. 
+	else // Assume Called INSIDE SOLVE LOOP. Thus RENDER_ACTIVE dbg state. InitalStateCalls in CTOR. 
 	{
-		/* ! TESTING IN DEBUG MODE FIRST. OLD RLOOP HERE ! 
+		// PRE OP
+		get_FPS();
 
-		// Render Loop \\
+		// CUBE UPDATE 
+		cube_update(); // Transforms
 
-		glClearColor(0.0f, 0.0f, 1.0f, 0.0f);
+		// CUBE FRONT 
+		cube_fbo_attach(CUBE_FRONT);
+		bindclear_fbo(FBO_CUBE);
 
-		// Active and Bind Textures. (Multiple Texture/Units) - 
-		glActiveTexture(GL_TEXTURE2);
+		glUseProgram(cube_shader_prog);
+		// Draw Cube Front -
+		glBindVertexArray(CFront_VAO);
+		glDrawArrays(GL_TRIANGLES, 0, 18);
+
+		// CUBE BACK - 
+		cube_fbo_attach(CUBE_BACK); // Cback. 
+		bindclear_fbo(FBO_CUBE); // BindClear Cube FBO
+		// Draw Cube Back -
+		glBindVertexArray(CBack_VAO);
+		glDrawArrays(GL_TRIANGLES, 0, 18);
+
+		// SCREEN QUAD
+		bindclear_fbo(FBO_DEFAULT);
+		// Reset Render State
+		glUseProgram(0);
+		glBindVertexArray(0);
+
+		// Render Screen Quad - 
+		glUseProgram(quad_shader_prog);
+
+		// Active and Bind Textures. 
+		// 2D - 
+		glActiveTexture(GL_TEXTURE0); // Cube Front. 
+		glBindTexture(GL_TEXTURE_2D, tex_CFront);
+		glActiveTexture(GL_TEXTURE1); // Cube Back. 
+		glBindTexture(GL_TEXTURE_2D, tex_CBack);
+		// 3D - 
+		glActiveTexture(GL_TEXTURE2); // Density Grid
 		glBindTexture(GL_TEXTURE_3D, tex_dens);
-
-		glActiveTexture(GL_TEXTURE3);
+		glActiveTexture(GL_TEXTURE3); // Velocity Grid
 		glBindTexture(GL_TEXTURE_3D, tex_vel);
 
-		// Call Shader Program. (Is also called in SolveStep on RenderObj Instance). 
-		glUseProgram(shader_prog);
-
-		this->print_GL_error(); // Check for GL Errors.
-		
-		// Draw Quad via Indexed Drawing - 
-		glBindVertexArray(VAO);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+		// Draw Full Screen Quad to Default FrameBuffer. 
+		glBindVertexArray(Quad_VAO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Quad_EBO);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-		glfwSwapInterval(0); // No VSync !
+
+		// POST OP \\
+		// Clear Render State. 
+		glUseProgram(0);
+		glBindVertexArray(0);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+		// Swap and Poll - 
+		glfwSwapInterval(0); // Disable vsync. 
 		glfwSwapBuffers(window_ptr);
 		glfwPollEvents();
-		*/
 	}
 
 }

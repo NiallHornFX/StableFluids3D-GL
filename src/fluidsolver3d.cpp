@@ -2089,15 +2089,7 @@ void fluidsolver_3::solve_step(bool solve, bool do_diffdens, bool do_diffvel, fl
 	int render_mode = 1; // 0 = Density, 1 = Vel. // May be overriden by Input in SolveStep (RenderObj::ShaderPipe()).
 	render_obj = new renderobject_3D_OGL("OpenGL", 4, 0, vec2<int>(win_size_xy, win_size_xy), vec3<int>(x_s + e_s, y_s + e_s, z_s + e_s), this->winptr, render_mode); 
 
-	//// Move this into RenderObject Initalization - 
-	//// Set Render_Object Texture Units to Sampler Uniforms Pre Solve Loop - 
-	//glUseProgram(render_obj->quad_shader_prog); // Call Use (Shader) Program First. 
-
-	//// Set 3D Tex Sampler Uniforms, to matching Texture Units.
-	//glUniform1i(glGetUniformLocation(render_obj->quad_shader_prog, "d_tex"), 0); // Density = 0. 
-	//glUniform1i(glGetUniformLocation(render_obj->quad_shader_prog, "v_tex"), 1); // Density = 0. 
-
-	//Solve Step And Render - EXEC LOOP 
+	// SOLVE STEP AND RENDER - EXECUTION LOOP 
 	while (solve == true && step_count <= max_step) // Infinite Solve Loop For Now. Will need to link this to drawing/waiting etc. 
 	{
 		// Time Start - 
