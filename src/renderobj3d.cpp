@@ -457,43 +457,19 @@ int renderobject_3D_OGL::shader_loader(const char *vert_path, const char *frag_p
 	return 0; 
 }
 
+// Call Per Frame to Convert and Update Grids to 3D Textures and utility uniforms for Rendering.
 void renderobject_3D_OGL::shader_pipe(fluidobj_3d *f3obj)
 {
-	// Shader Pipe is Passing to Quad Shader Only (ie 3D Texs for RayMarching) After Cube Render Steps. 
-	// UNIFORM CONSTANTS (Per Step) \\
-
+	// Shader Pipe is Passing to Quad Shader Only.
 	glUseProgram(quad_shader_prog);
-
-	/*
-	// Pass Window Size to GL Uniform. // Could be done after Shader Compile (Once.?)
-	glUniform1i(glGetUniformLocation(quad_shader_prog, "W_Size"), window_size.x); // Window Size (Assume Square Dim, Used for Frag-UV Space)
-
-	// Interactive Render Mode Switching - 
-	int ent_state = glfwGetKey(window_ptr, GLFW_KEY_ENTER);
-	// Switch Between 0 and 1 (Density or Vel Render).
-	if (ent_state == GLFW_PRESS)
-	{
-		// Switch Render Mode On Enter Press (Assuming 0 or 1 Modes Only).
-		rendermode = !rendermode;
-
-		// Update RenderMode Uniform - 
-		glUniform1i(glGetUniformLocation(quad_shader_prog, "Mode"), rendermode);
-		if (verbose) std::cout << "DBG::RENDER MODE SWITCHED = " << rendermode << "\n";
-	}
-
-	// Current Step Uniform (RenderObj BaseMember et passed in solvestep). Fix naughty Double-Int cast. 
-	glUniform1i(glGetUniformLocation(quad_shader_prog, "Step"), (GLint)et);
-	*/
 
 	// TEXTURE->SAMPLERS (Per Step) \\
 
 	// TEXTURE - DENSITY \\
 
-	// Pass Density Grid - grid_data vector, data array to 3D Texture. 4Bytes (32Bit) Float Per Grid Density Value.
 	glBindTexture(GL_TEXTURE_3D, 0);
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_3D, tex_dens);
-	// Use Linear (Trilinear Texture Filtering HC'd) 
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	GLfloat *ptr = (GLfloat*)f3obj->dens->grid_data->data();
@@ -503,40 +479,34 @@ void renderobject_3D_OGL::shader_pipe(fluidobj_3d *f3obj)
 
 	// TEXTURE - VELOCITY \\
 
-	// Pack X-Y-Z Velocity into R-G-B Components of single Velocity 3D Texture. 
-	// Check Vel Grid Size (via grid_data flat array size) Actually == Passed GridSize to RenderObj. 
-	assert(f3obj->vel->grid_data->size() == (grid_size.x * grid_size.y * grid_size.z)); // Passed Grid Size, should incl Edge Cells per Dim. 
+	// Pack X-Y-Z Velocity into R-G-B Components of single Velocity 3D Texture.  
+	assert(f3obj->vel->grid_data->size() == (grid_size.x * grid_size.y * grid_size.z)); 
 
-	// Memory Layout - 
 	// Per Voxel (3D Texel) - [Rx|Gy|Bz]. VelocityGrid Size (1D) * 3. Thus per voxel byte stride of 3 * sizeof (float)  
 
 	std::size_t vel3dsize = f3obj->vel->grid_data->size() * 3;
-	GLfloat *vel3D = new float[vel3dsize] {};
+	auto vel3D = std::make_unique<GLfloat[]>(vel3dsize); 
 
-	// Loop Through 1D Grid as Cells i, with RGB Components within vel3D Merged Array (ch_idx) - 
+	// Merge XYZ Vel Components to 3D Scalar RGB Componets Per Cell. 
 	for (int i = 0, ch_idx = 0; i < f3obj->t_s; i++, ch_idx += 3)
 	{
-		// Merge XYZ Vel Components to 3D Scalar RGB Componets Per Cell. 
 		vel3D[ch_idx] = f3obj->vel->getdata_x(i); // v.x -> R
 		vel3D[ch_idx + 1] = f3obj->vel->getdata_y(i); // v.y -> G
 		vel3D[ch_idx + 2] = f3obj->vel->getdata_z(i); // v.z -> B
 	}
 
-	// Now Pass Merged Flat 1D Array to 3D Velocity Texture -  
+	// Flat 1D Array to 3D Velocity Texture -  
 	glBindTexture(GL_TEXTURE_3D, 0);
 	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_3D, tex_vel);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB, (GLint)grid_size.x, (GLint)grid_size.y, (GLint)grid_size.z, 0, GL_RGB, GL_FLOAT, vel3D); 
+	glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB, (GLint)grid_size.x, (GLint)grid_size.y, (GLint)grid_size.z, 0, GL_RGB, GL_FLOAT, vel3D.get()); 
 
-	// Bound State Clear - 
 	glBindTexture(GL_TEXTURE_3D, 0);
 	glUseProgram(0);
 
-	// Delete Temp Arrays - 
-	delete vel3D; vel3D = nullptr; 
 }
 
 // Need a better way to pass this, most likely through shader_pipe().
@@ -556,8 +526,6 @@ void renderobject_3D_OGL::cube_setup()
 
 	// Model-World Matrix - 
 	cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), 0.25f);
-	//cube_model.translate(vec3<float>(-0.4f, 0.0f, 0.0f));
-	//cube_model.scale(vec3<float>(0.2f, 1.5f, 0.2f));
 	cube_model.label = "Cube Model";
 	cube_model.print_mat();
 
@@ -571,8 +539,6 @@ void renderobject_3D_OGL::cube_setup()
 	cube_persp.label = "Cube Persp";
 	cube_persp.print_mat();
 
-	/* Pass Matrix_4x4<T>.comp Data Array. 
-	   matrx_4x4<T> Stores Elements in RowMajor order, so transpoe = GL_TRUE */ 
 	glUseProgram(cube_shader_prog);
 	glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "model"), 1, GL_FALSE, cube_model.comp);
 	glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "view"), 1, GL_TRUE, cube_view.comp);
@@ -580,17 +546,12 @@ void renderobject_3D_OGL::cube_setup()
 	glUseProgram(0);
 }
 
-// Update Transformation Matrices in Render loop 
-// Testing, Need to add Parms. 
+// Update Transformation Matrices in Render loop Testing, Need to add Parms. 
 void renderobject_3D_OGL::cube_update()
 {
-	// Update Model Transfor, 
 	//cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), matrix_4x4<float>::degtoRad(-(2.0 * dt)));
-	//float ang = matrix_4x4<float>::degtoRad( ((std::sinf(t1 * 2.0f) * 25.0f) - 5.0f) * dt);
 	float ang = matrix_4x4<float>::degtoRad( (std::sinf(t1 * 1.5f) * -15.0f) * dt); // Some Fake Camera/Grid Motion.
 	cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), ang);
-
-	// If Camera Changed Update View Mat. 
 
 	// Testing Camera Translation like beahviour. 
 	if (glfwGetKey(window_ptr, GLFW_KEY_W) == GLFW_PRESS)
@@ -606,12 +567,9 @@ void renderobject_3D_OGL::cube_update()
 
 	// Update Uniforms - 
 	glUseProgram(cube_shader_prog);
-	// Model - 
 	glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "model"), 1, GL_FALSE, cube_model.comp);
-	// View -
 	glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "view"), 1, GL_TRUE, cube_view.comp);
-	// Persp -
-	//
+	// Persp
 	glUseProgram(0);
 }
 
@@ -628,7 +586,7 @@ void renderobject_3D_OGL::cube_fbo_setup()
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, window_size.x, window_size.y);
 	glBindRenderbuffer(GL_RENDERBUFFER, 0); // Unbind RBO State. 
 
-	// Front Back Texture Setup, pass NULL data - 
+	// Gen Textures
 	// Front 
 	glGenTextures(1, &tex_CFront);
 	glBindTexture(GL_TEXTURE_2D, tex_CFront);
@@ -679,8 +637,7 @@ void renderobject_3D_OGL::bindclear_fbo(use_fbo mode)
 
 }
 
-// RenderObject_3D_OGL Cube FrameBuffer Attach - Call During Render to Switch/Clear FrameBuffer Attachments.
-// Only Switch Colour Attachment (Textures) RBO Stays the Same. 
+// RenderObject_3D_OGL Cube FrameBuffer Attach - Call Switch/Clear FrameBuffer Attachments. Colour Only Switched. RBO is Constant. 
 void renderobject_3D_OGL::cube_fbo_attach(use_cube tex)
 {
 	if (tex == CUBE_FRONT) // FBO --> Cube Front Texture Attachment
@@ -697,7 +654,7 @@ void renderobject_3D_OGL::cube_fbo_attach(use_cube tex)
 	}
 }
 
-// Only Call this Once on Robj Initalization, After Vertex/Shader setup in RObj Ctor.
+// Only Call this Once on RBO Initalization, After Vertex/Shader setup in RObj Ctor.
 void renderobject_3D_OGL::inital_renderstate()
 {
 	cube_setup(); // Intial Cube Transform Setup
@@ -715,21 +672,11 @@ void renderobject_3D_OGL::get_FPS()
 	if (step % 1 == 0) std::cout << std::fixed << "DEBUG::RENDER_OBJ FPS = " << 1.0f / dt << " FPS" << "\n"; // !TOD Logger Class / Utilsh. 
 }
 
-// RenderObject_3D_OGL Shader Loader Implementation -
+// RenderObject_3D_OGL Shader Loader Implementation - Debug State For Out Of Solver Testing Only. 
 void renderobject_3D_OGL::render_loop(rend_state rs)
 {
-	/* IF DBG Then Use While Loop Here - (As Assume NOT CALLED FROM INSIDE SOLVER LOOP (per step))
-	   DBG Mode assumes RenderObject Setup/Debugging outside of a FluidSolver Instance eg from main for dbg sake. 
-	   Test Render Code in Render_Debug State. */ 
-
 	if (rs == rend_state::RENDER_DEBUG)
 	{
-		/* Inital State - NOW in Ctor
-		cube_setup(); // Intial Cube Transform Setup
-		cube_fbo_setup(); // Inital FBO Setup 
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		glEnable(GL_MULTISAMPLE);
-		*/
 		while (!glfwWindowShouldClose(window_ptr))
 		{
 			// PRE OP 
