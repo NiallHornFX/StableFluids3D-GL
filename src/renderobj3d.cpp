@@ -539,6 +539,16 @@ void renderobject_3D_OGL::shader_pipe(fluidobj_3d *f3obj)
 	delete vel3D; vel3D = nullptr; 
 }
 
+// Need a better way to pass this, most likely through shader_pipe().
+void renderobject_3D_OGL::get_input(const vec2<float> &m)
+{
+	glUseProgram(quad_shader_prog);
+	glUniform1f(glGetUniformLocation(quad_shader_prog, "mx"), m.x);
+	glUniform1f(glGetUniformLocation(quad_shader_prog, "my"), m.y);
+	glUseProgram(0);
+	std::cout << std::fixed << "MOUSE POS = " << m.x << "  " << m.y << "\n";
+}
+
 // RenderObject_3D_OGL Cube Setup - Setup Cube Transforms (Initalize, and then cube_update() in RLoop?)
 void renderobject_3D_OGL::cube_setup()
 {
@@ -582,13 +592,26 @@ void renderobject_3D_OGL::cube_update()
 
 	// If Camera Changed Update View Mat. 
 
+	// Testing Camera Translation like beahviour. 
+	if (glfwGetKey(window_ptr, GLFW_KEY_PAGE_UP) == GLFW_PRESS)
+	{
+		cube_view.translate(vec3<float>(0.0f, 0.0f, 0.1f));
+	}
+	if (glfwGetKey(window_ptr, GLFW_KEY_PAGE_DOWN) == GLFW_PRESS)
+	{
+		cube_view.translate(vec3<float>(0.0f, 0.0f, -0.1f));
+	}
+
 	// If FOV Changed Update Persp Mat. 
 
+	// Update Uniforms - 
 	glUseProgram(cube_shader_prog);
 	// Model - 
 	glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "model"), 1, GL_FALSE, cube_model.comp);
 	// View -
+	glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "view"), 1, GL_TRUE, cube_view.comp);
 	// Persp -
+	//
 	glUseProgram(0);
 }
 

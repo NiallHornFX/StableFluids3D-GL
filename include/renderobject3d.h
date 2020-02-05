@@ -1,7 +1,7 @@
 #ifndef RENDEROBJECT_H
 #define RENDEROBJECT_H
 
-// Prevent Glew and GLFW multiple inclusion. 
+// Prevent Glew and GLFW multiple inclusion/implmentation defintion. 
 #ifndef GLEW_STATIC
 #define GLEW_STATIC // Static Linking GLEW and GLFW For now. 
 #include <GLEW\glew.h>
@@ -97,6 +97,7 @@ protected:
 	void cube_fbo_setup();
 	void cube_fbo_attach(use_cube tex); // 0 front | 1 back 
 	void bindclear_fbo(use_fbo mode); // 0 Cube FBO | 1 Default FBO
+	void get_input(const vec2<float> &m);
 
 	// DBG - 
 	void print_GL_error(); 

@@ -2135,6 +2135,8 @@ void fluidsolver_3::solve_step(bool solve, bool do_diffdens, bool do_diffvel, fl
 		//debug_step();
 
 		// STEP - RENDER CALLS \\ ------------------
+		// Pass Cur Mouse - 
+		render_obj->get_input(vec2<float>(xpos_1_N, -ypos_1_N));
 		// Pass Cur Step - 
 		render_obj->et = step_count; 
 		// Uniform/Texture Set Calls (ShaderPipe) -
@@ -2193,6 +2195,8 @@ void fluidsolver_3::set_window(GLFWwindow *win)
 	this->winptr = win; 
 }
 
+// NEED TO FIX MOUSE POSTION TO USE WINDOW SIZE NOT N SIZE (AS IN 2D !). 
+
 // Call To Update Mouse Pos - (Pixel (Cell Index) Space)
 void fluidsolver_3::updt_mousepos(const step step_id)
 {
@@ -2222,10 +2226,10 @@ void fluidsolver_3::updt_mouseposNorm(const step step_id)
 
 		ypos_1_N = (y_s + e_s) - ypos_1_N; // FLIP Y Axis (So Matches GridSpace Postive Y = Down) (Up When drawn). 
 
-		xpos_1_N /= N_dim; ypos_1_N /= N_dim;
+		xpos_1_N /= 512; ypos_1_N /= 512;
 
 		// Window Bounds - 
-		if (!glfwGetWindowAttrib(winptr, GLFW_HOVERED)) xpos_1_N = 0.0f, ypos_1_N = 0.0f;
+	//	if (!glfwGetWindowAttrib(winptr, GLFW_HOVERED)) xpos_1_N = 0.0f, ypos_1_N = 0.0f;
 	}
 	else if (step_id == step::STEP_PREV)
 	{
@@ -2233,10 +2237,10 @@ void fluidsolver_3::updt_mouseposNorm(const step step_id)
 
 		ypos_0_N = (y_s + e_s) - ypos_0_N; // FLIP Y Axis (So Matches GridSpace Postive Y = Down) (Up When drawn). 
 
-		xpos_0_N /= N_dim; ypos_0_N /= N_dim;
+		xpos_0_N /= 512; ypos_0_N /= 512;
 
 		// Window Bounds - 
-		if (!glfwGetWindowAttrib(winptr, GLFW_HOVERED)) xpos_0_N = 0.0f, ypos_0_N = 0.0f;
+	//	if (!glfwGetWindowAttrib(winptr, GLFW_HOVERED)) xpos_0_N = 0.0f, ypos_0_N = 0.0f;
 	}
 }
 
