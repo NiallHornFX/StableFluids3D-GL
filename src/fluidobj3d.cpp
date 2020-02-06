@@ -1,6 +1,7 @@
 // Implementation of FluidObject_3D
 #include "fluidobj3d.h"
 
+// Std Headers
 #include <fstream> 
 #include <string>
 #include <sstream>
@@ -18,38 +19,27 @@ fluidobj_3d::fluidobj_3d(int x_size, int y_size, int z_size, int edge_size)
 {
 	t_s = (x_s + e_s) * (y_s + e_s) * (z_s + e_s);
 
-	// Heap Allocate Grids to Member Pointers, Manual ID Paramters. 
 	dens = new grid3_scalar<float>(x_size, y_size, z_size, edge_size);
 	prev_dens = new grid3_scalar<float>(x_size, y_size, z_size, edge_size);
-
 	col = new grid3_scalar<float>(x_size, y_size, z_size, edge_size);
-
 	vel = new grid3_vector<vec3<float>>(x_size, y_size, z_size, edge_size);
 	prev_vel = new grid3_vector<vec3<float>>(x_size, y_size, z_size, edge_size);
-
 	curl = new grid3_vector<vec3<float>>(x_size, y_size, z_size, edge_size);
 	vc = new grid3_vector<vec3<float>>(x_size, y_size, z_size, edge_size);
-
-	// Debug Grids. 
 	preproj_vel = new grid3_vector<vec3<float>>(x_size, y_size, z_size, edge_size);
-
 }
 
 
 fluidobj_3d::~fluidobj_3d()
 {
-	// Delete Heap Alloacted Grids- 
 	delete dens; dens = nullptr; 
 	delete prev_dens; prev_dens = nullptr;
 	delete vel; vel = nullptr;
 	delete prev_vel; prev_vel = nullptr; 
 	delete col; col = nullptr; 
 
-	// If Vorticity Confinement Temp Grids Still Allocated - 
 	if (curl) delete curl, curl = nullptr; 
 	if (vc) delete vc, vc = nullptr; 
-
-	// If Debug Grids were used/allocated. 
 	if (preproj_vel) delete preproj_vel, preproj_vel = nullptr; 
 }
 
@@ -65,10 +55,9 @@ void fluidobj_3d::add_velocity(const vec3<float> &v, int i, int j, int k)
 	vel->adddata(v, i, j, k);
 }
 
-// Add Force To Velocity. Assume Constant Mass/Density 1.0f for now. 
+// Add Force To Velocity. Assume Constant Mass/Density 1.0f for now. PerFrame.
 void fluidobj_3d::integrate_force(const vec3<float> &force, float dt, int i, int j, int k)
 {
-	// Needs to be called per frame, to intergrate force to vel. 
 	vec3<float> temp = force;
 	temp *= dt; 
 	vel->adddata(temp, i, j, k);
@@ -76,7 +65,6 @@ void fluidobj_3d::integrate_force(const vec3<float> &force, float dt, int i, int
 
 void fluidobj_3d::print_info()
 {
-
 	// Just use sizeof (T) * GridData Size - 
 	std::size_t sgrid_bytes = sizeof (float) * dens->griddataptr_getter()->size(); 
 	std::size_t vgrid_bytes = sizeof (vec3<float>) * vel->griddataptr_getter()->size(); 
@@ -90,10 +78,7 @@ void fluidobj_3d::print_info()
 	std::size_t vgrid_MB = vgrid_bytes / std::size_t(pow(1024, 2)); // 1048576 (1.048 Million) Btyes Per MB. 
 	std::size_t vgrid_GB = vgrid_bytes / std::size_t(pow(1024, 3)); // 1073741824 (1.073 Billion) Btyes Per GB. 
 
-	// Print Memory of Fluid Object Density (Scalar) and Velocity (Vector) Grids Using FluidObject Dimension Vals -
-
 	std::cout << "\nDEBUG::Fluid Object 3D " << " INFO BEGIN - \n";
-	// INFO Code - 
 	std::cout << "DEBUG::Fluid Object 3D:: Scalar Grid Size = " << sgrid_bytes << " B \n";
 	std::cout << "DEBUG::Fluid Object 3D:: Scalar Grid Size = " << sgrid_KB << " KB \n";
 	std::cout << "DEBUG::Fluid Object 3D:: Scalar Grid Size = " << sgrid_MB << " MB \n";
@@ -107,19 +92,14 @@ void fluidobj_3d::print_info()
 	std::cout << "DEBUG::Fluid Object 3D:: vec3 Cell Size = " << sizeof(vec3<float>) << " B \n";
 	std::cout << "DEBUG::Fluid Object 3D " << " INFO END. \n \n";
 
-	// Print Size of Total FluidObj Allocated grids memory. Based on above vec/scalar grid size. 
 }
 
 
 
 // Implicit SDF sphere For Sourcing into Density and Velocity Grids. 
-
 void fluidobj_3d::implicit_sphere_source(float dd, const vec3<float> &vv, const vec3<float> &offset, float rad)
 {
-	// Iterate Over Grid Cells, Test for Implicit Condtion. 
-	// if (pow(@P.x, 2) * 10 <= -@P.y) where Px and Py = i,j.
-
-	float h = 1.0f / x_s; // ! Assumeing Cube'd Grid 
+	float h = 1.0f / x_s; 
 	float surf_isothresh = 0.01f; 
 
 	#pragma omp parallel for
@@ -162,102 +142,6 @@ void fluidobj_3d::implicit_sphere_source(float dd, const vec3<float> &vv, const 
 
 }
 
-// Implicit Sphere Source Generic Overloads - Impelement Later !
-/*
-void fluidobj_3d::implicit_sphere_source(grid3_scalar<float> *grid, float quant, const vec3<float> &offset, float rad)
-{
-	//
-}
-void fluidobj_3d::implicit_sphere_source(grid3_vector<vec3<float>> *grid, const vec3<float> &quant, const vec3<float> &offset, float rad)
-{
-	//
-}
-*/
-
-
-// Velocity Field Forces \\ 
-
-/* ! Implement Later !
-
-// Radial Force - 
-void fluidobj_2d::radial_force(const vec2<float> &orig_offset, float strength, float dt)
-{
-	// Thread Safe - 
-
-	#pragma omp parallel for
-	for (int j = 1; j <= y_s; j++)
-	{
-		#pragma omp parallel for
-		for (int i = 1; i <= x_s; i++)
-		{
-			// Index --> GridSpace Vector (x, y); 
-			vec2<float> gs((float)i / x_s, (float)j / y_s);
-			// Offset GridSpace Origin (x - h, y - k) (Offset (h,k) Passed in Cartesian GridSpace)
-			gs -= orig_offset;
-
-			// Set Radial Velocity, Normalize and Mult Speed Length. 
-			vec2<float> rad_vel(gs.y - gs.x, -gs.y - gs.x);
-			rad_vel.normalize() *= strength;
-
-			// Integrate Force to Velocity - 
-			integrate_force(rad_vel, dt, i, j);
-		}
-	}
-}
-
-
-// Inital Velocity Condtion (Velocity Override) Member Functions \\
-
-// These Override Velocity, and Should Only be added Initally PreSolveStep call. Not within.
-
-// Radial Velocity - 
-void fluidobj_2d::radial_vel(const vec2<float> &orig_offset, float speed)
-{
-	for (int j = 1; j <= y_s; j++)
-	{
-		for (int i = 1; i <= x_s; i++)
-		{
-			// Index --> GridSpace Vector (x, y); 
-			vec2<float> gs((float)i / x_s, (float)j / y_s);
-			// Offset GridSpace Origin (x - h, y - k) (Offset (h,k) Passed in Cartesian GridSpace)
-			gs -= orig_offset;
-
-			// Set Radial Velocity, Normalize and Mult Speed Length. 
-			vec2<float> rad_vel(gs.y - gs.x, -gs.y - gs.x);
-			rad_vel.normalize() *= speed; 
-
-			// Set Velocity In All Cells -
-			vel->setdata(rad_vel, i, j);
-		}
-	}
-}
-
-// Sink Velocity (To Some GridSpace OriginOffset / Postion) - 
-
-// (0.5f, 0.5f) Offset Vector Crashes? (x - 0.5, y - 0.5) (Offset Origin to Center) ? 
-// (0.5f, 0.4999f) works... Must be rounding error. 
-void fluidobj_2d::sink_vel(const vec2<float> &orig_offset, float speed)
-{
-	for (int j = 1; j <= y_s; j++)
-	{
-		for (int i = 1; i <= x_s; i++)
-		{
-			// Index --> GridSpace Vector (x, y); 
-			vec2<float> gs((float)i / x_s, (float)j / y_s);
-
-			// Offset GridSpace Origin (x - h, y - k) (Offset (h,k) Passed in Cartesian GridSpace)
-			gs -= orig_offset;
-
-			// Re-Normalize and Negate Grid Space Pos Vector to Face Offseted Origin. 
-			gs.normalize(); gs.x *= -1, gs.y *= -1;
-
-			// Set Velocity In All Cells -
-			vel->setdata((gs *= speed), i, j);
-		}
-	}
-}
-*/
-
 void fluidobj_3d::setcurtoprev(grid3_scalar<float> *grid0, grid3_scalar<float> *grid1)
 {
 	// Loop Main Grid (W Edge Cells) Set PrevVel to Cur. 
@@ -278,7 +162,6 @@ void fluidobj_3d::setcurtoprev(grid3_vector<vec3<float>> *grid0, grid3_vector<ve
 	#pragma omp parallel for num_threads(omp_get_max_threads())
 	for (int i = 0; i < t_s; i++)
 	{
-		// Get Cur Vel at Cell i
 		vec3<int> idx_3d = grid1->idx_1Dto3D(i);
 
 		// Set Prev Density at Cell i

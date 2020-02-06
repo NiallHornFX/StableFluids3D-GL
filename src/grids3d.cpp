@@ -1,8 +1,10 @@
 // Implementation of grids3d
 #include "grids3d.h"
 
+// Project Headers
 #include "vec3d.h"
 
+// Std Headers
 #include <memory>
 #include <fstream>
 #include <string>
@@ -77,14 +79,12 @@ T grid3<T>::getdata(int i) const
 	return (*grid_data)[i];
 }
 
-// NOTE: Could just take std::vector<T> Ptr or Reference to avoid doing the grid3 abc downcast to derived grid_[..] class. 
 template <class T>
 void grid3<T>::swap(const grid3<T> *B)
 {
-	// Check Grid_Data Sizes Match -  
 	assert(this->grid_data->size() == B->grid_data->size());
-	// Check Grid_Data Element Type Sizes Match -
 	assert(sizeof(this->grid_data->at(0)) == sizeof(B->grid_data->at(0)));
+
 	// Swap grid_data vectors. 
 	this->grid_data->swap(*(B->grid_data));
 }
@@ -103,16 +103,14 @@ vec3<std::size_t> grid3<T>::get_dimsize() const
 
 // Grid Data Pointer / Data Array Pointer Getters - 
 
-// Returns grid_data (std::vector<T>) ptr, for external acess 
-// ! Use with caution
+// Returns grid_data (std::vector<T>) ptr, for external acess !Use with caution
 template <class T>
 std::vector<T>* grid3<T>::griddataptr_getter() const
 {
 	return grid_data;
 }
 
-// Returns grid_data std::vector<T>::data() internal data array pointer, for external acess.
-// ! Use with caution
+// Returns grid_data std::vector<T>::data() internal data array pointer, for external acess. !Use with caution
 template <class T>
 T* grid3<T>::getdataarray() const
 {
@@ -120,7 +118,6 @@ T* grid3<T>::getdataarray() const
 }
 
 // Indexers - 
-
 template <class T>
 int grid3<T>::idx_3Dto1D(int i, int j, int k) const
 {
@@ -140,11 +137,10 @@ vec3<int> grid3<T>::idx_1Dto3D(int i) const
 
 //----------------------------------------------------------------------\\
 
-// Grid3_Scalar Implmentation \\
-
-// grid3_scalar shares most implmentation with base grid3 class, apart from implmeneting pure virtual MFs. 
-
-// Note: explicit use's of this-> due to C3861 from Dependemt Base Class Template <T> Members. (No Two Phase Name Lookup)
+/* Grid3_Scalar Implmentation 
+	grid3_scalar shares most implmentation with base grid3 class, apart from implmeneting pure virtual MFs. 
+	Note: explicit use's of this-> due to C3861 from Dependemt Base Class Template <T> Members. (No Two Phase Name Lookup)
+*/
 
 // Inilzation of Base grid3 Class Constructor. No Grid3_Scalar Specfic Members to initalize.
 template <class T>
@@ -181,11 +177,10 @@ void grid3_scalar<T>::printinfo() const
 
 //----------------------------------------------------------------------\\
 
-// Grid3_Vector Implmentation \\
-
-// grid3_vector shares some implementations with Base class, adds per component getter/setter MFs, aswell as defining Pure Virtaul MFs. 
-
-// Note: explicit use's of this-> due to C3861 from Dependemt Base Class Template <T> Members. (No Two Phase Name Lookup)
+/*	Grid3_Vector Implmentation 
+	grid3_vector shares some implementations with Base class, adds per component getter/setter MFs, aswell as defining/ovr Pure Virtaul MFs.
+	Note: explicit use's of this-> due to C3861 from Dependemt Base Class Template <T> Members. (No Two Phase Name Lookup)
+*/
 
 // Inilzation of Base grid3 Class Constructor. No Grid3_Vector Specfic Members to initalize.
 template <class T>
@@ -195,11 +190,10 @@ grid3_vector<T>::grid3_vector<T>(std::size_t x_s, std::size_t y_s, std::size_t z
 template <class T>
 grid3_vector<T>::~grid3_vector()
 {
-	// Grid Data Dealloc by ABC grid3 Destructor. 
+	// Grid Data Dealloc by ABC grid3 dtor.
 }
 
 // Pure Virtual MFs Implementation - 
-
 template <class T>
 void grid3_vector<T>::clear()
 {
@@ -219,8 +213,6 @@ void grid3_vector<T>::printinfo() const
 	std::cout << "Grid Edge Cell Size = " << this->edge_size << "\n";
 	std::cout << "DEBUG::Grid 2D Scalar " << " Info END. \n \n";
 }
-
-// grid3_vector Specfic, Component Wise Setters/Getters - 
 
 // Vec3 Component Setters -
 // Set X

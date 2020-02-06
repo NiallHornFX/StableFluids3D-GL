@@ -1,5 +1,7 @@
+// Implementation of RenderContext3D
 #include "rendercontext3d.h"
 
+// Std Headers
 #include <iostream>
 
 extern short verbose;

@@ -12,7 +12,7 @@
 // External Headers - 
 #include <omp.h> 
 
-#define dospherebound 1 
+#define dospherebound 0 
 #define doedgebound 1 
 #define DO_SPHEREBOUNDS_MT 1
 
@@ -415,15 +415,6 @@ void fluidsolver_3::sphere_bounds_eval(grid3_vector<vec3<float>> *grid, float co
 				{
 					// Inside Operations - 
 
-					// Do Reflection On Interior Velocites Oppose to Zeroing Them? 
-					/* NOT Used, as Causes Relfection on Interior Cells Causes Advection Issues at Surface.
-					float input_spd = grid->getdata(i, j).length();
-					vec3 refl_dir = vec3(float(i) * h, float(j) * h) - vec3(offset.x, offset.y) ;
-					refl_dir.normalize();
-					refl_dir *= input_spd * 1.0f;
-					// Override Interior Col Vel With Reflect Dir Vel
-					grid->setdata(refl_dir, i, j); // ISSUES WITH ADDED GRID VELOCITY ? */
-
 					// Simply Zero Out Vector Grid Values In Interior Sphere Cells -   
 					grid->setdata(vec3<float>(0.0f, 0.0f, 0.0f), i, j, k);
 				}
@@ -436,7 +427,7 @@ void fluidsolver_3::sphere_bounds_eval(grid3_vector<vec3<float>> *grid, float co
 				}
 				*/
 
-				/*
+				/* Mouse Vel Additon
 				if (sphere_func <= col_iso) 
 				{
 					float mouse_velMult = 1.0f;
@@ -456,10 +447,9 @@ void fluidsolver_3::sphere_bounds_eval(grid3_vector<vec3<float>> *grid, float co
 /* ====================================================
 	DIFFUSION
    ==================================================== */
-
-// ** DIFFUSION-SCALAR-FIELD-LINSOLVE IMPLEMENTATION ** \\ - 
-
 // Gauss-Seidel Based Diffusion, not Thread Safe Possible Race Condtion of Neighbour Cells own diffusion.
+
+// ** DIFFUSION-SCALAR-FIELD-LINSOLVE IMPLEMENTATION ** \\ 
 
 void fluidsolver_3::diffuse(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1, float diff, ushort iter)
 {
@@ -498,7 +488,7 @@ void fluidsolver_3::diffuse(grid3_scalar<float> *grid_0, grid3_scalar<float> *gr
 	}
 }
 
-// ** DIFFUSION-VECTOR-FIELD-LINSOLVE IMPLEMENTATION ** \\ - 
+// ** DIFFUSION-VECTOR-FIELD-LINSOLVE IMPLEMENTATION ** \\ 
 
 void fluidsolver_3::diffuse(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3<float>> *grid_1, float diff, ushort iter)
 {
@@ -563,7 +553,7 @@ void fluidsolver_3::diffuse(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3
    Linear Backtrace along Velocity, Interoplate Neighbours at Backtraced Postion, to get our new advected value. 
    BackTrace Done in Index Space | Thread Safe, Read from Prev, Write to Cur.  */
 
-// ** ADVECT_SL(Semi-Lagragagin)_Scalar Overload ** \\ - 
+// ** ADVECT_SL(Semi-Lagragagin)_Scalar Overload ** \\ 
 
 void fluidsolver_3::advect_sl(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1)
 {
@@ -663,7 +653,7 @@ void fluidsolver_3::advect_sl(grid3_scalar<float> *grid_0, grid3_scalar<float> *
 	#endif
 }
 
-// ** ADVECT_SL(Semi-Lagragagin)_Vector Overload ** \\ - 
+// ** ADVECT_SL(Semi-Lagragagin)_Vector Overload ** \\ 
 
 void fluidsolver_3::advect_sl(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3<float>> *grid_1)
 {
@@ -785,9 +775,8 @@ void fluidsolver_3::advect_sl(grid3_vector<vec3<float>> *grid_0, grid3_vector<ve
 		}
 	}
 
-	// Call Boundary Condtions Post Advection (Density)- 
 	#if doedgebound == 1
-	edge_bounds(grid_1); // Generic Func Call, Pass Grid_1 (n+1). 
+	edge_bounds(grid_1); 
 	#endif
 
 	#if dospherebound == 1
@@ -796,12 +785,11 @@ void fluidsolver_3::advect_sl(grid3_vector<vec3<float>> *grid_0, grid3_vector<ve
 }
 
 /* MID POINT ADVECTION (RK2) WIP - 
-BackTrace to MidPoint, Sample (interoplate) Velocity at MidPoint, Then BackTrace from Cell using MidPoint Vel, 
-to sample (interoplate) Final BackTraced Advection Quanitiy
-Advection in Grid Index Space. Dt Scaled to N_Dim size | Velocity Components split for Advection Sampling and Interoplation.
+	BackTrace to MidPoint, Sample (interoplate) Velocity at MidPoint, Then BackTrace from Cell using MidPoint Vel, to sample (interoplate) Final BackTraced Advection Quanitiy
+	Advection in Grid Index Space. Dt Scaled to N_Dim size | Velocity Components split for Advection Sampling and Interoplation.
 */
 
-// ** ADVECT_SL_RK2(Semi-Lagragagin_MidPoint)_Scalar Overload ** \\ - 
+// ** ADVECT_SL_RK2(Semi-Lagragagin_MidPoint)_Scalar Overload ** \\ 
 void fluidsolver_3::advect_sl_mp(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1)
 {
 	float dt0 = dt * N_dim; // Scale DeltaTime to Grid Dimension Size. 
@@ -1080,7 +1068,7 @@ void fluidsolver_3::project(int iter)
 				// Init to 0 
 				divergence->setdata(0.0f, i, j, k);
 
-				// Compute Divergence Cell Value. (0.5 * h oppose to / N) 
+				// Compute Divergence Cell Value. 
 				float div = -0.5 * h * (f3obj->vel->getdata_x(i + 1, j, k) - f3obj->vel->getdata_x(i - 1, j, k)
 					+ f3obj->vel->getdata_y(i, j + 1, k) - f3obj->vel->getdata_y(i, j - 1, k)
 					+ f3obj->vel->getdata_z(i, j,k + 1) - f3obj->vel->getdata_z(i, j, k - 1));
@@ -1445,7 +1433,7 @@ void fluidsolver_3::velocity_step()
 // Implementation of A Single solve Step of fluidsolver_3. Once User Calls this
 // Simulation will begin. And for now occur Untill program is closed. 
 
-void fluidsolver_3::solve_step(bool solve, bool do_diffdens, bool do_diffvel, float dens_diff, float vel_diff, int proj_iter, int diff_iter, int max_step)
+void fluidsolver_3::solve_step(bool solve, int max_step)
 {
 	// Init Step/time vals. 
 	int step_count = 0;
@@ -1504,12 +1492,9 @@ void fluidsolver_3::solve_step(bool solve, bool do_diffdens, bool do_diffvel, fl
 
 		if (step_count == max_step)
 		{
-			log_out << "\n *** INFO::Solve_Step::TOTAL_DELTA-TIME = " << dt_acc << " Seconds ***\n";
-			log_out << " \n *** DEBUG::Solve_Step::TOTAL_CALC_DURATION = " << total_elapsed << " Seconds *** \n";
+			log_out << "\n *** INFO::Solve_Step::TOTAL_DELTA-TIME = " << dt_acc << " Seconds at timestep of " << dt << "***\n";
+			log_out << " \n *** DEBUG::Solve_Step::TOTAL_WALLCLOCK_CALC_DURATION = " << total_elapsed << " Seconds *** \n";
 			log_out << " \n *** DEBUG::Solve_Step::TOTAL_FPS = ~" << double(max_step) / total_elapsed << " FPS *** \n \n";
-
-			// Write Last Frame To Img 
-			//f3obj->writeto_img(step_count); //f3obj->writeto_img_vel(step_count);
 		}
 
 		// Print Log to stdout - 
@@ -1717,5 +1702,4 @@ void fluidsolver_3::sphere_rad_test()
 	{
 		impsource_radius -= 0.001f;
 	}
-
 }

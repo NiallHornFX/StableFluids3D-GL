@@ -1,6 +1,7 @@
 #ifndef FLUIDSOLVER_2_H
 #define FLUIDSOLVER_2_H
 
+// Project Headers
 #include "fluidobj3d.h"
 #include "renderobject3d.h" 
 
@@ -53,11 +54,9 @@ public:
 	~fluidsolver_3();
 	fluidsolver_3() = delete; // Delete Default Constructor. 
 
-	// Setter/Getters - 
 	void set_window(GLFWwindow *win);
 
-	// Main Solver Step - (Only Public Fluid Solve MFunc). 
-	void solve_step(bool solve, bool do_diffdens, bool do_diffvel, float dens_diff, float vel_diff, int proj_iter, int diff_iter, int max_step);
+	void solve_step(bool solve, int max_step);
 
 	// PARAMTERS \\  WIP - 
 	struct FluidSolver2_Paramters
@@ -110,7 +109,6 @@ public:
 
 		bool p_spherebounds_killint = false; 
 
-		//p_dt // Constructor bound.
 		float emit_sphere_rad, emit_sphere_surfthresh;
 		float col_sphere_rad = 0.005f, col_sphere_surfthresh = 0.003f;
 
@@ -157,8 +155,7 @@ protected:
 	// Projection - Jacobi Solve (Multi-Threaded)
 	void project_jacobi(int iter); 
 
-	// DISSIPATION \\ -
-
+	// DISSIPATION \\ 
 	void dissipate(grid3_scalar<float> *grid, float disp_mult, float dt);
 	void dissipate(grid3_vector<vec3<float>> *grid, float disp_mult, float dt);
 
@@ -170,16 +167,14 @@ protected:
 	void velocity_step();
 
 	// UTILITY \\ - 
-
 	// Mouse Input - 
 	void updt_mousepos(const step step_id); // 0 - N XY Mouse Coords. 
-	void updt_mouseposNorm(const step step_id); // 0 -1 XY Mouse Coords
-	void updt_mouseposRange(const step step_id); // -1 to 1. XY Mouse Coords (Incorrect, Depreacted). 
+	void updt_mouseposNorm(const step step_id); // 0-1 XY Mouse Coords
+	void updt_mouseposRange(const step step_id); // -1 to 1. 
 	void updt_mousevel();
 	void sphere_rad_test();
 
 	// Static Utill - 
-	// Clamp,Fit,LERP,CosInterp .. TMP these maybe. 
 	static float clamp(float val, float min, float max);
 	static float fitRange(float val, float a_min, float a_max, float b_min, float b_max);
 	static float lerp(float val_0, float val_1, float bias);
@@ -191,7 +186,7 @@ protected:
 
 private:
 
-	fluidobj_3d *f3obj; // Pointer to FluidObject3D this FluidSolver Instance is Solving/Operating on.
+	fluidobj_3d *f3obj; 
 	float dt;
 
 	int x_s, y_s, z_s, e_s; 

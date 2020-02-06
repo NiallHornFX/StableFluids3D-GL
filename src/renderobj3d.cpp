@@ -1,6 +1,10 @@
+// Implementation of RenderObject3D
 #include "renderobject3d.h"
+
+// Project Headers
 #include "fluidobj3d.h"
 
+// Std Headers
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -10,9 +14,6 @@
 extern short verbose;
 
 // Render Object Creation Classes Implementation - 
-
-// Oppose to 2D Window does NOT Correspond to Grid in Size or Cell-Pixel Mapping. We are defining a window of aribitrary size, whose fragments will raymarch
-// the FluidObject Grids passed to GPU as 3D Textures sampled in WS. 
 
 // RenderObject_3D - ABC Implementations - 
 
@@ -25,7 +26,7 @@ renderobject_3D::renderobject_3D(const char *api_name, int v_maj, int v_min, con
 // RenderObject_2D_OGL Constructor - 
 renderobject_3D_OGL::renderobject_3D_OGL(const char *api_name, int v_maj, int v_min, const vec2<int> &ws, const vec3<int> &gs, GLFWwindow *winptr, short rmode)
 	: renderobject_3D(api_name, v_maj, v_min, ws, gs, rmode), window_ptr(winptr),  // Initalize RenObj ABC Members Via Its Own Constructor. 
-	cube_model(), cube_view(), cube_persp(), cam_target(0.0f, 0.0f, 0.0f) // 0 Initalize Cube Transformation Matrix and Vector Members
+	cube_model(), cube_view(), cube_persp(), cam_target(0.0f, 0.0f, 0.0f) // Ident Initalize Cube Transformation Matrix and Vector Members
 {
 	std::cout << "DBG::RenderObject_3D Created For Render API: " << api_name << " " << v_maj << "." << v_min << "\n \n";
 	// Call Setup MFuncs
@@ -157,64 +158,6 @@ int renderobject_3D_OGL::vertex_setup()
 		-0.5,-0.5,0.5, 0.0, 0.0, 1.0
 	};
 
-	// Full Cube - 
-	 float cube_verts[36 * 6] =
-	 {
-		 // FACE 0
-		 -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 0.0f,
-		 0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f,
-		 0.5f,  0.5f, -0.5f, 1.0f, 1.0f, 0.0f,
-
-		 0.5f,  0.5f, -0.5f, 1.0f, 1.0f, 0.0f,
-		 -0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
-		 -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 0.0f,
-
-		 // FACE 1
-		 -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f,
-		 0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 1.0f,
-		 0.5f,  0.5f, 0.5f, 1.0f, 1.0f, 1.0f,
-
-		 0.5f,  0.5f, 0.5f, 1.0f, 1.0f, 1.0f,
-		 -0.5f,  0.5f, 0.5f, 0.0f, 1.0f, 1.0f,
-		 -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f,
-
-		 // FACE 2
-		 -0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f,
-		 -0.5f,  0.5f, -0.5f, 1.0f, 1.0f, 0.0f,
-		 -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
-
-		 -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
-		 -0.5f, -0.5f,  0.5f, 0.0f, 0.0f, 1.0f,
-		 -0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f,
-
-		 // FACE 3
-		 0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f,
-		 0.5f,  0.5f, -0.5f, 1.0f, 1.0f, 0.0f,
-		 0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
-
-		 0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
-		 0.5f, -0.5f,  0.5f, 0.0f, 0.0f, 1.0f,
-		 0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f,
-
-		 // FACE 4
-		 -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
-		 0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 0.0f,
-		 0.5f, -0.5f,  0.5f, 1.0f, 0.0f, 1.0f,
-
-		 0.5f, -0.5f,  0.5f, 1.0f, 0.0f, 1.0f,
-		 -0.5f, -0.5f,  0.5f, 0.0f, 0.0f, 1.0f,
-		 -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
-
-		 // FACE 5
-		 -0.5f,  0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
-		 0.5f,  0.5f, -0.5f, 1.0f, 1.0f, 0.0f,
-		 0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f,
-
-		 0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f,
-		 -0.5f,  0.5f,  0.5f, 0.0f, 0.0f, 1.0f,
-		 -0.5f,  0.5f, -0.5f, 0.0f, 1.0f, 0.0f
-	 };
-
 	// Vertex Screen Quad Setup - 
 	quad_vertices = new GLfloat[12]
 	{
@@ -286,11 +229,11 @@ int renderobject_3D_OGL::vertex_setup()
 	// QUAD Texture Sampler Units - 
 	glUseProgram(quad_shader_prog);
 	// Set Quad Shader 2D Texture Sampler Units (Cube Front Face and Back Face 0,1) -
-	glUniform1i(glGetUniformLocation(quad_shader_prog, "cf_tex"), 0); // Set Sampler TU0. 
-	glUniform1i(glGetUniformLocation(quad_shader_prog, "cb_tex"), 1); // Set Sampler TU1. 
+	glUniform1i(glGetUniformLocation(quad_shader_prog, "cf_tex"), 0); 
+	glUniform1i(glGetUniformLocation(quad_shader_prog, "cb_tex"), 1); 
 	// Set Quad Shader 3D Texture Sampler Units (Density, Velocity Grid Textures 2,3) - 
-	glUniform1i(glGetUniformLocation(quad_shader_prog, "dens_tex"), 2); // Density (R) = TU2. 
-	glUniform1i(glGetUniformLocation(quad_shader_prog, "vel_tex"), 3); // Velocity (RGB) = TU3. 
+	glUniform1i(glGetUniformLocation(quad_shader_prog, "dens_tex"), 2); 
+	glUniform1i(glGetUniformLocation(quad_shader_prog, "vel_tex"), 3); 
 	glUseProgram(0);
 
 	// Inital RenderState 
@@ -359,7 +302,6 @@ void renderobject_3D_OGL::shader_checkLink(int shader)
 
 	glGetProgramiv(cur_shader_prog, GL_LINK_STATUS, &sucess);
 
-	// If Not Sucess (thus sucess undefined/non-intialzed) print error log out (via cout)
 	if (!sucess)
 	{
 		glGetProgramInfoLog(cur_shader_prog, len, NULL, err_log);
@@ -380,12 +322,11 @@ int renderobject_3D_OGL::shader_loader(const char *vert_path, const char *frag_p
 	std::stringstream v_shad_buf, f_shad_buf; 
 	std::string temp_v, temp_f; 
 
-	// Set ifstream exceptions
 	vert_shader_load.exceptions(std::ios::badbit | std::ios::failbit);
 	frag_shader_load.exceptions(std::ios::badbit | std::ios::failbit);
 
-	// Shader Load And Write to Code Buffer. (Probs could of done this with strcpy directly much easier !) 
-	// No Parsing, (For now) just check compile and linkage on shader creation below. 
+	/* Shader Load And Write to Code Buffer. (Probs could of done this with strcpy directly much easier !) 
+	 No Parsing, (For now) just check compile and linkage on shader creation below. */ 
 	try
 	{
 		vert_shader_load.open(vert_path);
@@ -464,7 +405,6 @@ void renderobject_3D_OGL::shader_pipe(fluidobj_3d *f3obj)
 	glUseProgram(quad_shader_prog);
 
 	// TEXTURE->SAMPLERS (Per Step) \\
-
 	// TEXTURE - DENSITY \\
 
 	glBindTexture(GL_TEXTURE_3D, 0);
@@ -741,7 +681,7 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 		}
 
 	}
-	else // Assume Called INSIDE SOLVE LOOP. Thus RENDER_ACTIVE dbg state. InitalStateCalls in CTOR. 
+	else if (rs == rend_state::RENDER_ACTIVE)
 	{
 		// PRE OP
 		get_FPS();
@@ -790,7 +730,6 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 		glBindVertexArray(Quad_VAO);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Quad_EBO);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
 
 		// POST OP \\
 		// Clear Render State. 

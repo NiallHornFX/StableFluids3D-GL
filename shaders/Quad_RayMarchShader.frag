@@ -43,8 +43,7 @@ void main()
 	vec3 ray_P = samp_cf_start;
 	
 	// Clamp Ray_P to 3D Texture Space 0-1,xyz. 
-	//ray_P_f = clamp(ray_P_f, 0.0, 1.0); 
-	//ray_P_b = clamp(ray_P_b, 0.0, 1.0); 
+	//ray_P_f = clamp(ray_P_f, 0.0, 1.0); ray_P_b = clamp(ray_P_b, 0.0, 1.0); 
 
 	// Map 3D Texture Space Cube Local Space Texture Sampled Locations.
 	float dens = 0.0; vec3 vel = vec3(0.0, 0.0, 0.0); 
@@ -64,10 +63,6 @@ void main()
 		vec3 ldir = normalize(lpos - ray_P); 
 		for (int j = 0; j < l_step_count; j++) // Basic Shadow Ray...
 		{
-			//vec3 lpos = vec3(0.9, 1.0, -0.2);
-			//vec3 lpos = vec3(mx, my, -clamp(mx+my, 0.0, 1.0)); 
-			
-			
 			l += texture(dens_tex, lray_P).x * 0.25;
 			lray_P += ldir * step_size; 
 			if (l >= 0.99) {break;}
@@ -75,10 +70,10 @@ void main()
 		float l_dist = length(lpos - ray_P);
 		//float phase = pow(l_dist, 2.0); 
 		//dens -= l_dist * 0.001; 
-		l /= l_step_count; l = clamp(l, 0.0, 1.0); // Hacky Clamping... Scaled into SDR.
+		l /= l_step_count; l = clamp(l, 0.0, 1.0); 
 		dens -= l * 1.0; // Subtract ShadowRay Accumlated Density. In Primary Ray Loop. 
 		
-		// Early Ray Termination - Creating Clipping. 
+		// Early Ray Termination 
 		//if ((length(ray_P) >= rayL)) {break;}
 		//if (dens > 0.99) { dens = 1.0; break;}
 	}	
@@ -93,16 +88,5 @@ void main()
 	cv_0 = desat(cv_0, 1.0).xyz; cv_0.xy += 0.1 * length(cv_0); cv_0 *= 0.4; // cv_0.x += 0.1;
 	vec3 cv_1 = mix(cv_0, dens_vec, 0.5); 
 	frag_color = vec4(clamp(cv_1, 0.0, 1.0), 1.0); 
-	
-	
-	//frag_color = vec4(vel.x, vel.y, vel.z, 1.0); 
-	//frag_color = vec4(mix(samp_cf.xyz, samp_cb.xyz, 0.5), 1.0); // Check Cube Faces Blended. 
-	//vec3 dens_vec = vec3(dens, dens, dens); 
-	//vec3 add_both = (ray_P_f + ray_P_b) / 2.0f;
-	//frag_color = vec4(add_both, 1.0); 
-	//frag_color = vec4(dens_vec, 1.0);
-	//frag_color = vec4(dens, dens, dens, 1.0); 
-	//frag_color = vec4(ray_dir, 1.0); // Check RayDir
-	//frag_color = vec4(uv.xy, 0.0, 1.0); // Check ScreenSpace UV.
 	
 }

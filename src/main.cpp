@@ -35,10 +35,8 @@
 #define GLMajor 4
 #define GLMinor 0
 
-// Move macros to utils header. Useless here. 
 #define DEBUG_MODE 0 
 #define USE_ASSERT 0
-
 #define USE_SIMD 1 
 #define SIMD_FORCE_INLINE
 
@@ -79,7 +77,7 @@ int main()
 	test_fluidsolver.set_window(render_c.get_window());
 
 	// Call Solve Step Loop to start simulation and rendering - 
-	test_fluidsolver.solve_step(true, false, false, 0.0001f, 0.001f, 10, 5, solve_steps);
+	test_fluidsolver.solve_step(true, solve_steps);
 
 	return 0;
 }
