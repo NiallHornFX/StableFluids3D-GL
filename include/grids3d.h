@@ -23,8 +23,6 @@ public:
 
 	virtual ~grid3();
 
-	// PVMFs to Override in grid3_[..] derivations. 
-	// Data Acess (1D, 3D) -
 	void setdata(T data, int i);
 
 	void setdata(T data, int i, int j, int k);
@@ -52,7 +50,7 @@ protected:
 	std::vector<T> *grid_data;
 	std::size_t x_size, y_size, z_size, edge_size, total_size;
 
-	matrix_4x4<float> GStoWS; // Local Grid Space to World Space Transformation Matrix. 
+	matrix_4x4<float> GStoWS; 
 
 };
 
@@ -71,8 +69,9 @@ public:
 	virtual void printinfo() const override; 
 };
 
-
 // Grid3 Vector Class - 
+// vec_t (vec_t t = Template, vec_t<T>T = float).
+
 template <class T>
 class grid3_vector : public grid3<T>
 {

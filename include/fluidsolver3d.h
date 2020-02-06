@@ -49,7 +49,6 @@ class fluidsolver_3
 {
 public:
 
-	// Enforce no default constructor/implicit construction. FluidObject Pointer Is NEEDED for Construction.
 	fluidsolver_3(fluidobj_3d *f3dptr, float dtt);
 	~fluidsolver_3();
 	fluidsolver_3() = delete; // Delete Default Constructor. 
@@ -77,7 +76,6 @@ public:
 			Advect_SL_BackTrace_RK2,
 			Advect_NONE_DBG
 
-			// Interpolant Variants
 			// BFECC,MacCormack ... 
 		};
 
@@ -164,11 +162,6 @@ protected:
 	void dissipate(grid3_scalar<float> *grid, float disp_mult, float dt);
 	void dissipate(grid3_vector<vec3<float>> *grid, float disp_mult, float dt);
 
-	// MISC \\ - 
-	//void vel_force(vec3<float> ff, float dtt);
-	//// Run Passed Lambda Callback Over Each Vector Grid Cell. 
-	//void custom_force(grid3_vector<vec3<float>> *grid, std::function <vec2<float>(vec2<int> idx)> &force);
-
 	// VORTICITY CONFINEMENT WIP \\ - 
 	//void vorticty_confine(float strength);
 
@@ -206,30 +199,27 @@ private:
 	fluidobj_3d *f3obj; // Pointer to FluidObject3D this FluidSolver Instance is Solving/Operating on.
 	float dt;
 
-	// Hard Coded on Construction (Constant) Not Paramters - (Get from FluidObj Ideally, Kinda Dont need these do we?)
-	// Size Members, Get from Fluid Object. 
+	int x_s, y_s, z_s, e_s; 
+	std::size_t total_size; 
 
-	int x_s, y_s, z_s, e_s; // Axis Sizes and Edge Cell Size/Count.
-	std::size_t total_size; // Total Cell Size (X+E) * (Y+E). 
-
-	// Assume Square Grid - 
-	int N_dim; // Size of SINGLE Dimension w/o Edge Cells.
-	int NE_dim; // Size of SINGLE Dimension w/ Edge Cells.
+	// Assume Cubed Grid - 
+	int N_dim; 
+	int NE_dim; 
 
 	// Input - Mouse Members/Functions - 
 	double xpos_0, ypos_0, xpos_0_N, ypos_0_N, xpos_0_R, ypos_0_R; // Prev_Step Mouse Data
 	double xpos_1, ypos_1, xpos_1_N, ypos_1_N, xpos_1_R, ypos_1_R;  // Cur_step Mouse Data 
 	vec2<float> mouse_vel;
 
-	// Temp/Scratch Grids Ptrs for Solver Use Only (Never Directly Rendered or used back in FluidObj unless copied).
+	// Temp/Scratch Grids for Solver Use Only.
 	grid3_scalar<float> *pressure, *pressure_1;
 	grid3_scalar<float> *divergence;
-	grid3_scalar<float> *vort; // 2D Vort/Curl Grid. 
-	grid3_scalar<float> *spherebounds_sdf; // Grid to hold SphereBounds SDF Value For Cur Step. 
+	grid3_scalar<float> *vort; // 
+	grid3_scalar<float> *spherebounds_sdf; 
 
 	// Render Members - 
-	renderobject_3D_OGL *render_obj; // Uses OGL Not Base Ptr for now, nocast. 
-	GLFWwindow *winptr; // From Render Contex Passed In Window. 
+	renderobject_3D_OGL *render_obj; // HC OGL.
+	GLFWwindow *winptr; 
 };
 
 #endif

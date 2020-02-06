@@ -9,7 +9,6 @@
 
 class fluidobj_3d
 {
-// FluidObject is Friend of FluidSolver And RenderObj Class to allow private acess. 
 
 friend class fluidsolver_3;
 friend class renderobject_3D;
@@ -22,9 +21,6 @@ public:
 	fluidobj_3d() = delete; 
 	~fluidobj_3d();
 
-	// Public MFuncs to be called from Fluidsolver to modifiy grids. 
-
-	// Implicit Sphere Source To Source into Density and Velocity Grids (HardCodeed) 
 	void implicit_sphere_source(float dd, const vec3<float> &vv, const vec3<float> &offset, float rad);
 
 	/* ! TO IMPLEMENT

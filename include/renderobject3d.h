@@ -61,6 +61,7 @@ public:
 	renderobject_3D_OGL(const char *api_name, int v_maj, int v_min, const vec2<int> &w_s, const vec3<int> &g_s, GLFWwindow *winptr, short rmode);
 	~renderobject_3D_OGL();
  
+	// Public Overrides of OGL Implementation.
 	virtual void shader_pipe(fluidobj_3d *f3obj) override final;
 	virtual void render_loop(rend_state dbg) override final;
 
