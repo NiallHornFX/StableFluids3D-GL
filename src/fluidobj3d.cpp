@@ -1,4 +1,4 @@
-
+// Implementation of FluidObject_3D
 #include "fluidobj3d.h"
 
 #include <fstream> 
@@ -9,12 +9,9 @@
 
 #include <omp.h>
 
-
-extern short verbose; // Get Verbose Global from main. 
+extern short verbose; 
 
 // fluidobj_3d Implemenatation - 
-
-// fluidobj_2d Constructor Main - 
 
 fluidobj_3d::fluidobj_3d(int x_size, int y_size, int z_size, int edge_size) 
 	: x_s(x_size), y_s(y_size), z_s(z_size), e_s(edge_size)

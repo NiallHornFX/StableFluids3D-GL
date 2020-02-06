@@ -5,6 +5,7 @@
 This is a 3D Implementation of Jos Stams famous paper [Stable Fluids](https://d2f99xq7vri1nk.cloudfront.net/legacy_app_files/pdf/ns.pdf "Paper") on the CPU.
 Implemented in C++ in an OOP Framework style, with OpenGL currently the only implemented Graphics API, For Ray Marching the resulting 3D Density Grid. 
 However the `renderobject_3D` abstract base Class can be implemented to support other API Backends. This Multi-Render Handler abstraction will be futher increased later.  
+I chose to implement this as a CPU Solver first, mainly because in VFX CPU Solvers take preedence, my GPU Implementation will become part of this project later. 
 
 The Advection Method implemented currently uses Semi-Lagrangian (Single Step, Forward Euler), with ethier Linear or Cosine Interoplation. 
 The Pressure Projection step uses a Matrix-less implementation of the Gauss-Seidel (Single-Threaded) with Sucessive Over Relaxation or Jacobi (Multi-Threaded) 

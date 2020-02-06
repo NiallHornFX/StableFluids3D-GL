@@ -1,7 +1,7 @@
 // Implementation of fluidsolver_3
 #include "fluidsolver3d.h"
 
-// C++ Headers - 
+// Std Headers - 
 #include <memory>
 #include <chrono>
 #include <thread>
@@ -9,41 +9,31 @@
 #include <algorithm>
 #include <cassert>
 
-// Windows Specfic Headers - 
-#include <omp.h> // OpenMP 2.0
+// External Headers - 
+#include <omp.h> 
 
-#define dospherebound 1 // Enable Sphere Collisions
-#define doedgebound 1 // NEEDS DEBUGGING LINE ISSUES...
+#define dospherebound 1 
+#define doedgebound 1 
 #define DO_SPHEREBOUNDS_MT 1
 
 #define RENDER_GL 1
 #define RENDER_IMG 0
 
-// Replace with Parms ... 
-// Sphere Bound Globals (For Sphere Bound MFunc Paramters) Oppose to Pass Per Nested MFunc Call. 
 vec3<float> spherebound_offset(0.0f, 0.0f, 0.0f);  
 const float spherebound_coliso = 0.0025f; 
 float spherebound_radius = 0.005f; 
 float impsource_radius = 0.01f;
 
 extern int win_size_xy;
-extern short verbose; // Get Verbose Global from main. 
-
-// !CLEAN
-// !TODO 
-// !MT MultiThreading Disabled Currently. 
-// !SIMD SIMD Disabeled Currently.
+extern short verbose;
 
 
 /* ====================================================
 	fluidsolver_3 CONSTRUCTOR/DESTRUCTOR'S
    ==================================================== */
 
-// fluidsolver_3 CONSTRUCTOR (Explict Only) - 
-// Added dt Param & HardCoded Spherebound Initalization List. 
-
 fluidsolver_3::fluidsolver_3(fluidobj_3d *f3dptr, float dtt) 
-	: dt(dtt), f3obj(f3dptr) //,spherebound_coliso(0.002f), spherebound_radius(0.01f), spherebound_offset(-0.5f, 0.75f)
+	: dt(dtt), f3obj(f3dptr) 
 {
 	// Get Dimensions,Spacing from FluidObject Ensure Values Match. 
 	x_s = f3obj->x_s, y_s = f3obj->y_s, z_s = f3obj->z_s, e_s = f3obj->e_s;
@@ -57,7 +47,7 @@ fluidsolver_3::fluidsolver_3(fluidobj_3d *f3dptr, float dtt)
 
 }
 
-// fluidsolver_3 DESTRUCTOR 
+// fluidsolver_3 DESTRUCTOR - Toned down SmartPtr use for now. 
 fluidsolver_3::~fluidsolver_3()
 {
 	delete spherebounds_sdf; spherebounds_sdf = nullptr; 
@@ -71,11 +61,11 @@ fluidsolver_3::~fluidsolver_3()
 
 	delete render_obj; render_obj = nullptr; 
 
-	// FluidObj Is Responsible for its own deletion. Do Not Delete Here. 
+	// FluidObj Responsible for own deletion. 
 }
 
 /* ====================================================
-	MANUAL USER FIELD DELTETION
+	FIELD DELTETION
    ==================================================== */
 
 void fluidsolver_3::del_pressure()
@@ -111,19 +101,13 @@ void fluidsolver_3::del_divergence()
 
 // Explcitlly Setting Solid Edge Cell Boundary Condtions, on Edge/Ghost Cells. 
 
-// fluidsolver_3::edge_bounds INFO - 
-
-// Set Edge Cell Reflection of XYZ Velocity And Average Corner Cells of Vel and Dens Field. 
 
 // ** EDGE_BOUNDS_SCALAR-FIELD IMPLEMENTATION ** \\ - 
 // Assumes Grid is Cubed (N = X = Y = Z)
 void fluidsolver_3::edge_bounds(grid3_scalar<float> *grid)
 {
 	// 6 Edge Faces of Grid (X-|X+|Y-|Y+|Z-|Z+)
-	// Loop 2 Dimensions Holding 1 Constant for Each Grid Face. Get Data From adjancent cell, and set to self. 
 
-	// bool do_mt = Parms.p_MT_Global & Parms.p_MT_Global;
-	//!MT #pragma omp parallel for num_threads(omp_get_max_threads())
 	#pragma omp parallel for 
 	for (int j = 1; j <= N_dim; j++)
 	{
@@ -158,21 +142,10 @@ void fluidsolver_3::edge_bounds(grid3_scalar<float> *grid)
 	}
 
 
-	// 8 Corner Cells, ScalarGrid Edge Bounds Corner Adjacent Cell Neighbour Averages -
-	// Self + or - XYZ (0(+1) or N+1(-1(N))) (0 and N+1 Axis Ghost/Edge Cells).
-	// If At 0 For Coord Offset +1, if At N+1 For Coord Offset -1. Offset Axis, Keep Others Const. Like a PDE. 
+	/* 8 Corner Cells, ScalarGrid Edge Bounds Corner Adjacent Cell Neighbour Averages -
+	   Self + or - XYZ (0(+1) or N+1(-1(N))) (0 and N+1 Axis Ghost/Edge Cells).
+	   If At 0 For Coord Offset +1, if At N+1 For Coord Offset -1. Offset Axis, Keep Others Const. Like a PDE. */
 
-	// Corner Cell = Adjacent X + Y + Z (LH CoordSys Z->Back)
-	// 0, 0, 0 = 1, 0, 0 | 0, 1, 0 | 0, 0, 1 // LeftBottomFront (Assume Origin)
-	// 0,N+1,0 = 1,N+1,0 | 0,N,1 | 0,N+1,1 // LeftTopFront
-	// 0, 0, N+1 = 1, 0, N+1 | 0, 1, N+1 | 0, 0, N //LeftBottomBack
-	// 0,N+1,N+1 = 1,N+1,N+1| 0,N,N+1 | 0,N+1,N // LeftTopBack
-	// N+1,0,0 = N,0,0 | N+1,1,0 | N+1,0,1 // RightBottomFront
-	// N+1,N+1,0 = N,N+1,0 | N+1,N,0 | N+1,N+1,1 // RightTopFront
-	// N+1,0,N+1 = N, 0, N+1 | N+1,1,N | N+1,0,N // RightBottomBack
-	// N+1,N+1,N+1 = N, N+1, N+1 | N+1,N,N+1 | N+1,N+1,N // RightTopBack
-
-	
 	// 3D 0,0,0 = 1,0,0 + 0,1,0 + 0,0,1 
 	float c_0_0_0 = 0.33f * (grid->getdata(1, 0, 0) + grid->getdata(0, 1, 0) + grid->getdata(0, 0, 1));
 	grid->setdata(c_0_0_0, 0, 0, 0);
@@ -205,23 +178,18 @@ void fluidsolver_3::edge_bounds(grid3_scalar<float> *grid)
 	float c_N1_N1_N1 = 0.33f * (grid->getdata(N_dim, N_dim + 1, N_dim + 1) + grid->getdata(N_dim + 1, N_dim, N_dim + 1) + grid->getdata(N_dim + 1, N_dim + 1, N_dim)); 
 	grid->setdata(c_N1_N1_N1, N_dim + 1, N_dim + 1, N_dim + 1); 
 
-
-
 }
 
 // ** EDGE_BOUNDS_VECTOR-FIELD IMPLEMENTATION ** \\ - 
 
-// Is ThreadSafe as Face/Edge Cells and Corner Cells only Read and Write to Selves locally.
+// Set Grid Edge Bounds Faces, to reflect the perpendicular velocity component for cells within each six faces of grid. 
+// ThreadSafe.
 void fluidsolver_3::edge_bounds(grid3_vector<vec3<float>> *grid)
 {
-	// Set Grid Edge Bounds Faces, to reflect the perpendicualr velocity component for cells within each six faces of grid. 
-
 	// X +/- Grid Face Cells = Y Compoent Reflection
 	// Y +/- Grid Face Cells = X Component Relfection
 	// Z +/- Grid Face Cells = Z Component Relfection (Yes Z reflects Z)
 	
-	// !MT #pragma omp parallel for num_threads(omp_get_max_threads())
-
 	#pragma omp parallel for
 	for (int j = 1; j <= N_dim; j++)
 	{
@@ -267,7 +235,7 @@ void fluidsolver_3::edge_bounds(grid3_vector<vec3<float>> *grid)
 	}
 
 	// Corner Cell Interoplation/Averaging of Adjacent Neighbours for Ux,Vy,Wz Velocity Components -  
-	// Do Each Corner Cell For each Component. Inline Averaging (messy but perf !). 
+	// Do Each Corner Cell For each Component. Inline Averaging.
 
 	// U (X Component)
 	float cU_0_0_0 = 0.33f * (grid->getdata_x(1, 0, 0) + grid->getdata_x(0, 1, 0) + grid->getdata_x(0, 0, 1));
@@ -334,8 +302,6 @@ void fluidsolver_3::sphere_bounds_set(float radius, float col_iso, const vec3<fl
 {
 	float h = 1.0f / N_dim; // Grid Spacing, Recoprical of One Dim Size (N). 
 
-	//!MT #pragma omp parallel for num_threads(omp_get_max_threads())	
-
 	#pragma omp parallel for
 	for (int k = 1; k < N_dim; k++)
 	{
@@ -349,9 +315,8 @@ void fluidsolver_3::sphere_bounds_set(float radius, float col_iso, const vec3<fl
 				vec3<float> cell_gridSpace(float(i * h) - offset.x, float(j * h) - offset.y, float(k*h) - offset.z); // Index to Grid Space 0-1N. 
 				float sphere_func = ((cell_gridSpace.x * cell_gridSpace.x) + (cell_gridSpace.y * cell_gridSpace.y) + (cell_gridSpace.z * cell_gridSpace.z)) - radius; 
 
-				// Write to  spherebounds_sdf grid for spherebounds_eval() to lookup. 
-				spherebounds_sdf->setdata(0.0f, i, j, k); // Zero Out Prev SDF Grid Cell Values. 
-				spherebounds_sdf->setdata(sphere_func, i, j, k); // Set New Cur Step SDF Cell Values. 
+				spherebounds_sdf->setdata(0.0f, i, j, k); 
+				spherebounds_sdf->setdata(sphere_func, i, j, k); 
 			}
 		}
 	}
@@ -359,8 +324,7 @@ void fluidsolver_3::sphere_bounds_set(float radius, float col_iso, const vec3<fl
 }
 
 // ** SPHERE_BOUNDS_EVAL - SCALAR-FIELD OVERRIDE ** \\ - 
-// Eval SphereBounds - On Scalar Field. Also Set "Col" Viz Grid For Cells Inside Sphere SDF For Render col viz. 
-// Unused (Surface and Exterior Condtions disabled for perf). 
+// Eval SphereBounds - On Scalar Field. Unused (Surface and Exterior Condtions disabled for perf). 
 
 void fluidsolver_3::sphere_bounds_eval(grid3_scalar<float> *grid, float col_iso)
 {
@@ -420,8 +384,6 @@ void fluidsolver_3::sphere_bounds_eval(grid3_scalar<float> *grid, float col_iso)
 
 // ** SPHERE_BOUNDS_EVAL - VECTOR-FIELD OVERRIDE ** \\ - 
 // Eval SphereBounds - On Vector Field. Also add Mouse Velocity to Vel Grid, Within SphereBounds. 
-// (This Function does not set col grid)
-// Unused (Surface and Exterior Condtions disabled for perf). 
 
 void fluidsolver_3::sphere_bounds_eval(grid3_vector<vec3<float>> *grid, float col_iso)
 {
@@ -445,17 +407,6 @@ void fluidsolver_3::sphere_bounds_eval(grid3_vector<vec3<float>> *grid, float co
 				if (sphere_func >= 0.0f && sphere_func <= col_iso) // func-radis > 0.0f but <= col_iso Cell is on "surface".
 				{
 					// Surface Operations -
-
-					// Do Sphere Vel Reflection On Surface Cirlce/Sphere Cells -
-					// Reflect from offset vector (Sphere Center) to CellPos Diriection, oppose to origin^ -
-
-					//float input_spd = grid->getdata(i, j).length();
-					//vec3 refl_dir = vec3(offset.x, offset.y) - vec3(float(i) * h, float(j) * h);
-					//refl_dir.normalize();
-					//refl_dir *= input_spd * 1.0f;
-
-					// Override Vel With Reflect Dir Vel
-					//grid->setdata(refl_dir, i, j);
 				}
 				*/
 
@@ -485,19 +436,16 @@ void fluidsolver_3::sphere_bounds_eval(grid3_vector<vec3<float>> *grid, float co
 				}
 				*/
 
-				// !TODO 3D MOUSE VEL - 
-				/* ADD MOUSE VELOCITY - Also On Surface & Interior Cells -
-				Eventually add this as a Bool Param Option for Sphere_Bounds Vector, and expose Vel Multipler Param.*/
-				if (sphere_func <= col_iso) // func-radius <= col_iso is Ethier Inside or on Surface. 
+				/*
+				if (sphere_func <= col_iso) 
 				{
 					float mouse_velMult = 1.0f;
-
 					// Get Stored Current Mouse Vel + to Current Grid Cell Velocity. 
-					//vec2<float> cur_vel = grid->getdata(i, j);
-					//grid->setdata(cur_vel + (mouse_vel *= mouse_velMult), i, j);
-
-					//grid->setdata(grid->getdata(i, j, k) + (mouse_vel *= mouse_velMult), i, j, k);
+					vec2<float> cur_vel = grid->getdata(i, j);
+					grid->setdata(cur_vel + (mouse_vel *= mouse_velMult), i, j);
+					grid->setdata(grid->getdata(i, j, k) + (mouse_vel *= mouse_velMult), i, j, k);
 				}
+				*/
 			}
 		}
 	}
@@ -515,10 +463,9 @@ void fluidsolver_3::sphere_bounds_eval(grid3_vector<vec3<float>> *grid, float co
 
 void fluidsolver_3::diffuse(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1, float diff, ushort iter)
 {
-	// Diffusion Value for "mat" A - 
+	// Implicit Matrix
 	float a = dt * diff * powf(N_dim, 2.0f);
 
-	// Scalar Field Diffusion - 
 	for (int l = 0; l < iter; l++)
 	{
 		for (int k = 1; k <= N_dim; k++)
@@ -542,7 +489,7 @@ void fluidsolver_3::diffuse(grid3_scalar<float> *grid_0, grid3_scalar<float> *gr
 
 		// Call (Re-Inforce Boundary Condtions) Boundary Calc MFs on each Relaxation Iter - 
 		#if doedgebound == 1
-		edge_bounds(grid_1); // Generic Func Call, Pass Grid_1 (n+1). 
+		edge_bounds(grid_1); 
 		#endif
 
 		#if dospherebound == 1
@@ -612,25 +559,15 @@ void fluidsolver_3::diffuse(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3
 	ADVECTION
    ==================================================== */
 
-// Semi Lagragain Advection - Overloads depend on Grid Type Passed. (Scalar,Vector Currently).
-// Linear Backtrace along Velocity, Interoplate Neighbours at Backtraced Postion, to get our new advected value. 
-// Single Step. MidPoint Coming soon. 
+/* Semi Lagragain Advection - Overloads depend on Grid Type Passed. (Scalar,Vector Currently).
+   Linear Backtrace along Velocity, Interoplate Neighbours at Backtraced Postion, to get our new advected value. 
+   BackTrace Done in Index Space | Thread Safe, Read from Prev, Write to Cur.  */
 
 // ** ADVECT_SL(Semi-Lagragagin)_Scalar Overload ** \\ - 
-// Assume ALL Advection is done using Main Vel Field. (Not using Input VelGrid Params). 
-// BackTrace Done in Index Space
-// Dt Scaled to Index Space Dim Size - 
-
-// Thread Safe, Read from Prev, Write to Cur. Per Cell Operations Only depend on Single Iteration Interoplated Neighbours, not progessivly Relaxed over l iterations. 
 
 void fluidsolver_3::advect_sl(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1)
 {
-
-	float dt0 = dt*N_dim; // Step Distance (Velocity Scaling) of DeltaTime * Grid Length, Hence GridSpace Dt Coeff (dt0). 
-
-	// Density (Scalar Field Advection) - 
-
-	//!MT#pragma omp parallel for num_threads(omp_get_max_threads()) 
+	float dt0 = dt*N_dim; // Scale Dt By Grid Length (Advect in IDX Space).
 
 	#pragma omp parallel for
 	for (int k = 1; k <= N_dim; k++)
@@ -727,14 +664,10 @@ void fluidsolver_3::advect_sl(grid3_scalar<float> *grid_0, grid3_scalar<float> *
 }
 
 // ** ADVECT_SL(Semi-Lagragagin)_Vector Overload ** \\ - 
-// Assume ALL Advection is done using Main Vel Field. (Not using Input VelGrid Params). 
-// Backtrace Along Grid_1 (Cur), Sample Grid_0 (prev), Set New Grid_1 (Cur). 
 
 void fluidsolver_3::advect_sl(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3<float>> *grid_1)
 {
-	float dt0 = dt*N_dim; // Step Distance (Velocity Scaling) of DeltaTime * Grid Length, Hence GridSpace Dt Coeff (dt0). 
-
-	//!MT#pragma omp parallel for num_threads(omp_get_max_threads())
+	float dt0 = dt*N_dim; 
 
 	#pragma omp parallel for
 	for (int k = 1; k <= N_dim; k++)
@@ -865,9 +798,7 @@ void fluidsolver_3::advect_sl(grid3_vector<vec3<float>> *grid_0, grid3_vector<ve
 /* MID POINT ADVECTION (RK2) WIP - 
 BackTrace to MidPoint, Sample (interoplate) Velocity at MidPoint, Then BackTrace from Cell using MidPoint Vel, 
 to sample (interoplate) Final BackTraced Advection Quanitiy
---
-Advection in Grid Index Space. Dt Scaled to N_Dim size.
-Velocity Components split for Advection Sampling and Interoplation.
+Advection in Grid Index Space. Dt Scaled to N_Dim size | Velocity Components split for Advection Sampling and Interoplation.
 */
 
 // ** ADVECT_SL_RK2(Semi-Lagragagin_MidPoint)_Scalar Overload ** \\ - 
@@ -876,8 +807,6 @@ void fluidsolver_3::advect_sl_mp(grid3_scalar<float> *grid_0, grid3_scalar<float
 	float dt0 = dt * N_dim; // Scale DeltaTime to Grid Dimension Size. 
 
 	// Density (Scalar Field Advection) - 
-
-	//!MT#pragma omp parallel for num_threads(omp_get_max_threads()) 
 
 	#pragma omp parallel for
 	for (int k = 1; k <= N_dim; k++)
@@ -893,9 +822,7 @@ void fluidsolver_3::advect_sl_mp(grid3_scalar<float> *grid_0, grid3_scalar<float
 				float v_P = f3obj->vel->getdata_y(i, j, k);
 				float w_P = f3obj->vel->getdata_z(i, j, k);
 
-				// BackTrace Along Negative CurCell Vel - XG - dt0 * u(CurCell)
-				// XG -> Midpoint = XG - dt0 * u(XG)
-				// BackTrace U,V,W Velocity Components to Midpoint.
+				// BackTrace U,V,W Velocity Components to Midpoint | XG -> Midpoint = XG - dt0 * u(XG)
 				float xxm = i - (0.5 * dt0) * u_P; 
 				float yym = j - (0.5 * dt0) * v_P; 
 				float zzm = k - (0.5 * dt0) * w_P; 
@@ -989,8 +916,6 @@ void fluidsolver_3::advect_sl_mp(grid3_scalar<float> *grid_0, grid3_scalar<float
 void fluidsolver_3::advect_sl_mp(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3<float>> *grid_1)
 {
 	float dt0 = dt * N_dim; // Scale DeltaTime to Grid Dimension Size. 
-
-	//!MT#pragma omp parallel for num_threads(omp_get_max_threads()) 
 
 	#pragma omp parallel for
 	for (int k = 1; k <= N_dim; k++)
@@ -1116,315 +1041,19 @@ void fluidsolver_3::advect_sl_mp(grid3_vector<vec3<float>> *grid_0, grid3_vector
 	#endif
 }
 
-
-/* ====================================================
-				FORCES AND MISC - 
-	==================================================== */
-/* !TODO LATER
-
-// Loop Through Vel Grid, and Add passed force to velocity * dt. 
-void fluidsolver_3::vel_force(vec3<float> ff, float dtt)
-{
-	for (int j = 1; j <= N_dim; j++)
-	{
-		for (int i = 1; i <= N_dim; i++)
-		{
-			//vec3<float> temp (ff.x, ff.y); // UN NEGATE AXIS for coord fix/dbg ?
-			//f3obj->integrate_force(temp, dtt, i, j);   // Call add_force MF in fluid_obj.
-		}
-	}
-}
-
-// Pass Custom Force Callback (Lambda) to run over each vector grid cell and integrate as force. 
-void fluidsolver_3::custom_force(grid3_vector<vec3<float>> *grid, std::function <vec3<float>(vec3<int> idx)> &force)
-{
-	#pragma omp parallel for 
-	for (int j = 1; j <= N_dim; j++)
-	{
-		#pragma omp parallel for 
-		for (int i = 1; i <= N_dim; i++)
-		{
-			// Call Callback - Get Force Vector. 
-			vec3<float> force_vec = force(vec3<int>(i, j));
-			// Integrate Force -
-			f3obj->integrate_force(force_vec, dt, i, j);
-		}
-	}
-}
-*/
-
 /*	====================================================
 	VORTICITY CONFINEMENT
 ==================================================== */
-
-// Compute and Integrate Vorticity Confinement Force, from/to Velocity Field.
-
-// NOTES/Learnt - 
-// CURL in 2D is a Scalar, not a vector. As theres no Cross Product for single XY Plane Vel.
-
-/*
-void fluidsolver_3::vorticty_confine(float strength)
-{
-	// VCForce = strength * cell size * (N cross W) ... Intergrate to Vel Field over Dt. 
-	float dx = 1.0f / N_dim; // (h / cell size)
-
-	// Allocate Vorticity Grids (Per Call)
-	vort = new grid3_vector<vec3<float>>(X_dim, Y_dim, edge_size, 6, 1.0f); // Vorticity Field Grid
-	deltavort = new grid3_vector<vec3<float>>(X_dim, Y_dim, edge_size, 7, 1.0f); // Vorticity Gradient Field Grid. 
-
-	// Cap f3obj ptr by ref [&]. 
-	std::function<float(int, int)> curl2d = [&](int i , int j) -> float 
-	{
-		return float(f3obj->vel->getdata_x(i, j + 1) - f3obj->vel->getdata_x(i, j - 1)) 
-		+ (f3obj->vel->getdata_y(i + 1, j) - f3obj->vel->getdata_x(i, j - 1));
-	};
-
-	/*
-		// Curl From Velocity (3D) -  (Curl From Velocity Field Function I wrote in VEX in Houdini DOPs)
-
-		// a(j - l) 
-		vector zy = (volumeindex(0, "vel",set(i,j+1,k)) - volumeindexv(0, "vel", set(i,j-1,k)) / h) - (volumeindexv(0, "vel", set(i,j,k+1)) - volumeindexv(0, "vel", set(i,j,k-1)) / h); 
-		// a(k - i)
-		vector xz = (volumeindexv(0, "vel", set(i,j,k+1)) - volumeindexv(0, "vel", set(i,j,k-1)) / h) - (volumeindexv(0, "vel", set(i+1,j,k)) - volumeindexv(0, "vel", set(i-1,j,k)) / h); 
-		// a(i - j)
-		vector yx = (volumeindexv(0, "vel", set(i+1,j,k)) - volumeindexv(0, "vel", set(i-1,j,k)) / h) - (volumeindexv(0, "vel", set(i,j+1,k)) - volumeindexv(0, "vel", set(i,j-1,k)) / h); 
-		vector curl_v = zy + xz + yx;
-		v@curl = curl_v;
-
-		// Curl From Velocity (2D) - Ofc 2D we only have a single plane XY, so just need ^ for XY Partial Derivative Subtraction Terms (Facing Vector in 2D) - 
-		// a(x - y)
-		vector xy = (volumeindexv(0, "vel", set(i+1,j,k)) - volumeindexv(0, "vel", set(i-1,j,k)) / h) - (volumeindexv(0, "vel", set(i,j+1,k)) - volumeindexv(0, "vel", set(i,j-1,k)) / h);
-		v@curl = xy; 
-
-		I'm Calling Curl (w) Vorticity Here ... Bridson dentotes (w') as Voriticty/Curl, because he uses w as vel axis of Z, as u,v,w reprenseting velocity components for 3Dimensions. 
-
-		Apprently 2D Length of Curl Directly Calculating is - 
-		curl_length = (f3obj->vel->getdata_x(i, j + 1) - f3obj->vel->getdata_x(i, j - 1)) - (f3obj->vel->getdata_y(i + 1, j) - f3obj->vel->getdata_x(i, j - 1));
-
-	*/
-
-	/*
-	// Caluclate Vorticity (Curl w) From Velocity Grid, Write to Vorticity Grid. // Exclude Ghost/Edge Cells. 
-	for (int j = 1; j < N_dim; j++)
-	{
-		for (int i = 1; i < N_dim; i++)
-		{
-		    // Central Diffrence To Calc Curl from XY Velocity - / i +/- (j) constant, then viceversa. Divide by h (dx) *2 Because Over 2 Cells +/- Distance h. 
-		//	vec3 w_xy = (f3obj->vel->getdata(i + 1, j) - f3obj->vel->getdata(i - 1, j) /= dx*2) - (f3obj->vel->getdata(i, j + 1) - f3obj->vel->getdata(i, j - 1) /= dx*2);
-			vec3 w_xy = (f3obj->vel->getdata(i + 1, j) - f3obj->vel->getdata(i - 1, j)) - (f3obj->vel->getdata(i, j + 1) - f3obj->vel->getdata(i, j - 1));
-			w_xy /= dx * 2; 
-			vort->setdata(w_xy, i, j); // Set Resulting Curl/Vorticity (w) Vector Per Voxel. 
-		}
-	}
-	*/
-
-	/* 
-	Calculate Vorticity Gradient from ||Vorticity|| HAS to be done sepereate Loop, because All Values (+/- i,J) 
-	need to be calculated and stored to vort/curl grid, to then calc gradient. 
-	
-
-
-	for (int j = 2; j < N_dim-1; j++)
-	{
-		for (int i = 2; i < N_dim-1; i++)
-		{
-			/*
-			float curl_l = (vort->getdata(i,j)).length(); // Length of Curl/Vorticity Value to Calc Gradient Of. 
-
-			// Calc N ie Normalized Gradient/Delta Vort of Curl Length Central Diffrence of Scalar Curl Length Per Partial D, Dimension X,Y. 
-			float xx = ((vort->getdata(i+1, j)).length() - (vort->getdata(i-1, j)).length()) / dx * 2;
-			float yy = ((vort->getdata(i + 1, j)).length() - (vort->getdata(i - 1, j)).length()) / dx * 2;
-			vec3 grad(xx, yy); 
-			//grad.normalize(); // Normalize Gradient N
-
-			// Resulting Vorticity Confinement Vector W X N
-			vec3 vc_vec = vort->getdata(i, j).cross(grad); 
-			vec3 vc_force = vc_vec *= (strength * dx);
-
-			// VCForce = Strength * dx * (W X N)
-			// Vel += VCForce * dt; // Integrate VC Force to vel. 
-
-			// Debuggin currently so messing with what I Intergrate to vel field... 
-
-			// Get Current Cell Velocity From VelField - 
-			vec3 vel = f3obj->vel->getdata(i, j);
-			// vel = vel + (vc_force *= dt) ; // Integrate vc force. 
-			vec3 vcurl = vort->getdata(i, j);
-			//vcurl.normalize();
-			vel = vel + (vcurl *= 0.002f); // Integrate vc force. 
-			f3obj->vel->setdata(vel, i, j); // Set to new Vel Value. 
-		//	f3obj->vel->setdata(vel + vort->getdata(i,j), i, j); // Set to new Vel Value. 
-			
-
-			//float xx = std::abs(curl2d(i, j+1)) - std::abs(curl2d(i, j-1));
-			float xx = curl2d(i, j - 1) - curl2d(i, j + 1);
-			float yy = curl2d(i+1, j) - curl2d(i-1, j);
-			vec3 dir(xx, yy);
-
-		//	float f = (10.0f / dir.length()) + 1e-05f;
-		//	dir *= f; 
-			vec3 old_vel = f3obj->vel->getdata(i, j);
-		//	float dtc = dt * curl2d(i, j);
-		//	vec3 vc = dir *= dtc; 
-		//	vec3 new_vel = old_vel + vc; 
-			f3obj->vel->setdata(old_vel + ((dir += 1e-05f) *= 5.0f * dt), i, j);
-
-
-		}
-	}
-
-
-
-	// Set Force Value (Should be done in ^ Loop and intergrated within, oppose to writing to third final
-	// vorticity confinement grid). 
-	// Intergrate Force to Velocity ^^
-
-	// Delete Vorticity Grids - 
-	delete vort; vort = nullptr;
-	delete deltavort; deltavort = nullptr; 
-
-	// In Future Might Make Vorticity Grid a FLuidObj Grid member, so Its lifespan/scope is same as fluidobj, 
-	// and can be passed to GPU as texture for debug drawing/viz like Vel Field. 
-
-}
-*/
-
-/*! TODO Later 
-// Vorticity Confinement On The Fly (No Writing to Vorticity/Curl Grids, Curl, Curl Grad and Resulting VC Force
-// calculated all within one loop, via Curl Lambda to calc  Curl (w) and Curl Gradient (w'). 
-void fluidsolver_3::vorticty_confine_otf(float strength)
-{
-	// Calculate 2D Velocity Curl Scalar - Without Central Diff Offsets, for Calling within Curl gradient CentralDiff calc lines. 
-	std::function<float(int, int)> curl2d = [&](int i, int j) -> float // Cap f3obj ptr by ref [&]. 
-	{
-		// i j offsets will be set on call. 
-		return float(f3obj->vel->getdata_x(i, j) - f3obj->vel->getdata_x(i, j))
-			+ (f3obj->vel->getdata_y(i, j) - f3obj->vel->getdata_x(i, j));
-		// Should be / dx*2 ie central diff over h. 
-	};
-
-	// Curl With ij central diff offsets, for calling when eval curl only. 
-	std::function<float(int, int)> curl2d_wo = [&](int i, int j) -> float // Cap f3obj ptr by ref [&]. 
-	{
-		// i j set with offset.
-		return float(f3obj->vel->getdata_x(i, j+1) - f3obj->vel->getdata_x(i, j-1))
-			+ (f3obj->vel->getdata_y(i+1, j) - f3obj->vel->getdata_x(i-1, j));
-		// Should be / dx*2 ie central diff over h. 
-	};
-
-	for (int j = 1; j < N_dim - 1; j++)
-	{
-		for (int i = 1; i < N_dim - 1; i++)
-		{
-			// w' from w Calc both curl and gradient curl per axis using central diff. 
-			float xx = curl2d(i, j-1) - curl2d(i, j+1);
-			float yy = curl2d(i+1, j) - curl2d(i-1, j);
-			vec3<float> dir(xx, yy); // resulting w' grad vector. 
-			f3obj->vc->setdata(dir, i, j); // Pass To VC Grid for viz. Pre Normalization (will be clampped vals on GPU).
-			dir += 1e-05; // Prevent /0 errors on normalization.
-			dir.normalize();
-
-			// Integrate VC to new vel value.
-			vec3<float> old_vel = f3obj->vel->getdata(i, j);
-			dir *= strength; // Mult By Strength Scalar Coeff. 
-			//f3obj->vel->setdata(old_vel + (dir *= (dt * curl2d(i, j))), i, j);
-			// v + strength*(Curl (w) and GradCurl (w')*dt) = v1 (v with VC). 
-			f3obj->vel->setdata(old_vel + ((dir *= dt) *= curl2d_wo(i,j)), i, j);
-		}
-	}
-}
-// End of Vorticity_Confine_otf Member Func Implementation.
-
-void fluidsolver_3::vorticity_confine_B(float strength)
-{
-	// Alloc Vorticity Grid - 
-	vort = new grid3_scalar<float>(x_s, y_s, e_s, 5, 1.0f);
-
-	float dx = 1.0f / N_dim; // cellsize dx (h). 
-
-	// Calculate 2D Velocity Curl Scalar - At Given Cell Indices- 
-	std::function<float(int, int)> curl2d = [&](int i, int j) -> float // Cap f3obj ptr by ref [&]. 
-	{
-		return float(
-			(f3obj->vel->getdata_x(i, j+1) - f3obj->vel->getdata_x(i, j-1) / (2 * dx))
-			- 
-			(f3obj->vel->getdata_y(i+1, j) - f3obj->vel->getdata_y(i-1, j) / (2 * dx))
-			);
-	};
-
-	// Calculate 2D Vorticity Gradient Vector - At Given Cell Indices- - 
-	std::function<vec3<float>(int, int)> grad2d = [&](int i, int j) -> vec3<float>
-	{
-		float xx = (vort->getdata(i + 1, j) - vort->getdata(i - 1, j)) / (2 * dx); // 2.0f * dx;
-		float yy = (vort->getdata(i, j + 1) - vort->getdata(i, j - 1)) / (2 * dx); // 2.0f * dx;
-		vec3<float> grad(xx, yy);
-		grad += 1e-05; // Add Small Constant, to prevent divide by 0 error on Grad Vector Normalization. 
-		grad.normalize(); 
-		return grad; 
-	};
-
-	// Calculate Curl and write to vort grid- 
-	for (int j = 1; j < N_dim; j++)
-	{
-		for (int i = 1; i < N_dim; i++)
-		{
-			vort->setdata(curl2d(i, j), i, j);
-		}
-	}
-
-	// Calc and Apply Vortex Confienement - 
-	for (int j = 1; j < N_dim; j++)
-	{
-		for (int i = 1; i < N_dim; i++)
-		{
-			// Calc Gradient and Final VortCon Vector. 
-			float W = vort->getdata(i, j);
-			vec3<float> N = grad2d(i, j);
-
-			// Write W (as vec3(W,W)) OR N (VC Gradient) to FluidObj vc grid, for Viz/Rendering via RenderObject. 
-		   // f3obj->vc->setdata(vec3(W, W), i, j); // W VIZ
-			f3obj->vc->setdata(vec3<float>(N) *= 1.0f , i, j); // N VIZ
-
-			vec3<float> VC = N; VC *= W; 
-			//f3obj->vc->setdata(VC, i, j); // N VIZ
-			//VC *= (strength * dx);
-			VC *= strength; // Final Vort Con Vector
-
-			// Intergrate - 
-			vec3<float> vel_0 = f3obj->vel->getdata(i, j);
-			//vec3 vel_1 = vel_0 + (VC *= dt);
-			N *= strength; //10.0f; // strength; // Mult By Stength Coeff. 
-			vec3<float> vel_1 = vel_0 + (N *= (curl2d(i, j) * dt));
-
-			// Set Vel - 
-			f3obj->vel->setdata(vel_1, i, j);
-
-		}
-	}
-
-	// Delete/Dealloc Vort Grid. 
-	delete vort; vort = nullptr; 
-}
-*/
 
 /* ====================================================
 	VELOCITY PROJECTION / PRESSURE SOLVE 	
 	==================================================== */
 
-// Velocity Projection / Pressure Solve 
-// Calculate Pressure Field, whose Gradient when subtraced from velocity field, will result in divergence ~0.
-// Mass Conserving and Maintain Incompresilbitly, by subtracing divergence gradient from velocity field.
-// Use an Iterative Linear System, to converge to the projected velocites. 
-// Use HH Decomposition to Decompose Velocity Field.
-// Uses Matrixless Laplcian A to solve uknown Pressure Vector x by caluclated diverence vector b. 
+/* Velocity Projection / Pressure Solve 
+   Calculate Pressure Field, whose Gradient when subtraced from velocity field, will result in Velocity Divergence ~0.
+   LinearSystem of Matrixless Laplacian A to solve uknown Pressure Vector x by caluclated diverence vector b. */ 
 
-// Residual Vector = b - Ax
-
-/* PROJECTION - GAUSS-SEIDEL + SUCESSIVE OVER RELAXATION (GS+SOR) - 
-	Solved Pressure Values are re-injected into current iterations grids, hence this alogrithim has to be single threaded to avoid 
-	data races across threads and allow correct synchroized reads of updated cells within the same iteration for reamaing cells. 
-	Divergence and Pressure Gradient Subtraction loops are MT, these are thread safe (Only read or write from same grids). */
-
+// PROJECTION - GAUSS-SEIDEL + SUCESSIVE OVER RELAXATION (GS+SOR) - SingleThreaded Pressure Solve. 
 void fluidsolver_3::project(int iter)
 {
 	float h = 1.0f/N_dim; // CellSize 1.0f/N (N_dim); 
@@ -1437,7 +1066,6 @@ void fluidsolver_3::project(int iter)
 	pressure = new grid3_scalar<float>(x_s, y_s, z_s, e_s);
 
 	// DIVERGENCE FIELD CALC \\ -
-	// Compute Divergence Field, from Velocity Field - 
 
 	// Thread Safe, Per Cell Operations. 
 	#pragma omp parallel for
@@ -1456,15 +1084,9 @@ void fluidsolver_3::project(int iter)
 				float div = -0.5 * h * (f3obj->vel->getdata_x(i + 1, j, k) - f3obj->vel->getdata_x(i - 1, j, k)
 					+ f3obj->vel->getdata_y(i, j + 1, k) - f3obj->vel->getdata_y(i, j - 1, k)
 					+ f3obj->vel->getdata_z(i, j,k + 1) - f3obj->vel->getdata_z(i, j, k - 1));
-
-				// Set Divergence Cell Value. 
+ 
 				divergence->setdata(div, i, j, k);
-
-				// Zero Out Pressure Grid, as Inital Value PreLinSolve. (Index Based oppose to calling grid3_scalar<float>->clear()).
-				pressure->setdata(0.0f, i, j, k);
-
-				// Write Inital PreProjected VelField to Grid For dbg - 
-				//f3obj->preproj_vel->setdata(f3obj->vel->getdata(i, j, k), i, j, k);
+				pressure->setdata(0.0f, i, j, k); // Init 0 guess. 
 			}
 		}
 	}
@@ -1479,8 +1101,6 @@ void fluidsolver_3::project(int iter)
 
 	// PRESSURE FIELD LINEAR SOLVE \\ 
 
-	// (Iterativly Compute Inverse of Divergence Grid/Matrix) Gauss-Seidel, Solve Discrete Poission Of Pressure Field, using Linear System. 
-	// Gauss-Seidel Rexlation, Not ThreadSafe, as Neighbours on sepreate threads may converge at diffrent rates. Ie Race Condtions. 
 	for (int l = 0; l < iter; l++)
 	{
 		double error = 0.0f; 
@@ -1598,14 +1218,13 @@ void fluidsolver_3::project(int iter)
 
 
 /* PROJECTION - JACOBI to Solve Pressure Poission Equation -
-	Allows Multithreading as Cells (inner i,j presure loop) Only lookup Previous Pressure Values, but results in slower Convergence. 
-	Divergence and Pressure Gradient Subtraction loops are MT, these are thread safe.*/
+   Allows Multithreading as Cells Pressure Solve, Only lookup Previous Pressure Values, but results in slower Convergence. */
 
 void fluidsolver_3::project_jacobi(int iter)
 {
 	float h = 1.0f/N_dim; // CellSize 1.0f/N (N_dim); 
 
-	// Ensure previous Divergence and Pressure Temp Grids have been deleted before new grid ptr assignement/Alloc. 
+	// Ensure prev D&P Temp Grids have been deleted.
 	del_divergence(); del_pressure();
 	
 	// Alloc New DP Grids. 
@@ -1614,9 +1233,6 @@ void fluidsolver_3::project_jacobi(int iter)
 	pressure_1 = new grid3_scalar<float>(x_s, y_s, z_s, e_s);
 
 	// DIVERGENCE FIELD CALC \\ - 
-
-	// Compute Divergence Field, from Velocity Field - 
-	//!MTpragma omp parallel for num_threads(omp_get_max_threads())
 
 	#pragma omp parallel for
 	for (int k = 1; k <= N_dim; k++)
@@ -1627,7 +1243,6 @@ void fluidsolver_3::project_jacobi(int iter)
 			#pragma omp parallel for
 			for (int i = 1; i <= N_dim; i++)
 			{
-				// Init to 0 
 				divergence->setdata(0.0f, i, j, k);
 
 				// Compute Divergence Cell Value. 
@@ -1635,27 +1250,20 @@ void fluidsolver_3::project_jacobi(int iter)
 					+ f3obj->vel->getdata_y(i, j + 1, k) - f3obj->vel->getdata_y(i, j - 1, k)
 					+ f3obj->vel->getdata_z(i, j, k + 1) - f3obj->vel->getdata_z(i, j, k - 1));
 
-				// Set Divergence Cell Value. 
 				divergence->setdata(div, i, j, k);
-
-				// Zero Out Pressure Grid, as Inital Value PreLinSolve. (Index Based oppose to calling grid3_scalar<float>->clear()).
-				pressure->setdata(0.0f, i, j, k);
+				pressure->setdata(0.0f, i, j, k); // Init 0 Guess. 
 			}
 		}
 	}
+
 	// Call Boundary Condtions on Divergence Field and Inital Pressure Field - 
-	edge_bounds(divergence); edge_bounds(pressure); // Edge Bounds
-	#if dospherebound == 1 // Sphere Bounds
+	edge_bounds(divergence); edge_bounds(pressure); 
+	#if dospherebound == 1
 	sphere_bounds_eval(divergence, spherebound_coliso);
 	sphere_bounds_eval(pressure, spherebound_coliso);
 	#endif
 
 	// PRESSURE FIELD LINEAR SOLVE \\ 
-
-	// (Iterativly Compute Inverse of Divergence Grid/Matrix) 
-	// Jacobi For Possion Pressure Solve. (Write to Seperate "Sratch Grid", Only Swap at end of lth Iteration.
-	// pressure == main pressure grid (to read from), pressure_1 == scratch pressure grid (to write to and then swap). 
-
 	for (int l = 0; l < iter; l++)
 	{
 		#pragma omp parallel for
@@ -1680,17 +1288,13 @@ void fluidsolver_3::project_jacobi(int iter)
 			}
 		}
 
-		// Call Boundary Condtion Functions On Pressure After Each Pressure Field Iteration.
 		edge_bounds(pressure_1);
 		#if dospherebound == 1
-		//sphere_bounds_scalar(pressure_1, spherebound_radius, spherebound_coliso, spherebound_offset);
-		sphere_bounds_eval(pressure_1,spherebound_coliso); // Optimized SphereBounds for pressure calc. 
+		sphere_bounds_eval(pressure_1,spherebound_coliso); 
 		#endif	
 
-		// Swap Pressure Grid with Scratch Grid at end of k Iter After internal i,j,k MT'd Jacobi Projection Iteration is complete.
-		// (This is Single Threaded to ensure whole grid is swapped correctly together, and not within a Multithreaded Outer loop).
+		// Swap Pressure Grid with Scratch Grid at end of k Iter After internal i,j,k MT'd Jacobi Projection Iteration is complete. ST
 		pressure_1->swap(pressure);
-		// Hence removal of Outer MT Kth Loop and OMP Crticial which was not correct, as Pressure grid was swapping atomically per x threads, not as a singlethread. 
 	}
 	
 	// SUBTRACT PRESSURE GRADEINT FROM VELOCITY FIELD \\ -
@@ -1725,223 +1329,12 @@ void fluidsolver_3::project_jacobi(int iter)
 	sphere_bounds_eval(f3obj->vel, spherebound_coliso);
 	#endif
 
-	// TEMP FIELD DELETION/DEALLOCATION - 
 	del_divergence(); del_pressure();
 	
 }
 // End of Velocity Projection (Jacobi) Implementation.
 
-/////////////////////////////////////////////////////////////////////////////
 
-/* !TODO 
-// PROJECT - Gauss-Seidel + SOR - SIMD TESTING - 
-
-void fluidsolver_3::project_SIMD(int iter)
-{
-	float h = 1.0f / N_dim; // CellSize 1.0f/N (N_dim); 
-
-	// Ensure previous Divergence and Pressure Temp Grids have been deleted before new grid ptr assignement/Alloc. 
-	del_divergence(); del_pressure();
-
-	// Init Solvers Own Divergence and Pressure Fields, Only needed for Scope of this Function.  
-	divergence = new grid3_scalar<float>(x_s, y_s, e_s, 4, 1.0f);
-	pressure = new grid3_scalar<float>(x_s, y_s, e_s, 5, 1.0f);
-
-	// DIVERGENCE FIELD CALC \\ - 
-
-	// Compute Divergence Field, from Velocity Field - 
-	#pragma omp parallel for num_threads(omp_get_max_threads())
-	for (int j = 1; j <= N_dim; j++)
-	{
-		for (int i = 1; i <= N_dim; i++)
-		{
-			// Init to 0 
-			divergence->setdata(0.0f, i, j);
-
-			// Compute Divergence Cell Value. 
-			float div = -0.5 * h * (f3obj->vel->getdata_x(i + 1, j) - f3obj->vel->getdata_x(i - 1, j)
-				+ f3obj->vel->getdata_y(i, j + 1) - f3obj->vel->getdata_y(i, j - 1));
-
-			// Set Divergence Cell Value. 
-			divergence->setdata(div, i, j);
-
-			// Zero Out Pressure Grid, as Inital Value PreLinSolve. (Index Based oppose to calling grid3_scalar<float>->clear()).
-			pressure->setdata(0.0f, i, j);
-
-			// Write Inital PreProjected VelField to Grid For dbg - 
-			f3obj->preproj_vel->setdata(f3obj->vel->getdata(i, j), i, j);
-
-		}
-	}
-	// Call Boundary Condtions on Divergence Field and Inital Pressure Field - 
-	edge_bounds(divergence); edge_bounds(pressure);
-	#if dospherebound == 1
-	sphere_bounds_eval(divergence, spherebound_coliso);
-	sphere_bounds_eval(pressure, spherebound_coliso);
-	#endif
-
-	/*
-	// PRESSURE FIELD LINEAR SOLVE \\ 
-
-	std::vector<float>* pres_transpose = new std::vector<float>(total_size, 0.0f); // To Store Transposed Pressure grid_data std::vector<float>
-
-	// (Iterativly Compute Inverse of Divergence Grid/Matrix) Gauss-Seidel, Solve Discrete Poission Of Pressure Field, using Linear System. 
-	for (int k = 0; k < iter; k++)
-	{
-		double error = 0.0f;
-		double total_error = 0.0f;
-
-		// Get Transposed Grid with Jth Neighbour Elements in Contigous RowMajor (per k)-
-		pressure->tranpose_gridata(pres_transpose);
-
-		// Iterate over +2 Cells Per dim, i,i-1,j,j-1 And then Do i-1, i-1-1 etc...  
-		for (int j = 1; j <= N_dim; j++)
-		{
-			for (int i = 1; i <= N_dim; i++)
-			{
-				
-				//float n0 = pressure->getdata(i, j); // n (Pressure (k(n)) for SOR)
-				// NON SIMD Pressure Solve - 
-
-				//std::size_t idx1d = (std::size_t) pressure->idx_2Dto1D(i, j);
-				// Fast Loading to Reigster - IF Grid Mem is Contigous for cells needed (its not !).
-				//avx256 t_a = _mm256_load_ps((pressure->getdataarray()) + idx1d); 
-
-				// i-1 | i | i+1 | i+2
-				__m128 ii = _mm_load_ps(pressure->getdataarray() + pressure->idx_2Dto1D(i-1, j) );
-				// i-1 | 0.0f | i+1 | 0.0f
-				ii.m128_f32[1] = 0.0f, ii.m128_f32[3] = 0.0f; 
-				
-				
-				// Use Transposed j (So use same 2d IDX bias i) (So Get j-1 -> j+2 Contigously rowmajor transposed jth (j,i)). 
-				// j-1 | j | j+1 | j+2
-				__m128 jj = _mm_load_ps((pres_transpose->data()) + pressure->idx_2Dto1D(i-1, j) );
-				// j-1 | 0.0f | j+1 | Divergence(i,j)
-				jj.m128_f32[1] = 0.0f; ii.m128_f32[3] = divergence->getdata(i, j); // Oppose to zeroiing [3] add Divergence Cell Here. 
-				
-
-				// i-1 | 0.0f | i+1 | 0.0f
-				//                                      +  
-				// j-1 | 0.0f | j+1 | Divergence(i,j)
-
-				// Cast 2 m128 vectors to single _m256 vector. (3 0 unsused elements)  
-				// 0        1       2      3      4       5      6           7
-				// i-1,j | 0.0f | i+1,j | 0.0f | i,j-1 | 0.0f | i,j+1 | Divergence(i,j)|  With Both Dim Indices for reference. 
-
-				// Naivie Way - 
-				//__m256 iijj = _mm256_set_ps(ii.m128_f32[0], ii.m128_f32[1], ii.m128_f32[2], ii.m128_f32[3],
-				//	jj.m128_f32[0], jj.m128_f32[1], jj.m128_f32[2], jj.m128_f32[3]);
-
-				// Intrinsics Way-
-				__m256 iijj = _mm256_castps128_ps256(ii); // Cast ii to m256
-				 iijj = _mm256_insertf128_ps(iijj, jj, 1); // inster jj into latter element (idx 1) for resulting iijj comb. 
-
-				// 256 bit reg Hadditon - 
-				// Call SIMD _256 HADD and div over 4. 
-				float pres = (simd256_hAdd(iijj)) / 4.0f;
-
-				// Set Pressure to resulting float. 
-				pressure->setdata(pres, i, j); 
-
-				// Slow Loading Instructions - 
-				//avx256 t_a = _mm256_set_ps(divergence->getdata(i, j), pressure->getdata(i - 1, j), pressure->getdata(i + 1, j), pressure->getdata(i, j - 1), pressure->getdata(i, j + 1),
-				//0.0f, 0.0f, 0.0f); 
-
-				// Add Press
-				//float pres_ij = (divergence->getdata(i, j) + pressure->getdata(i - 1, j) + pressure->getdata(i + 1, j) +
-				//	pressure->getdata(i, j - 1) + pressure->getdata(i, j + 1)) / 4.0f;
-
-				//float n1 = pres; // n+1 (Pressure (k(n+1)) for SOR)
-
-				/*
-				// Use SOR or not - 
-				if (Parms.p_ProjectionType == Parms.Project_GaussSeidel_SOR)
-				{
-					// SOR 
-					float alpha = Parms.p_SOR_alpha;
-					float sor_pres = alpha * n1 + (1 - alpha) * n0;
-					pressure->setdata(sor_pres, i, j);
-				}
-				*/
-				//else if (Parms.p_ProjectionType == Parms.Project_GaussSeidel) {}
-		
-				// pressure->setdata(t_b, i, j);
-				
-
-				/*
-				// Caluclate Resdiual - 
-				if (k == iter - 1)
-				{
-					// Check Error Value of Resulting Pressure Solve Convergence (b-Ax) wip -
-					error += std::fabsf(divergence->getdata(i, j)) - std::fabsf(pressure->getdata(i, j));
-				}
-				
-				
-
-			}
-		}
-
-
-		// Call Boundary Condtion Functions On Pressure After Each Pressure Field Iteration.
-		edge_bounds(pressure);
-		#if dospherebound == 1
-		//sphere_bounds_scalar(pressure, spherebound_radius, spherebound_coliso, spherebound_offset);
-		sphere_bounds_eval(pressure, spherebound_coliso);
-		#endif	
-
-		// Get Avg Residual Error on Last Iter. 
-		if (k == iter - 1)
-		{
-			// Average Total Error (Over num of Cells) and Print. 
-			total_error = std::fabsf(error / (float(pow(N_dim, 2))));
-			std::cout << "DBG::PRESSURE SOLVER ERROR = " << std::scientific << std::fabsf(total_error) << "\n";
-		}
-	}
-	*/
-	// SUBTRACT PRESSURE GRADEINT FROM VELOCITY FIELD \\  
-
-	// Delete Transposed Grid_Data
-	//delete pres_transpose; pres_transpose = nullptr;
-/* !TODO
-	#pragma omp parallel for num_threads(omp_get_max_threads()) 
-	for (int j = 1; j <= N_dim; j++)
-	{
-		for (int i = 1; i <= N_dim; i++)
-		{
-			// 3 Methods Equivalent. 
-			//1 Partial Derivatves for Each Pressure Gradient Components (2003 StableFluids)-
-			float grad_x = 0.5 * (pressure->getdata(i + 1, j) - pressure->getdata(i - 1, j)) / h;
-			float grad_y = 0.5 * (pressure->getdata(i, j + 1) - pressure->getdata(i, j - 1)) / h;
-
-			//2 Typical Central Diffrence (/2h) - 
-			//grad_x = (pressure->getdata(i + 1, j) - pressure->getdata(i - 1, j)) / (2.0f*h);
-			//grad_y = (pressure->getdata(i, j + 1) - pressure->getdata(i, j - 1)) / (2.0f*h);
-
-			//3 Stams Book Implmenetation - 
-			//grad_x = 0.5f * N_dim * (pressure->getdata(i + 1, j) - pressure->getdata(i - 1, j));
-			//grad_y = 0.5f * N_dim * (pressure->getdata(i, j + 1) - pressure->getdata(i, j - 1));
-
-			// Subtract Gradient Components from Velocity Field Components and set to Velocity-
-			float new_vel_x = f3obj->vel->getdata_x(i, j) - grad_x;
-			f3obj->vel->setdata_x(new_vel_x, i, j);
-			float new_vel_y = f3obj->vel->getdata_y(i, j) - grad_y;
-			f3obj->vel->setdata_y(new_vel_y, i, j);
-
-		}
-	}
-
-	// Call and Enforce Boundary Condtions After Projection on Vel Field - 
-	edge_bounds(f3obj->vel);
-	#if dospherebound == 1
-	sphere_bounds_eval(f3obj->vel, spherebound_coliso);
-	#endif
-
-	// Delete Solver Temp Pressure and Divergence Fields - 
-	del_divergence(); del_pressure();
-
-}
-// End of Velocity Projection Implementation (GS + SOR) SIMD.
-*/
 
 /* ====================================================
 	DESNITY SOLVE STEP - 
@@ -1954,10 +1347,10 @@ void fluidsolver_3::density_step()
 	// If Using Diffusion, If Not Need to Manually set Cur to Prev, rather than swapping.
 	if (Parms.p_Do_Dens_Diff == true)
 	{
-		f3obj->dens->swap(f3obj->prev_dens); // Swap Density With Prev_Density. 
+		f3obj->dens->swap(f3obj->prev_dens); 
 		// Gauss-Seidel Iterative Density (Scalar) Diffusion - 
 		diffuse(f3obj->prev_dens, f3obj->dens, Parms.p_Dens_Diffuse_Str, Parms.p_Dens_Diff_iter);
-		f3obj->dens->swap(f3obj->prev_dens); // Re-Swap Density With Prev_Density. 
+		f3obj->dens->swap(f3obj->prev_dens); 
 	}
 	else 
 	{
@@ -1978,8 +1371,8 @@ void fluidsolver_3::density_step()
 
 	if (Parms.p_Do_Dens_Disp)
 	{
-		// DISSIPATE Density by multipler - 
-		dissipate(f3obj->dens, Parms.p_Dens_Disp_Mult, this->dt); // Density Dissipation. 
+		// DISSIPATE Density
+		dissipate(f3obj->dens, Parms.p_Dens_Disp_Mult, this->dt); 
 	}
 
 }
@@ -1989,8 +1382,6 @@ void fluidsolver_3::density_step()
 	Velocity SOLVE STEP -
 	==================================================== */
 
-// Implementation of Simulation Solve step of Velocity solve operations. 
-// Excluding Sourcing which will be done via user in FluidObject.
 // Removed Pre Advection Projection Calls, So I can use One Call Post Advection, With Higher Iter Counts.
 
 void fluidsolver_3::velocity_step()
@@ -1998,10 +1389,10 @@ void fluidsolver_3::velocity_step()
 	// If Using Diffusion, If Not Need to Manually set Cur to Prev, rather than swapping. 
 	if (Parms.p_Do_Vel_Diff == true)
 	{
-		f3obj->vel->swap(f3obj->prev_vel); // Swap Vel Field with Prev_VelField.
+		f3obj->vel->swap(f3obj->prev_vel); 
 		// Gauss-Seidel Iterative Vector Diffusion - 
 		diffuse(f3obj->prev_vel, f3obj->vel, Parms.p_Vel_Diffuse_Str, Parms.p_Vel_Diff_iter);
-		f3obj->vel->swap(f3obj->prev_vel); // Re-Swap Vel With Prev_Vel. 
+		f3obj->vel->swap(f3obj->prev_vel); 
 	}
 	else 
 	{
@@ -2021,19 +1412,14 @@ void fluidsolver_3::velocity_step()
 
 	if (Parms.p_Do_Vel_Disp)
 	{
-		// DISSIPATE Density by multipler - 
+		// DISSIPATE 
 		dissipate(f3obj->vel, Parms.p_Vel_Disp_Mult, this->dt); // Density Dissipation. 
 	}
 
-	// VORTICITY CONFINEMENT WIP \\
 
 	if (Parms.p_useVorticity)
 	{
-		/* WIP
-		vorticty_confine(1.0f);
-		vorticty_confine_otf(5.0f);
-		vorticity_confine_B(5.0f);
-		*/
+		// WIP
 	}
 
 	// PROJECT VELOCITY FIELD \\  (Post Advect Only) 
@@ -2042,9 +1428,6 @@ void fluidsolver_3::velocity_step()
 	{
 		// GS + SOR (ST) - (SOR May or May not be enabled by FluidSolver Member Paramter). 
 		project(Parms.p_GS_Proj_iter);
-
-		// SIMD Projection WIP 
-		//project_SIMD(Parms.p_GS_Proj_iter);
 	}
 	else if (Parms.p_ProjectionType == Parms.Project_Jacobi)
 	{
@@ -2054,22 +1437,6 @@ void fluidsolver_3::velocity_step()
 
 }
 // End of Velocity Step Implemetnation.
-
-/*	====================================================
-	Debug SOLVE STEP -
-	==================================================== */
-
-void fluidsolver_3::debug_step()
-{
-	// Use "SetCurToPrev" Funcs to Copy Grids, Oppose to via Diffusion - 
-	f3obj->setcurtoprev(f3obj->prev_dens, f3obj->dens);
-
-	// advect_sl(f3obj->prev_dens, f3obj->dens);
-
-	// DISSIPATE Density by multipler - 
-	// dissipate(f3obj->dens, Parms.p_Dens_Disp_Mult, this->dt); // Density Dissipation.
-
-}
 
 /*	====================================================
 	SOLVE STEP -
@@ -2086,8 +1453,7 @@ void fluidsolver_3::solve_step(bool solve, bool do_diffdens, bool do_diffvel, fl
 	float total_elapsed = 0.0f; // Chrono Time
 
 	// Render Object Creation/Setup - 
-	// Pass Render Context Window Ptr Now FluidSovler2Mem, to RenderObject. (Passed in To Solver in Main via set_window() MF.
-	int render_mode = 1; // 0 = Density, 1 = Vel. // May be overriden by Input in SolveStep (RenderObj::ShaderPipe()).
+	int render_mode = 1; // 0 = Density, 1 = Vel. 
 	render_obj = new renderobject_3D_OGL("OpenGL", 4, 0, vec2<int>(win_size_xy, win_size_xy), vec3<int>(x_s + e_s, y_s + e_s, z_s + e_s), this->winptr, render_mode); 
 
 	// SOLVE STEP AND RENDER - EXECUTION LOOP 
@@ -2267,7 +1633,6 @@ void fluidsolver_3::updt_mousevel()
 // Dissipate Grid Quanities By Multiplier - 
 void fluidsolver_3::dissipate(grid3_scalar<float> *grid, float disp_mult, float dt)
 {
-	//disp_mult = std::max(0.0f, std::min(disp_mult, 1.0f)); // Enforce 0-1 Mult. 
 	disp_mult = clamp(disp_mult, 0.0f, 1.0f); 
 
 	#pragma omp parallel for
@@ -2311,7 +1676,6 @@ void fluidsolver_3::dissipate(grid3_vector<vec3<float>> *grid, float disp_mult, 
 }
 
 
-
 /*	====================================================
 Static Utility Member Functions 
 ==================================================== */
@@ -2341,28 +1705,7 @@ float fluidsolver_3::cosinterp(float val_0, float val_1, float bias)
 	return (float) (val_0*(1.0f - mu) + val_1 * mu);
 };
 
-/*	====================================================
-	DEBUG - Member Functions 
-	==================================================== */
-
-void fluidsolver_3::fill_test(int x)
-{
-	if (x >= NE_dim) x = NE_dim; 
-
-	for (int k = 0; k < x; k++)
-	{
-		for (int j = 0; j < x; j++)
-		{
-			for (int i = 0; i < x; i++)
-			{
-				f3obj->dens->setdata(1.0f, i, j, k);
-			}
-		}
-	}
-
-}
-
-// Test Implementation of Interactive Sphere Radius - Can Cause Pressure Solver Crashes. 
+// Test Implementation of Interactive Sphere Radius
 void fluidsolver_3::sphere_rad_test()
 {
 	if (glfwGetKey(winptr, GLFW_KEY_PAGE_UP) == GLFW_PRESS)
@@ -2375,5 +1718,4 @@ void fluidsolver_3::sphere_rad_test()
 		impsource_radius -= 0.001f;
 	}
 
-	//if (spherebound_radius <= 0.001) spherebound_radius = 0.001;
 }

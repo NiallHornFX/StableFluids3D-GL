@@ -169,8 +169,6 @@ protected:
 	void density_step();
 	void velocity_step();
 
-	void debug_step(); 
-
 	// UTILITY \\ - 
 
 	// Mouse Input - 
@@ -186,9 +184,6 @@ protected:
 	static float fitRange(float val, float a_min, float a_max, float b_min, float b_max);
 	static float lerp(float val_0, float val_1, float bias);
 	static float cosinterp(float val_0, float val_1, float bias);
-
-	// TEMP / DBG \\ - 
-	void fill_test(int x);  // DBG - Iteration test.
 
 	// Delete Temp Grids
 	void del_pressure();
