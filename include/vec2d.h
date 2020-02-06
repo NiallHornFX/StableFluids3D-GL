@@ -20,35 +20,32 @@ public:
 	}
 
 	// Vec2 Vector Math Operations, Return Scalar. 
-	inline float length() const; // Return Length of Vector 
-	inline float dot(const vec2 &b) const; // Non Normalized Dot Product between this and v2.
-	inline float angle(const vec2 &b) const; // Angle Between this and v2. InvCosine of Normalized DotProduct. 
+	inline float length() const; 
+	inline float dot(const vec2 &b) const; 
+	inline float angle(const vec2 &b) const; 
 
 	// Vec2 Vector Math Operations, Return modified *this. 
-	inline vec2& normalize(); // Nomralize And return *this. 
-	inline vec2& clear(); // Clear Both Components Without indv mem acess. Return *this. 
+	inline vec2& normalize();
+	inline vec2& clear(); 
 
 	// LHS Vec2 Arithmetic Overloads - Return new vec2 with operation of this and B vec2 completed. Do Not Modifiy this.
-	inline vec2 operator+ (const vec2 &b) const; // Vector Additon. v3 = this + v2
-	inline vec2 operator- (const vec2 &b) const; // Vector Subtraction. v3 = v2 - this
+	inline vec2 operator+ (const vec2 &b) const;
+	inline vec2 operator- (const vec2 &b) const; 
 
-	inline float operator*(const vec2 &b) const; // Dot Product v1 * v2 overload. 
+	inline float operator*(const vec2 &b) const; 
 
 	// LHS Operator Overloads Vec2 - Modifiy this return *this. 
-	// Scalar Constants Must Match same Type T as vec2 instance is using. 
-	inline vec2& operator+= (T scalar); // Vector Add with Scalar. Modifiy Cur vec2.
+	inline vec2& operator+= (T scalar);
 	inline vec2& operator+= (const vec2 &b);
-	inline vec2& operator-= (T scalar); // Vector Subtract with Scalar . Modifiy Cur vec2.
+	inline vec2& operator-= (T scalar);
 	inline vec2& operator-= (const vec2 &b);
-	inline vec2& operator/= (T scalar); // Vector Divide with Scalar , Modify Cur vec2.
+	inline vec2& operator/= (T scalar); 
 	inline vec2& operator/= (const vec2 &b);
-	inline vec2& operator*= (T scalar); // Vector Mult with Scalar Constant. Modifty Cur vec2. 
+	inline vec2& operator*= (T scalar);
 
 	static inline float degtoRad(float deg);
 	static inline float radtoDeg(float rad);
 
-
-	// Public Member vec2 Components - 
 	T x, y;
 };
 
@@ -208,7 +205,7 @@ static inline float vec2<T>::radtoDeg(float rad)
 }
 
 
-// RHS vec2 Operand overloads Free Functions \\
+// _RHS vec2 Operand Global Operator Overload Free Functions \\ 
 
 // s1 * v1 ---> v1;
 template <class T>

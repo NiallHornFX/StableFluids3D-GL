@@ -2,14 +2,14 @@
 #define FLUIDSOLVER_2_H
 
 #include "fluidobj3d.h"
-#include "renderobject3d.h" // Incl Here not source, to stop Inclusion of Glew within FluidSolversrc.
+#include "renderobject3d.h" 
 
 // Vendor Headers - 
 #include <GLFW\glfw3.h>
 
 // Std Headers 
-#include <immintrin.h> // SIMD Intrinsics. 
-#include <functional> // std::function object. 
+#include <immintrin.h> 
+#include <functional> 
 #include <iostream>
 
 using ushort = unsigned short; 
@@ -137,14 +137,11 @@ protected:
 	void sphere_bounds_eval(grid3_vector<vec3<float>> *grid, float col_iso);
 
 	// DIFFUSION \\ - 
-	// Gauss-Seidel Relaxation Diffusion Based on Grid Neighbours 
-
 	// ! Gauss-Seidel Relaxation - Diffusion - 
 	void diffuse(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1, float diff, ushort iter);
 	void diffuse(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3<float>> *grid_1, float diff, ushort iter);
 
 	// ADVECTION \\ - 
-	// Semi-Lagraginin Advection Step Single Backtrace Step. Overload Based on Grid Type. 
 
 	// Semi Lagrangian (Single Backwards Euler) Advection - 
 	void advect_sl(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1);
@@ -155,18 +152,15 @@ protected:
 	void advect_sl_mp(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3<float>> *grid_1);
 
 	// PROJECTION \\ - 
-	// Velocity Field Projection/Pressure Solve - 
 
 	// Projection - Gauss-Seidel Relaxation Method, with SOR (Single-Threaded)
 	void project(int iter);
-	void project_SIMD(int iter);
-
-	void project_GS_RB(int iter); // Gauss-Seidel RedBlack (MultiThreaded). 
 
 	// Projection - Jacobi Solve (Multi-Threaded)
 	void project_jacobi(int iter); 
 
-	// DISSIPATION \\ - 
+	// DISSIPATION \\ -
+
 	void dissipate(grid3_scalar<float> *grid, float disp_mult, float dt);
 	void dissipate(grid3_vector<vec3<float>> *grid, float disp_mult, float dt);
 
@@ -177,8 +171,6 @@ protected:
 
 	// VORTICITY CONFINEMENT WIP \\ - 
 	//void vorticty_confine(float strength);
-	//void vorticty_confine_otf(float strength); // On the fly, without Vort/Curl Grids. 
-	//void vorticity_confine_B(float strength);
 
 	// SOLVER - SUB SOLVERS \\ - 
 	void density_step();

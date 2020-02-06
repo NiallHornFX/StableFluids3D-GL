@@ -4,7 +4,7 @@
 #include <iostream>
 #include "vec2d.h"
 
-/*	Matrix Info -
+/*
 	Matrix 4x4 Implementation, Template and or Inline Def in Header. 
 	Row Major Order. Multipcation with Vector is Post Multiplicative. v * M = v. (Transpose for OGL)
 	Matrix is Explcitlly Stored in 1D Array form, and mapped to 2D Indices using i + N * j, where N = 4. Iterate in Row Major (j,i) order. 
@@ -124,7 +124,6 @@ inline matrix_4x4<T>& matrix_4x4<T>::ident()
 			}
 		}
 	}
-
 	return *this; 
 }
 
@@ -141,7 +140,6 @@ inline matrix_4x4<T> matrix_4x4<T>::transpose()
 			tp.comp[idx2Dto1D(i, j)] = this->comp[idx2Dto1D(j, i)];
 		}
 	}
-
 	return tp; 
 }
 
@@ -233,7 +231,6 @@ inline matrix_4x4<T>& matrix_4x4<T>::operator+= (T s)
 }
 
 // this Matrix Subtraction -
-
 template <class T>
 inline matrix_4x4<T>& matrix_4x4<T>::operator-= (const matrix_4x4<T> &b)
 {
@@ -340,7 +337,6 @@ inline matrix_4x4<T> matrix_4x4<T>::make_perspective(T fov, T ar, T near, T far)
 	float b = 2.0f*far*near / (far - near);
 	float c = t / ar; // Div by AR if non square. 
 
-	// Need to Transpose Right Col and Bot Row ... 
 	//matrix_4x4<T> M_p(c, 0.0f, 0.0f, 0.0f, 0.0f, t, 0.0f, 0.0f, 0.0f, 0.0f, -a, -b, 0.0f, 0.0f, -1.0f, 0.0f); // CM
 	matrix_4x4<T> M_p(c, 0.0f, 0.0f, 0.0f, 0.0f, t, 0.0f, 0.0f, 0.0f, 0.0f, -a, -1.0f, 0.0f, 0.0f, -b, 0.0f);
 
@@ -385,9 +381,10 @@ inline vec2<int> matrix_4x4<T>::idx1Dto2D(int i)
 }
 
 
-// Matrix_4x4 Static MFs- 
+// Matrix_4x4 Static MFs - 
 
 // Angle Conversion - Explcitlly uses <T> == float. 
+
 // Degrees to Radians
 template <class T>
 inline float matrix_4x4<T>::degtoRad(float deg)

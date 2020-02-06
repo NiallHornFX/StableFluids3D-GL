@@ -6,8 +6,6 @@
 
 extern const double PI; 
 
-// Vec3 Interface Implmentation - 
-
 template <class T>
 class vec3
 {
@@ -25,38 +23,36 @@ public:
 	}
 
 	// vec3 Vector Math Operations, Return Scalar. 
-	inline float length() const; // Return Length of Vector 
-	inline float dot(const vec3 &b) const; // Non Normalized Dot Product between this and v2.
-	inline float angle(const vec3 &b) const; // Angle Between this and v2. InvCosine of Normalized DotProduct. 
+	inline float length() const; // 
+	inline float dot(const vec3 &b) const; 
+	inline float angle(const vec3 &b) const; 
 
 	// vec3 Vector Math Operations, Return modified *this. 
-	inline vec3& normalize(); // Nomralize And return *this. 
-	inline vec3& clear(); // Clear Both Components Without indv mem acess. Return *this. 
+	inline vec3& normalize(); 
+	inline vec3& clear(); 
 
 	// LHS vec3 Arithmetic Overloads - Return new vec3 with operation of this and B vec3 completed. Do Not Modifiy this.
-	inline vec3 operator+ (const vec3 &b) const; // Vector Additon. v3 = this + v2
-	inline vec3 operator- (const vec3 &b) const; // Vector Subtraction. v3 = v2 - this
+	inline vec3 operator+ (const vec3 &b) const; 
+	inline vec3 operator- (const vec3 &b) const;
 
-	inline float operator*(const vec3 &b) const; // Dot Product v1 * v2 overload. 
+	inline float operator*(const vec3 &b) const; 
 
 	// LHS Operator Overloads vec3 - Modifiy this return *this. 
-	// Scalar Constants Must Match same Type T as vec3 instance is using. 
-	inline vec3& operator+= (T scalar); // Vector Add with Scalar. Modifiy Cur vec3.
+	inline vec3& operator+= (T scalar); 
 	inline vec3& operator+= (const vec3 &b); 
-	inline vec3& operator-= (T scalar); // Vector Subtract with Scalar . Modifiy Cur vec3.
+	inline vec3& operator-= (T scalar); 
 	inline vec3& operator-= (const vec3 &b);
-	inline vec3& operator/= (T scalar); // Vector Divide with Scalar , Modify Cur vec3.
+	inline vec3& operator/= (T scalar); 
 	inline vec3& operator/= (const vec3 &b); 
-	inline vec3& operator*= (T scalar); // Vector Mult with Scalar Constant. Modifty Cur vec3. 
+	inline vec3& operator*= (T scalar); 
 
 	// Cross Product Return new vec3<T> c = a x b
 	static inline vec3 cross(const vec3 &a, const vec3 &b);
 
-	// Conversion
+	// Angle Conversion
 	static inline float degtoRad(float deg);
 	static inline float radtoDeg(float rad);
 
-	// Public Member vec3 Components - 
 	T x, y, z; 
 };
 

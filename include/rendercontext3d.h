@@ -1,8 +1,7 @@
 #ifndef RENDERCONTEXT_H
 #define RENDERCONTEXT_H
-// Render Context Creation and Window Initalization. (Eventually) For Muliplte APIs. 
 
-#define GLEW_STATIC // Static Linking GLEW and GLFW For now. 
+#define GLEW_STATIC 
 #include <GLEW\glew.h>
 #include <GLFW\glfw3.h>
 
@@ -10,7 +9,7 @@
 class render_context
 {
 public:
-	render_context(int sizex, int sizey); // Constructor For Inherited Initalization Calls Only. 
+	render_context(int sizex, int sizey);  
 	virtual ~render_context() = default; 
 
 protected:

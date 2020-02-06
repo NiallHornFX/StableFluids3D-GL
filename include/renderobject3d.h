@@ -3,7 +3,7 @@
 
 // Prevent Glew and GLFW multiple inclusion/implmentation defintion. 
 #ifndef GLEW_STATIC
-#define GLEW_STATIC // Static Linking GLEW and GLFW For now. 
+#define GLEW_STATIC  
 #include <GLEW\glew.h>
 #include <GLFW\glfw3.h>
 #endif 
@@ -52,8 +52,7 @@ protected:
 	double dt, et; 
 };
 
-// OpenGL Render Object 2D -
-// Additonal Implementation of DVR Within Local Cube Space. 
+// OpenGL Render Object 3D -
 class renderobject_3D_OGL : public renderobject_3D
 {
 // FCs
@@ -136,8 +135,6 @@ private:
 	// Shader Code Buffers - 
 	const char *cube_vert_shader_code, *cube_frag_shader_code, *quad_vert_shader_code, *quad_frag_shader_code;
 };
-
-
 
 
 

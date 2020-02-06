@@ -2097,55 +2097,31 @@ void fluidsolver_3::solve_step(bool solve, bool do_diffdens, bool do_diffvel, fl
 		std::chrono::system_clock::time_point timestep_start = std::chrono::system_clock::now();
 		std::stringstream log_out;
 
-		// STEP INPUT OPERATIONS \\ ----------------
-		// Interactive Sourcing ... 
+		// STEP INPUT OPERATIONS \\ ----------------. 
 		// Interactive Implicit Source Scaling Basic. 
 		sphere_rad_test(); 
 
-		// Interp Switching.
-		//if (glfwGetKey(winptr, GLFW_KEY_I) == GLFW_PRESS) { Parms.p_InteroplationType == Parms.Interoplation_Linear; };
-		//if (glfwGetKey(winptr, GLFW_KEY_C) == GLFW_PRESS) { Parms.p_InteroplationType == Parms.Interoplation_Cosine; };
-
-		// Get CurFrame Mouse Pos And Update Mouse Vel. Repos this call to avoid sleep delay. 
-	//	std::this_thread::sleep_for(std::chrono::milliseconds(5)); // Hold main thread to allow for delta mouse position (VelCalc). 5ms works fine  10ms
+		// Get CurFrame Mouse Pos And Update Mouse Vel. 
 		updt_mousepos(step::STEP_CUR); updt_mouseposNorm(step::STEP_CUR); updt_mouseposRange(step::STEP_CUR);
 		updt_mousevel(); 
-
-		// Pass to Override SphereBound_offset Values For Sphere Cols. 
-		spherebound_offset.x = xpos_1_N; spherebound_offset.y = ypos_1_N;
-		//std::cout << "DEBUG:: MOUSE_X = " << xpos_1 << " MOUSE_Y = " << ypos_1 << "\n";
 
 		// PRESTEP OPERATIONS \\ ----------------
 		// Eval SphereBounds_SDF - 
 		sphere_bounds_set(spherebound_radius, spherebound_coliso, spherebound_offset);
 
 		// STEP SOURCING OPERATIONS \\ ----------------
-		//vec3 anim_offset(0.4 + (float(sin(float(step_count) / float(max_step) * 50.0f))) * 0.1f, 0.4 + (float(cos(float(step_count) / float(max_step) * (float(step_count) / float(max_step) * 10.0f)))) * 0.2f);
-		//vec2<float> offs ((sin(((float)step_count / (float)max_step) * 5.0) * 0.5f), (cos(((float)step_count / (float)max_step) * 5.0) * 0.5f));
 		float offs = sin(((float)step_count / (float)max_step) * 500.0f) * 0.1f;
 		f3obj->implicit_sphere_source(0.1f, vec3<float>(0.0f, 1.0f, 0.55f), vec3<float>(offs + 0.4f, 0.1f, 0.5f), impsource_radius); // 0.01f
-		//f3obj->implicit_sphere_source(0.1f, vec3<float>(0.0f, 1.0f, 0.55f), vec3<float>(xpos_1_N, ypos_1_N, 0.5f), impsource_radius); // 0.01f
-
-		// Forces- 
-		//if (step_count <= 20) f3obj->radial_force(vec3<float>(0.499f, 0.499f), 0.8f, this->dt);
 
 		// STEP - SUB - SOLVER STEP OPERATIONS \\ -------------- 
 		velocity_step();
 		density_step();
 
-		// !!!! DebugStep - 
-		//debug_step();
-
 		// STEP - RENDER CALLS \\ ------------------
-		// Pass Cur Mouse - 
-		render_obj->get_input(vec2<float>(xpos_1_N, -ypos_1_N));
-		// Pass Cur Step - 
+		render_obj->get_input(vec2<float>(xpos_1_N, -ypos_1_N)); 
 		render_obj->et = step_count; 
-		// Uniform/Texture Set Calls (ShaderPipe) -
-		render_obj->shader_pipe(f3obj); // Pass Grids Via Friend Acess to shader_pipe() MF
-		// Render Operations Call - 
-		render_obj->render_loop(rend_state::RENDER_ACTIVE); // Call Render Step Ops here within solver loop, ie NON Debug Mode (Pass RENDER_ACTIVE).
-
+		render_obj->shader_pipe(f3obj); 
+		render_obj->render_loop(rend_state::RENDER_ACTIVE); 
 
 		// STEP DEBUG CONSLE OPERATIONS \\ -------------------- 
 		std::chrono::system_clock::time_point timestep_end = std::chrono::system_clock::now();
@@ -2156,23 +2132,18 @@ void fluidsolver_3::solve_step(bool solve, bool do_diffdens, bool do_diffvel, fl
 		// Store Mouse Pos as Prev Frame Pos.. 
 		updt_mousepos(step::STEP_PREV); updt_mouseposNorm(step::STEP_PREV); updt_mouseposRange(step::STEP_PREV);
 
-		// Differintate between SimTime Passed of accumlated DeltaTime, Vs Duration of SolveStep Caluclation (WallClock) !
 		log_out << "INFO::Solve_Step::SimTime Passed = " << dt_acc << " Seconds of " << dt << " timestep \n";
 		log_out << "DEBUG::Solve_Step::Step_Count =  " << step_count << "\n";
-		log_out << "DEBUG::Solve_Step::Calc_Duration = " << elapsed_sec << " Seconds" << "\n";
+		log_out << "DEBUG::Solve_Step::WallClock_Duration = " << elapsed_sec << " Seconds" << "\n";
 
 		if (step_count == max_step)
 		{
 			log_out << "\n *** INFO::Solve_Step::TOTAL_DELTA-TIME = " << dt_acc << " Seconds ***\n";
-
-			//std::cout << std::fixed; 
 			log_out << " \n *** DEBUG::Solve_Step::TOTAL_CALC_DURATION = " << total_elapsed << " Seconds *** \n";
 			log_out << " \n *** DEBUG::Solve_Step::TOTAL_FPS = ~" << double(max_step) / total_elapsed << " FPS *** \n \n";
 
 			// Write Last Frame To Img 
-			//f3obj->writeto_img(step_count);
-			//std::cout << "\n"; f3obj->print_info();
-			//f3obj->writeto_img_vel(step_count);
+			//f3obj->writeto_img(step_count); //f3obj->writeto_img_vel(step_count);
 		}
 
 		// Print Log to stdout - 
@@ -2180,7 +2151,7 @@ void fluidsolver_3::solve_step(bool solve, bool do_diffdens, bool do_diffvel, fl
 
 		// STEP INCREMENT \\ ------------
 		dt_acc += dt; 
-		step_count++; // Inc Step_Count
+		step_count++; 
 	}
 }
 // End of Solve Step Implementation.
@@ -2193,7 +2164,7 @@ void fluidsolver_3::solve_step(bool solve, bool do_diffdens, bool do_diffvel, fl
 // Window Setter. Passed from Render Context Object.  
 void fluidsolver_3::set_window(GLFWwindow *win)
 {
-	assert(win != nullptr); // Check for Passing a nullptr FluidSolver GLFW WinPtr. Assert this.
+	assert(win != nullptr); 
 	this->winptr = win; 
 }
 
