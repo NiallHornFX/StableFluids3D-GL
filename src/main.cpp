@@ -1,5 +1,5 @@
 /*	-- INFO --
-	A Realtime CPU Based 3D Fluid-Solver based on Jos Stams Stable Fluids Paper. Along with Fedkiw and Bridson.
+	A Realtime CPU Based 3D Fluid-Solver based on Jos Stams Stable Fluids Paper. 
 	With a Basic GPU Realtime RayMarcher For Rendering based in OpenGL. 
 
 	- Support for Cubed/Uniform Grids Only for now. 
@@ -44,7 +44,7 @@
 short verbose = 0;
 double const PI = 3.14159265359; 
 
-int const cube = 96; // Cube Grid Size N (1-N)
+int const cube = 64; // Cube Grid Size N (1-N)
 int const edge = 2; // Total Edge Cells E (0 | N+1). 
 int win_size_xy = 512; 
 int const solve_steps = 1000; 
@@ -54,16 +54,14 @@ int main()
 {
 	// Create Render Context For OpenGL Context With Window Setup (in main thread). Window Dimensions Incl Edge Cell/Pixels. 
 	render_context_OGL render_c (win_size_xy, win_size_xy, short(GLMajor), short(GLMinor)); 
+
 	// Create Fluid Object - Containing Fluid Grids and Data. 
 	fluidobj_3d test_fluidobj (cube, cube, cube, edge); 
-
-	// Print Fluid Object Debug Info - 
-	//test_fluidobj.print_info();
 
 	// Create FluidSolver Instance,  Pass FluidObj Pointer to It. 
 	fluidsolver_3 test_fluidsolver (&test_fluidobj, timestep);
 
-	// Pre Solve Parmaters Inital Values Set. (Can be Changed In Solve Per Step Later) - 
+	// Pre Solve Parmaters Inital Values Set -
 	test_fluidsolver.Parms.p_Do_Dens_Diff = false; 
 	test_fluidsolver.Parms.p_useVorticity = false;
 	test_fluidsolver.Parms.p_Do_Dens_Disp = true; 

@@ -11,10 +11,11 @@ The Advection Method implemented currently uses Semi-Lagrangian (Single Step, Fo
 The Pressure Projection step uses a Matrix-less implementation of the Gauss-Seidel (Single-Threaded) with Sucessive Over Relaxation or Jacobi (Multi-Threaded) 
 iteeative linear solvers to compute the pressure grid. While the Jacobi method can be safley Multi-Threaded increasing performance, its simultaneous displacements
 result in much slower convergence than the Gauss-Seidel method, espeically when using Sucessive Over Relaxation which increases convergence simmilar to the
-Conjugate Gradient Method with sucessive displacements been applied within each solve iteration, thus its favoured as the default pressure solver.
+Conjugate Gradient Method, because of its sucessive displacements been applied within each solve iteration, thus its favoured as the default pressure solver.
 
 *The Second Order accurate Runge Kutta 2 (MidPoint) Method is currently implemented but not enabled in solver just yet.  
 *SSE and AVX Intrinsics are been implemented to speed up Linear Interoplations aswell as Graident Caluclations. 
+*OpenMP used for Data Parallism based Multithreading on LockFree Solver operations where applicable. Plan to replace with TBB. 
 
 I Chose to implement my own templated vector and matrix classes oppose to using GLM. These are been futher refined. The Project as a whole has a long way to go.
 For now no GUI is implemented, there are basic Inputs W/S for Camera Translation and Page Up/Down for Emission Source Scaling. The Mouse can be used
