@@ -3,6 +3,7 @@
 
 // Project Headers
 #include "fluidobj3d.h"
+#include "assets.h"
 
 // Std Headers
 #include <iostream>
@@ -18,14 +19,14 @@ extern short verbose;
 // RenderObject_3D - ABC Implementations - 
 
 // Render Object 3D ABC Constructor
-renderobject_3D::renderobject_3D(const char *api_name, int v_maj, int v_min, const vec2<int> &win_size, const vec3<int> &grd_size, short rmode)
-	: API_Name(api_name), ver_major(v_maj), ver_minor(v_min), window_size(win_size), grid_size(grd_size), rendermode(rmode) {}
+renderobject_3D::renderobject_3D(const char *api_name, int v_maj, int v_min, const vec2<int> &win_size, const vec3<int> &grd_size)
+	: API_Name(api_name), ver_major(v_maj), ver_minor(v_min), window_size(win_size), grid_size(grd_size) {}
 
 // RenderObject_2D_OGL (OpenGL API) Implementations - 
 
 // RenderObject_2D_OGL Constructor - 
-renderobject_3D_OGL::renderobject_3D_OGL(const char *api_name, int v_maj, int v_min, const vec2<int> &ws, const vec3<int> &gs, GLFWwindow *winptr, short rmode)
-	: renderobject_3D(api_name, v_maj, v_min, ws, gs, rmode), window_ptr(winptr),  // Initalize RenObj ABC Members Via Its Own Constructor. 
+renderobject_3D_OGL::renderobject_3D_OGL(const char *api_name, int v_maj, int v_min, const vec2<int> &ws, const vec3<int> &gs, GLFWwindow *winptr)
+	: renderobject_3D(api_name, v_maj, v_min, ws, gs), window_ptr(winptr),  // Initalize RenObj ABC Members Via Its Own Constructor. 
 	cube_model(), cube_view(), cube_persp(), cam_target(0.0f, 0.0f, 0.0f) // Ident Initalize Cube Transformation Matrix and Vector Members
 {
 	std::cout << "DBG::RenderObject_3D Created For Render API: " << api_name << " " << v_maj << "." << v_min << "\n \n";
@@ -64,8 +65,7 @@ renderobject_3D_OGL::~renderobject_3D_OGL()
 		cube_shader_prog = NULL;
 	}
 
-	delete CFront_vertices; CFront_vertices = nullptr;
-	delete CBack_vertices;  CBack_vertices = nullptr;
+	delete cube_vertices;  cube_vertices = nullptr;
 	delete cube_vert_shader_code; cube_vert_shader_code = nullptr;
 	delete cube_frag_shader_code; cube_frag_shader_code = nullptr;
 
@@ -95,68 +95,9 @@ renderobject_3D_OGL::~renderobject_3D_OGL()
 /* RenderObject_2D_OGL Vertex Setup Implementation - Setup Quad and Cube Buffers and Arrays Here */ 
 int renderobject_3D_OGL::vertex_setup()
 {
-	// Cube Vertex Arrays - (!TODO Move these to assets.h?)
-	
-	CFront_vertices = new GLfloat[18 * 6]
-	{
-		// Face 0
-		0.5, -0.5, 0.5, 1.0, 0.0, 1.0,
-		-0.5, -0.5, 0.5, 0.0, 0.0, 1.0,
-		-0.5, 0.5, 0.5, 0.0, 1.0, 1.0,
-
-		-0.5, -0.5, 0.5, 0.0, 0.0, 1.0,
-		-0.5, -0.5, -0.5, 0.0, 0.0, 0.0,
-		-0.5,  0.5, -0.5,  0.0, 1.0, 0.0,
-
-		// Face 1
-		-0.5, -0.5, 0.5, 0.0, 0.0, 1.0,
-		-0.5, 0.5, -0.5, 0.0, 1.0, 0.0,
-		-0.5, 0.5, 0.5, 0.0, 1.0, 1.0,
-
-		0.5, -0.5, 0.5, 1.0, 0.0, 1.0,
-		-0.5, 0.5, 0.5, 0.0, 1.0, 1.0,
-		0.5, 0.5, 0.5, 1.0, 1.0, 1.0,
-
-		// Face 2
-		-0.5, 0.5, -0.5, 0.0, 1.0, 0.0,
-		0.5, 0.5, 0.5, 1.0, 1.0, 1.0,
-		-0.5, 0.5, 0.5, 0.0, 1.0, 1.0,
-
-		-0.5, 0.5, -0.5, 0.0, 1.0, 0.0,
-		0.5, 0.5,-0.5, 1.0, 1.0, 0.0,
-		0.5, 0.5, 0.5, 1.0, 1.0, 1.0
-	};
-
-	// Cube Back Faces (Triangle Vertices)
-	 CBack_vertices = new GLfloat[18 * 6]
-	{
-		// Face 3
-		-0.5,-0.5,-0.5, 0.0, 0.0, 0.0,
-		0.5,-0.5,-0.5, 1.0, 0.0, 0.0,
-		0.5,0.5,-0.5, 1.0, 1.0, 0.0,
-
-		0.5,-0.5,-0.5, 1.0, 0.0, 0.0,
-		-0.5,-0.5,0.5, 0.0, 0.0, 1.0,
-		0.5,-0.5,0.5, 1.0, 0.0, 1.0,
-
-		// Face 4
-		-0.5,-0.5,-0.5, 0.0, 0.0, 0.0,
-		0.5,0.5,-0.5, 1.0, 1.0, 0.0,
-		-0.5,0.5,-0.5, 0.0, 1.0, 0.0,
-
-		0.5,-0.5,-0.5, 1.0, 0.0, 0.0,
-		0.5,-0.5,0.5, 1.0, 0.0, 1.0,
-		0.5,0.5,0.5, 1.0, 1.0, 1.0,
-
-		// Face 5
-		0.5,-0.5,-0.5, 1.0, 0.0, 0.0,
-		0.5,0.5,0.5, 1.0, 1.0, 1.0,
-		0.5,0.5,-0.5, 1.0, 1.0, 0.0,
-
-		0.5,-0.5,-0.5, 1.0, 0.0, 0.0,
-		-0.5,-0.5,-0.5, 0.0, 0.0, 0.0,
-		-0.5,-0.5,0.5, 0.0, 0.0, 1.0
-	};
+	// Copy Cube Verts to memptr. 
+	cube_vertices = new float[36 * 6]{0.0f};
+	std::memcpy(cube_vertices, cube_verts_ccw, (36 * 6) * sizeof(float));
 
 	// Vertex Screen Quad Setup - 
 	quad_vertices = new GLfloat[12]
@@ -175,11 +116,10 @@ int renderobject_3D_OGL::vertex_setup()
 
 	// Cube Setup \\
 
-	// Front Cube (CFront_VAO, CFront_VBO) 
-	glGenVertexArrays(1, &CFront_VAO); glGenBuffers(1, &CFront_VBO);
-	glBindVertexArray(CFront_VAO);
-	glBindBuffer(GL_ARRAY_BUFFER, CFront_VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * (18 * 6), CFront_vertices, GL_STATIC_DRAW);
+	glGenVertexArrays(1, &Cube_VAO); glGenBuffers(1, &Cube_VBO);
+	glBindVertexArray(Cube_VAO);
+	glBindBuffer(GL_ARRAY_BUFFER, Cube_VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * (36 * 6), cube_vertices, GL_STATIC_DRAW);
 	// (float) XYZ-UVW (6 * sizeof(float) stride) 
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), 0);
 	glEnableVertexAttribArray(0); // Enable VAO Attrib 0 - Postion
@@ -189,22 +129,6 @@ int renderobject_3D_OGL::vertex_setup()
 	// UnBind
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-	// Back Cube (CBack_VAO, CBack_VBO) 
-	glGenVertexArrays(1, &CBack_VAO); glGenBuffers(1, &CBack_VBO);
-	glBindVertexArray(CBack_VAO);
-	glBindBuffer(GL_ARRAY_BUFFER, CBack_VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * (18 * 6), CBack_vertices, GL_STATIC_DRAW);
-	// (float) XYZ-UVW (6 * sizeof(float) stride) 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), 0);
-	glEnableVertexAttribArray(0); // Enable VAO Attrib 0 - Postion
-	// Vertex UV Attrib - (1) Start at float*3 offset of Postion Attribs. 
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (GLvoid*)(sizeof(float) * 3));
-	glEnableVertexAttribArray(1);
-	// UnBind
-	glBindVertexArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
 
 	// Full Screen Quad Setup \\ 
 
@@ -465,7 +389,8 @@ void renderobject_3D_OGL::cube_setup()
 	// Inital Cube Transform Setup to pass to GPU \\ 
 
 	// Model-World Matrix - 
-	cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), 0.25f);
+	//cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), 0.25f);
+	cube_model.rotate(vec3<float>(1.0f, 1.0f, 0.0f), 0.1f);
 	cube_model.label = "Cube Model";
 	cube_model.print_mat();
 
@@ -491,16 +416,17 @@ void renderobject_3D_OGL::cube_update()
 {
 	//cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), matrix_4x4<float>::degtoRad(-(2.0 * dt)));
 	float ang = matrix_4x4<float>::degtoRad( (std::sinf(t1 * 1.5f) * -15.0f) * dt); // Some Fake Camera/Grid Motion.
+	ang = t1 * (0.1f * dt); 
 	cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), ang);
 
 	// Testing Camera Translation like beahviour. 
 	if (glfwGetKey(window_ptr, GLFW_KEY_W) == GLFW_PRESS)
 	{
-		cube_view.translate(vec3<float>(0.0f, 0.0f, 0.1f));
+		cube_view.translate(vec3<float>(0.0f, 0.0f, 1.0f * dt));
 	}
 	if (glfwGetKey(window_ptr, GLFW_KEY_S) == GLFW_PRESS)
 	{
-		cube_view.translate(vec3<float>(0.0f, 0.0f, -0.1f));
+		cube_view.translate(vec3<float>(0.0f, 0.0f, -1.0f * dt));
 	}
 
 	// If FOV Changed Update Persp Mat. 
@@ -631,19 +557,24 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 
 			glUseProgram(cube_shader_prog);
 			// Draw Cube Front -
-			glBindVertexArray(CFront_VAO);
-			glDrawArrays(GL_TRIANGLES, 0, 18);
+			glEnable(GL_CULL_FACE);
+			glCullFace(GL_BACK); 
+			glBindVertexArray(Cube_VAO);
+			glDrawArrays(GL_TRIANGLES, 0, 36);
 
 			// CUBE BACK 
 			cube_fbo_attach(CUBE_BACK); // Cback. 
 			bindclear_fbo(FBO_CUBE); // BindClear Cube FBO
 			// Draw Cube Back -
-			glBindVertexArray(CBack_VAO);
-			glDrawArrays(GL_TRIANGLES, 0, 18);
+			glEnable(GL_CULL_FACE);
+			glCullFace(GL_FRONT);
+			glBindVertexArray(Cube_VAO);
+			glDrawArrays(GL_TRIANGLES, 0, 36);
 
 			// SCREEN QUAD 
 			bindclear_fbo(FBO_DEFAULT);
 			// Reset Render State
+			glDisable(GL_CULL_FACE);
 			glUseProgram(0);
 			glBindVertexArray(0);
 
@@ -683,7 +614,7 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 	}
 	else if (rs == rend_state::RENDER_ACTIVE)
 	{
-		// PRE OP
+		// PRE OP 
 		get_FPS();
 
 		// CUBE UPDATE 
@@ -695,19 +626,26 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 
 		glUseProgram(cube_shader_prog);
 		// Draw Cube Front -
-		glBindVertexArray(CFront_VAO);
-		glDrawArrays(GL_TRIANGLES, 0, 18);
+		glEnable(GL_CULL_FACE);
+		glCullFace(GL_BACK);
+		glFrontFace(GL_CW);
+		glBindVertexArray(Cube_VAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 
-		// CUBE BACK - 
+		// CUBE BACK 
 		cube_fbo_attach(CUBE_BACK); // Cback. 
 		bindclear_fbo(FBO_CUBE); // BindClear Cube FBO
 		// Draw Cube Back -
-		glBindVertexArray(CBack_VAO);
-		glDrawArrays(GL_TRIANGLES, 0, 18);
+		glEnable(GL_CULL_FACE);
+		glCullFace(GL_FRONT);
+		glFrontFace(GL_CW);
+		glBindVertexArray(Cube_VAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 
-		// SCREEN QUAD
+		// SCREEN QUAD 
 		bindclear_fbo(FBO_DEFAULT);
 		// Reset Render State
+		glDisable(GL_CULL_FACE);
 		glUseProgram(0);
 		glBindVertexArray(0);
 
@@ -731,7 +669,8 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Quad_EBO);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-		// POST OP \\
+		// POST OP \\ 
+
 		// Clear Render State. 
 		glUseProgram(0);
 		glBindVertexArray(0);

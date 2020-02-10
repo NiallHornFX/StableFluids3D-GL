@@ -20,13 +20,12 @@ uniform float my;
 
 vec4 desat (vec3 color, float DD)
 {
-	vec3 grayXfer = vec3(0.3, 0.59, 0.11);
-	vec3 gray = vec3(dot(grayXfer, color));
-	return vec4(mix(color, gray, DD), 1.0);
+	vec3 Aa = vec3(0.3, 0.59, 0.11);
+	vec3 Ab = vec3(dot(Aa, color));
+	return vec4(mix(color, Ab, DD), 1.0);
 }
 
 /* ----------------------------------------------------------------- */
-// BIN SHADER
 void main()
 {
 	// Map from 0-N FragCoord_Space to 0-1 UV Space. 
@@ -87,6 +86,7 @@ void main()
 	vec3 cv_0 = mix(samp_cf_start.xyz, samp_cb_end.xyz, 0.5);
 	cv_0 = desat(cv_0, 1.0).xyz; cv_0.xy += 0.1 * length(cv_0); cv_0 *= 0.4; // cv_0.x += 0.1;
 	vec3 cv_1 = mix(cv_0, dens_vec, 0.5); 
-	frag_color = vec4(clamp(cv_1, 0.0, 1.0), 1.0); 
+	//frag_color = vec4(clamp(cv_1, 0.0, 1.0), 1.0); 
+	frag_color = vec4(cv_0, 1.0); 
 	
 }

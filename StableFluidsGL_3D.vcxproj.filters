@@ -62,6 +62,9 @@
     <ClInclude Include="include\vec2d.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\assets.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\fluidsolver3d.cpp">

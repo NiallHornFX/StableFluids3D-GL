@@ -55,6 +55,10 @@ int main()
 	// Create Render Context For OpenGL Context With Window Setup (in main thread). Window Dimensions Incl Edge Cell/Pixels. 
 	render_context_OGL render_c (win_size_xy, win_size_xy, short(GLMajor), short(GLMinor)); 
 
+	renderobject_3D_OGL render_o ("OpenGL", 4, 2, vec2<int>(win_size_xy, win_size_xy), vec3<int>(cube + edge, cube + edge, cube + edge), render_c.get_window());
+	render_o.render_loop(rend_state::RENDER_DEBUG);
+
+	/*
 	// Create Fluid Object - Containing Fluid Grids and Data. 
 	fluidobj_3d test_fluidobj (cube, cube, cube, edge); 
 
@@ -76,6 +80,7 @@ int main()
 
 	// Call Solve Step Loop to start simulation and rendering - 
 	test_fluidsolver.solve_step(true, solve_steps);
+	*/
 
 	return 0;
 }

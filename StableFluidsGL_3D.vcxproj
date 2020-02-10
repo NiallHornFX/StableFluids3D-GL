@@ -11,6 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\assets.h" />
     <ClInclude Include="include\fluidobj3d.h" />
     <ClInclude Include="include\fluidsolver3d.h" />
     <ClInclude Include="include\grids3d.h" />

@@ -34,7 +34,7 @@ class renderobject_3D
 // FCs
 friend class fluidsolver_3;
 public:
-	renderobject_3D(const char *api_name, int v_maj, int v_min, const vec2<int> &win_size, const vec3<int> &grd_size, short rmode);
+	renderobject_3D(const char *api_name, int v_maj, int v_min, const vec2<int> &win_size, const vec3<int> &grd_size);
 	virtual ~renderobject_3D() = default;
 
 	virtual void shader_pipe(fluidobj_3d *f3obj) = 0;
@@ -58,7 +58,7 @@ class renderobject_3D_OGL : public renderobject_3D
 // FCs
 friend class fluidsolver_3; 
 public:
-	renderobject_3D_OGL(const char *api_name, int v_maj, int v_min, const vec2<int> &w_s, const vec3<int> &g_s, GLFWwindow *winptr, short rmode);
+	renderobject_3D_OGL(const char *api_name, int v_maj, int v_min, const vec2<int> &w_s, const vec3<int> &g_s, GLFWwindow *winptr);
 	~renderobject_3D_OGL();
  
 	// Public Overrides of OGL Implementation.
@@ -103,8 +103,8 @@ protected:
 
 private:
 	// Buffers -
-	GLuint CFront_VAO, CBack_VAO, Quad_VAO;
-	GLuint CFront_VBO, CBack_VBO, Quad_VBO;
+	GLuint Cube_VAO, Quad_VAO;
+	GLuint Cube_VBO, Quad_VBO;
 	GLuint Quad_EBO, Cube_FBO, Cube_RBO;
 
 	// Shaders -
@@ -119,7 +119,7 @@ private:
 	GLuint tex_dens, tex_vel;
 
 	// Geo Arrays
-	GLfloat *CFront_vertices, *CBack_vertices, *quad_vertices; 
+	GLfloat *cube_vertices, *quad_vertices; 
 	GLuint *quad_indices; 
 
 	// Cube Transform - 
