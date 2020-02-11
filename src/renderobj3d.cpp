@@ -640,7 +640,7 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 		glUseProgram(cube_shader_prog);
 		// Draw Cube Front -
 		glEnable(GL_CULL_FACE);
-		glCullFace(GL_BACK);
+		glCullFace(GL_FRONT);
 		glBindVertexArray(Cube_VAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
@@ -649,7 +649,7 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 		bindclear_fbo(FBO_CUBE); // BindClear Cube FBO
 		// Draw Cube Back -
 		glEnable(GL_CULL_FACE);
-		glCullFace(GL_FRONT);
+		glCullFace(GL_BACK);
 		glBindVertexArray(Cube_VAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
