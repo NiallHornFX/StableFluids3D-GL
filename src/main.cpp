@@ -33,7 +33,7 @@
 
 // Macros - 
 #define GLMajor 4
-#define GLMinor 0
+#define GLMinor 2
 
 #define DEBUG_MODE 0 
 #define USE_ASSERT 0

@@ -1,4 +1,4 @@
-#version 400 core 
+#version 420 core 
 
 in vec4 vpos; 
 in vec4 gl_FragCoord; 
@@ -31,66 +31,43 @@ void main()
 	// Map from 0-N FragCoord_Space to 0-1 UV Space. 
 	vec2 uv = (gl_FragCoord.xy - 0.0) / 512; 
 	
-	// Sample Baked Cube Textures for Entry/Exit Postions -
+	// Sample Baked Rasterized Cube Textures for Entry/Exit Postions -
 	vec3 samp_cf_start = texture(cf_tex, uv).rgb; 
 	vec3 samp_cb_end = texture(cb_tex, uv).rgb; 
+	
 	vec3 ray = samp_cb_end - samp_cf_start;
 	float rayL = length(ray); 
 	vec3 ray_dir = normalize(ray); 
 	
-	// Clamp Ray_P to 3D Texture Space 0-1,xyz. 
-	//samp_cf_start = clamp(samp_cf_start, 0.0, 1.0); samp_cb_end = clamp(samp_cb_end, 0.0, 1.0); 
-	
-	// Ray Inital Postion From Sampled Cube Texture RGB-Local XYZ Postion. 
-	vec3 ray_P = samp_cf_start;
+	// Backwards March.
+	vec3 ray_P = samp_cb_end;
 	
 	// Map 3D Texture Space Cube Local Space Texture Sampled Locations.
 	float dens = 0.0; vec3 vel = vec3(0.0, 0.0, 0.0); 
 	int step_count = 100, l_step_count = 30; 
-	float step_size = 0.01; /// step_count; 
 	
 	for (int i = 0; i < step_count; i++)
 	{
 		dens += texture(dens_tex, ray_P).x;
 		vel += texture(vel_tex, ray_P).xyz; 
-		ray_P += ray_dir * step_size;
-		
-		// Shadow/Light Ray Prep
-		float l = 0.0; 
-		vec3 lray_P = ray_P; 
-		vec3 lpos = vec3(mx, my, -0.8); 
-		vec3 ldir = normalize(lpos - ray_P); 
-		for (int j = 0; j < l_step_count; j++) // Basic Shadow Ray...
-		{
-			l += texture(dens_tex, lray_P).x * 0.25;
-			lray_P += ldir * step_size; 
-			if (l >= 0.99) {break;}
-		}
-		float l_dist = length(lpos - ray_P);
-		//float phase = pow(l_dist, 2.0); 
-		//dens -= l_dist * 0.001; 
-		l /= l_step_count; l = clamp(l, 0.0, 1.0); 
-		dens -= l * 1.0; // Subtract ShadowRay Accumlated Density. In Primary Ray Loop. 
+		ray_P += (samp_cf_start - samp_cb_end) / (step_count - 1);
 		
 		// Early Ray Termination 
-		//if ((length(ray_P) >= rayL)) {break;}
 		//if (dens > 0.99) { dens = 1.0; break;}
 	}	
 
-	//dens /= (step_count / 10); //dens = clamp(dens, 0.0, 1.0); 
 	vel /= step_count; vel *= clamp(dens, 0.0, 1.0); 
-	dens *= 0.25f; // Oppose to div by stepcount. 
+	dens /= float(step_count); dens *= 3.0;
 	float dens_a = dens; //dens_f + dens_b;
 	
 	vec3 dens_vec = vec3(dens_a + vel.x, dens_a + vel.y, dens_a + vel.z); 
 	vec3 cv_0 = mix(samp_cf_start.xyz, samp_cb_end.xyz, 0.5);
-	frag_color = vec4(cv_0, 1.0); 
+	//frag_color = vec4(cv_0, 1.0); 
 	cv_0 = desat(cv_0, 1.0).xyz; cv_0.xy += 0.1 * length(cv_0); cv_0 *= 0.4; // cv_0.x += 0.1;
 	vec3 cv_1 = mix(cv_0, dens_vec, 0.5); 
+	
 	frag_color = vec4(clamp(cv_1, 0.0, 1.0), 1.0); 
+	
 	//frag_color = vec4(cv_0, 1.0); 
-	//frag_color = vec4(mix(samp_cf_start, samp_cb_end, 0.5), 1.0); 
-	//frag_color = vec4(( samp_cf_start - samp_cb_end), 1.0);
-	
-	
+	//frag_color = vec4(dens_vec, 1.0); 	
 }

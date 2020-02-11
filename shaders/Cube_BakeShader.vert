@@ -1,4 +1,4 @@
-#version 400 core 
+#version 420 core 
 
 layout (location = 0) in vec3 vPos; // Pos
 layout (location = 1) in vec3 vTC; // TexCoord Attrib

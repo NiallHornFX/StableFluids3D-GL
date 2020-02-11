@@ -1442,7 +1442,7 @@ void fluidsolver_3::solve_step(bool solve, int max_step)
 
 	// Render Object Creation/Setup - 
 	int render_mode = 1; // 0 = Density, 1 = Vel. 
-	render_obj = new renderobject_3D_OGL("OpenGL", 4, 0, vec2<int>(win_size_xy, win_size_xy), vec3<int>(x_s + e_s, y_s + e_s, z_s + e_s), this->winptr); 
+	render_obj = new renderobject_3D_OGL("OpenGL", 4, 2, vec2<int>(win_size_xy, win_size_xy), vec3<int>(x_s + e_s, y_s + e_s, z_s + e_s), this->winptr); 
 
 	// SOLVE STEP AND RENDER - EXECUTION LOOP 
 	while (solve == true && step_count <= max_step) // Infinite Solve Loop For Now. Will need to link this to drawing/waiting etc. 
