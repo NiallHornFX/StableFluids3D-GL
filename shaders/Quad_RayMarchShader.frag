@@ -38,12 +38,12 @@ void main()
 	float rayL = length(ray); 
 	vec3 ray_dir = normalize(ray); 
 	
+	// Clamp Ray_P to 3D Texture Space 0-1,xyz. 
+	//samp_cf_start = clamp(samp_cf_start, 0.0, 1.0); samp_cb_end = clamp(samp_cb_end, 0.0, 1.0); 
+	
 	// Ray Inital Postion From Sampled Cube Texture RGB-Local XYZ Postion. 
 	vec3 ray_P = samp_cf_start;
 	
-	// Clamp Ray_P to 3D Texture Space 0-1,xyz. 
-	//ray_P_f = clamp(ray_P_f, 0.0, 1.0); ray_P_b = clamp(ray_P_b, 0.0, 1.0); 
-
 	// Map 3D Texture Space Cube Local Space Texture Sampled Locations.
 	float dens = 0.0; vec3 vel = vec3(0.0, 0.0, 0.0); 
 	int step_count = 100, l_step_count = 30; 
@@ -84,9 +84,13 @@ void main()
 	
 	vec3 dens_vec = vec3(dens_a + vel.x, dens_a + vel.y, dens_a + vel.z); 
 	vec3 cv_0 = mix(samp_cf_start.xyz, samp_cb_end.xyz, 0.5);
+	frag_color = vec4(cv_0, 1.0); 
 	cv_0 = desat(cv_0, 1.0).xyz; cv_0.xy += 0.1 * length(cv_0); cv_0 *= 0.4; // cv_0.x += 0.1;
 	vec3 cv_1 = mix(cv_0, dens_vec, 0.5); 
-	//frag_color = vec4(clamp(cv_1, 0.0, 1.0), 1.0); 
-	frag_color = vec4(cv_0, 1.0); 
+	frag_color = vec4(clamp(cv_1, 0.0, 1.0), 1.0); 
+	//frag_color = vec4(cv_0, 1.0); 
+	//frag_color = vec4(mix(samp_cf_start, samp_cb_end, 0.5), 1.0); 
+	//frag_color = vec4(( samp_cf_start - samp_cb_end), 1.0);
+	
 	
 }

@@ -125,6 +125,7 @@ private:
 	// Cube Transform - 
 	matrix_4x4<float> cube_model, cube_view, cube_persp;
 	vec3<float> cam_target;
+	float zoom;
 
 	// RenderContext (GLFW) Window Pointer
 	GLFWwindow *window_ptr = nullptr; 

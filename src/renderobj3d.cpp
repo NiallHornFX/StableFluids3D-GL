@@ -27,7 +27,7 @@ renderobject_3D::renderobject_3D(const char *api_name, int v_maj, int v_min, con
 // RenderObject_2D_OGL Constructor - 
 renderobject_3D_OGL::renderobject_3D_OGL(const char *api_name, int v_maj, int v_min, const vec2<int> &ws, const vec3<int> &gs, GLFWwindow *winptr)
 	: renderobject_3D(api_name, v_maj, v_min, ws, gs), window_ptr(winptr),  // Initalize RenObj ABC Members Via Its Own Constructor. 
-	cube_model(), cube_view(), cube_persp(), cam_target(0.0f, 0.0f, 0.0f) // Ident Initalize Cube Transformation Matrix and Vector Members
+	cube_model(), cube_view(), cube_persp(), cam_target(0.0f, 0.0f, 0.0f), zoom(40.0f) // Ident Initalize Cube Transformation Matrix and Vector Members
 {
 	std::cout << "DBG::RenderObject_3D Created For Render API: " << api_name << " " << v_maj << "." << v_min << "\n \n";
 	// Call Setup MFuncs
@@ -96,8 +96,9 @@ renderobject_3D_OGL::~renderobject_3D_OGL()
 int renderobject_3D_OGL::vertex_setup()
 {
 	// Copy Cube Verts to memptr. 
-	cube_vertices = new float[36 * 6]{0.0f};
-	std::memcpy(cube_vertices, cube_verts_ccw, (36 * 6) * sizeof(float));
+	//cube_vertices = cvert_ccw;
+	cube_vertices = cvert_n;
+	//std::memcpy(cube_vertices, cube_verts_ccw, (36 * 6) * sizeof(float));
 
 	// Vertex Screen Quad Setup - 
 	quad_vertices = new GLfloat[12]
@@ -416,7 +417,7 @@ void renderobject_3D_OGL::cube_update()
 {
 	//cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), matrix_4x4<float>::degtoRad(-(2.0 * dt)));
 	float ang = matrix_4x4<float>::degtoRad( (std::sinf(t1 * 1.5f) * -15.0f) * dt); // Some Fake Camera/Grid Motion.
-	ang = t1 * (0.1f * dt); 
+	ang = t1 * (0.01f * dt); 
 	cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), ang);
 
 	// Testing Camera Translation like beahviour. 
@@ -430,12 +431,21 @@ void renderobject_3D_OGL::cube_update()
 	}
 
 	// If FOV Changed Update Persp Mat. 
+	if (glfwGetKey(window_ptr, GLFW_KEY_UP) == GLFW_PRESS)
+	{
+		zoom -= 0.25f; 
+	}
+	if (glfwGetKey(window_ptr, GLFW_KEY_DOWN) == GLFW_PRESS)
+	{
+		zoom += 0.25f;
+	}
+	cube_persp = matrix_4x4<float>::make_perspective(zoom, 1.0f, 0.1f, 100.0f);
 
 	// Update Uniforms - 
 	glUseProgram(cube_shader_prog);
 	glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "model"), 1, GL_FALSE, cube_model.comp);
 	glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "view"), 1, GL_TRUE, cube_view.comp);
-	// Persp
+	glUniformMatrix4fv(glGetUniformLocation(cube_shader_prog, "persp"), 1, GL_FALSE, cube_persp.comp);
 	glUseProgram(0);
 }
 
@@ -624,11 +634,12 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 		cube_fbo_attach(CUBE_FRONT);
 		bindclear_fbo(FBO_CUBE);
 
+		float min = 3.5f;
+
 		glUseProgram(cube_shader_prog);
 		// Draw Cube Front -
 		glEnable(GL_CULL_FACE);
 		glCullFace(GL_BACK);
-		glFrontFace(GL_CW);
 		glBindVertexArray(Cube_VAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
@@ -638,7 +649,6 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 		// Draw Cube Back -
 		glEnable(GL_CULL_FACE);
 		glCullFace(GL_FRONT);
-		glFrontFace(GL_CW);
 		glBindVertexArray(Cube_VAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
