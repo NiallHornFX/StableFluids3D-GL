@@ -95,10 +95,9 @@ renderobject_3D_OGL::~renderobject_3D_OGL()
 /* RenderObject_2D_OGL Vertex Setup Implementation - Setup Quad and Cube Buffers and Arrays Here */ 
 int renderobject_3D_OGL::vertex_setup()
 {
-	// Copy Cube Verts to memptr. 
+	// Cube Verts in assets.h copy included ptr to member ptr. 
 	//cube_vertices = cvert_ccw;
-	cube_vertices = cvert_n;
-	//std::memcpy(cube_vertices, cube_verts_ccw, (36 * 6) * sizeof(float));
+	cube_vertices = cvert_nb;
 
 	// Vertex Screen Quad Setup - 
 	quad_vertices = new GLfloat[12]
@@ -390,8 +389,8 @@ void renderobject_3D_OGL::cube_setup()
 	// Inital Cube Transform Setup to pass to GPU \\ 
 
 	// Model-World Matrix - 
-	//cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), 0.25f);
-	cube_model.rotate(vec3<float>(1.0f, 1.0f, 0.0f), 0.1f);
+	cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), -0.1f);
+	//cube_model.rotate(vec3<float>(1.0f, 1.0f, 0.0f), 0.1f);
 	cube_model.label = "Cube Model";
 	cube_model.print_mat();
 
@@ -417,8 +416,10 @@ void renderobject_3D_OGL::cube_update()
 {
 	//cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), matrix_4x4<float>::degtoRad(-(2.0 * dt)));
 	float ang = matrix_4x4<float>::degtoRad( (std::sinf(t1 * 1.5f) * -15.0f) * dt); // Some Fake Camera/Grid Motion.
-	ang = t1 * (0.01f * dt); 
-	cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), ang);
+	ang = t1 * 0.05f; //* (1.0f * dt); 
+	std::cout << "ANG = " << t1 << "\n";
+	//cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), -ang);
+	cube_model = matrix_4x4<float>::make_rotate(vec3<float>(0.0f, 1.0f, 0.0f), -ang); // New each frame, oppose to product of prev.
 
 	// Testing Camera Translation like beahviour. 
 	if (glfwGetKey(window_ptr, GLFW_KEY_W) == GLFW_PRESS)
