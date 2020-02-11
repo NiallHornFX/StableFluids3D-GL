@@ -57,7 +57,7 @@ void main()
 	}	
 
 	vel /= step_count; vel *= clamp(dens, 0.0, 1.0); 
-	dens /= float(step_count); dens *= 3.0;
+	dens /= float(step_count); dens *= 5.0;
 	float dens_a = dens; //dens_f + dens_b;
 	
 	vec3 dens_vec = vec3(dens_a + vel.x, dens_a + vel.y, dens_a + vel.z); 

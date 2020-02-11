@@ -1465,14 +1465,15 @@ void fluidsolver_3::solve_step(bool solve, int max_step)
 
 		// STEP SOURCING OPERATIONS \\ ----------------
 		float offs = sin(((float)step_count / (float)max_step) * 500.0f) * 0.1f;
-		f3obj->implicit_sphere_source(0.1f, vec3<float>(0.0f, 1.0f, 0.55f), vec3<float>(offs + 0.4f, 0.1f, 0.5f), impsource_radius); // 0.01f
+		//f3obj->implicit_sphere_source(0.1f, vec3<float>(0.0f, 1.0f, 0.55f), vec3<float>(offs + 0.4f, 0.1f, 0.5f), impsource_radius); // 0.01f
+		f3obj->implicit_sphere_source(0.1f, vec3<float>(0.0f, 1.0f, 0.55f), vec3<float>(xpos_1_N, 1.0f-ypos_1_N, 0.5f), impsource_radius); // Mouse Emitter
 
 		// STEP - SUB - SOLVER STEP OPERATIONS \\ -------------- 
 		velocity_step();
 		density_step();
 
 		// STEP - RENDER CALLS \\ ------------------
-		render_obj->get_input(vec2<float>(xpos_1_N, -ypos_1_N)); 
+		render_obj->get_input(vec2<float>(xpos_1_N, ypos_1_N)); 
 		render_obj->et = step_count; 
 		render_obj->shader_pipe(f3obj); 
 		render_obj->render_loop(rend_state::RENDER_ACTIVE); 
@@ -1548,9 +1549,9 @@ void fluidsolver_3::updt_mouseposNorm(const step step_id)
 	{
 		glfwGetCursorPos(winptr, &xpos_1_N, &ypos_1_N);
 
-		ypos_1_N = (y_s + e_s) - ypos_1_N; // FLIP Y Axis (So Matches GridSpace Postive Y = Down) (Up When drawn). 
-
 		xpos_1_N /= 512; ypos_1_N /= 512;
+		xpos_1_N = clamp(xpos_1_N, 0.0f, 1.0f);
+		ypos_1_N = clamp(ypos_1_N, 0.0f, 1.0f);
 
 		// Window Bounds - 
 	//	if (!glfwGetWindowAttrib(winptr, GLFW_HOVERED)) xpos_1_N = 0.0f, ypos_1_N = 0.0f;
@@ -1559,9 +1560,9 @@ void fluidsolver_3::updt_mouseposNorm(const step step_id)
 	{
 		glfwGetCursorPos(winptr, &xpos_0_N, &ypos_0_N);
 
-		ypos_0_N = (y_s + e_s) - ypos_0_N; // FLIP Y Axis (So Matches GridSpace Postive Y = Down) (Up When drawn). 
-
 		xpos_0_N /= 512; ypos_0_N /= 512;
+		xpos_0_N = clamp(xpos_0_N, 0.0f, 1.0f);
+		ypos_0_N = clamp(ypos_0_N, 0.0f, 1.0f);
 
 		// Window Bounds - 
 	//	if (!glfwGetWindowAttrib(winptr, GLFW_HOVERED)) xpos_0_N = 0.0f, ypos_0_N = 0.0f;
