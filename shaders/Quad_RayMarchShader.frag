@@ -45,12 +45,13 @@ void main()
 	// Map 3D Texture Space Cube Local Space Texture Sampled Locations.
 	float dens = 0.0; vec3 vel = vec3(0.0, 0.0, 0.0); 
 	int step_count = 100, l_step_count = 30; 
+	vec3 step = (samp_cf_start - samp_cb_end) / (step_count - 1);
 	
 	for (int i = 0; i < step_count; i++)
 	{
 		dens += texture(dens_tex, ray_P).x;
 		vel += texture(vel_tex, ray_P).xyz; 
-		ray_P += (samp_cf_start - samp_cb_end) / (step_count - 1);
+		ray_P += step; 
 		
 		// Early Ray Termination 
 		//if (dens > 0.99) { dens = 1.0; break;}
@@ -71,9 +72,9 @@ void main()
 	cv_0 = desat(cv_0, 1.0).xyz; cv_0.xy += 0.1 * length(cv_0); cv_0 *= 0.4; // cv_0.x += 0.1;
 	
 	// Dens - 
-	//vec3 cv_1 = mix(cv_0, dens_vec, 0.5); 
+	vec3 cv_1 = mix(cv_0, dens_vec, 0.5); 
 	// Vel BB - 
-	vec3 cv_1 = mix(cv_0, vel_col, 0.5);
+	//vec3 cv_1 = mix(cv_0, vel_col, 0.5);
 	
 	// Final FragColor. 
 	frag_color = vec4(clamp(cv_1, 0.0, 1.0), 1.0); 
