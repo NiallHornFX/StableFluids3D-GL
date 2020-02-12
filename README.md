@@ -1,7 +1,6 @@
 # Stable Fluids 3D - Fluid Solver - Work In Progress !
 
-![Thumb](thumb.png)
-[Demo Video](https://www.youtube.com/watch?v=9_8SY5pndmU&feature=youtu.be)
+![Demo GIF - Updated Feb 12th](gif_demo.gif)
 
 This is a 3D Implementation of Jos Stams famous paper [Stable Fluids](https://d2f99xq7vri1nk.cloudfront.net/legacy_app_files/pdf/ns.pdf "Paper") on the CPU.
 Implemented in C++ in an OOP Framework style, with OpenGL currently the only implemented Graphics API, For Ray Marching the resulting 3D Density Grid. 

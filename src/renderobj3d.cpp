@@ -417,7 +417,7 @@ void renderobject_3D_OGL::cube_update()
 	//cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), matrix_4x4<float>::degtoRad(-(2.0 * dt)));
 	float ang = matrix_4x4<float>::degtoRad( (std::sinf(t1 * 1.5f) * -15.0f) * dt); // Some Fake Camera/Grid Motion.
 	ang = t1 * 0.05f; //* (1.0f * dt); 
-	std::cout << "ANG = " << t1 << "\n";
+	std::cout << "DEBUG::Rotation Angle = " << t1 << "\n"; 
 	//cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), -ang);
 	cube_model = matrix_4x4<float>::make_rotate(vec3<float>(0.0f, 1.0f, 0.0f), -ang); // New each frame, oppose to product of prev.
 

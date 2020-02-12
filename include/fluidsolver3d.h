@@ -167,6 +167,8 @@ protected:
 	void velocity_step();
 
 	// UTILITY \\ - 
+	// Vel Additon - 
+	void add_velocity(const vec3<float> &vel);
 	// Mouse Input - 
 	void updt_mousepos(const step step_id); // 0 - N XY Mouse Coords. 
 	void updt_mouseposNorm(const step step_id); // 0-1 XY Mouse Coords

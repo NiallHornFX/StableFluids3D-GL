@@ -1456,6 +1456,7 @@ void fluidsolver_3::solve_step(bool solve, int max_step)
 		sphere_rad_test(); 
 
 		// Get CurFrame Mouse Pos And Update Mouse Vel. 
+		std::this_thread::sleep_for(std::chrono::milliseconds(2));
 		updt_mousepos(step::STEP_CUR); updt_mouseposNorm(step::STEP_CUR); updt_mouseposRange(step::STEP_CUR);
 		updt_mousevel(); 
 
@@ -1661,6 +1662,23 @@ void fluidsolver_3::dissipate(grid3_vector<vec3<float>> *grid, float disp_mult, 
 	}
 }
 
+void fluidsolver_3::add_velocity(const vec3<float> &vel)
+{
+	#pragma omp parallel for
+	for (int k = 1; k <= N_dim; k++)
+	{
+		#pragma omp parallel for
+		for (int j = 1; j <= N_dim; j++)
+		{
+			#pragma omp parallel for
+			for (int i = 1; i <= N_dim; i++)
+			{
+				// Only Within Emission Sphere? Add alt ImpSource with MouseVel passed from solver..
+				f3obj->add_velocity(vel, i, j, k);
+			}
+		}
+	}
+}
 
 /*	====================================================
 Static Utility Member Functions 
@@ -1694,12 +1712,12 @@ float fluidsolver_3::cosinterp(float val_0, float val_1, float bias)
 // Test Implementation of Interactive Sphere Radius
 void fluidsolver_3::sphere_rad_test()
 {
-	if (glfwGetKey(winptr, GLFW_KEY_PAGE_UP) == GLFW_PRESS)
+	if (glfwGetKey(winptr, GLFW_KEY_A) == GLFW_PRESS)
 	{
 		impsource_radius += 0.001f; 
 	}
 
-	if (glfwGetKey(winptr, GLFW_KEY_PAGE_DOWN) == GLFW_PRESS)
+	if (glfwGetKey(winptr, GLFW_KEY_D) == GLFW_PRESS)
 	{
 		impsource_radius -= 0.001f;
 	}
