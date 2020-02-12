@@ -60,14 +60,25 @@ void main()
 	dens /= float(step_count); dens *= 5.0;
 	float dens_a = dens; //dens_f + dens_b;
 	
+	// Colour Using BlackBody Lookup of vel_l
+	float vel_l = length(vel); 
+	vec3 vel_col = (vec4(1,1./4.,1./16.,1) * exp(4.*vel_l - 1.)).xyz;
+	vel_col *= dens_a * 35.0; 
+	
+	// Colour Density + Cube. 
 	vec3 dens_vec = vec3(dens_a + vel.x, dens_a + vel.y, dens_a + vel.z); 
 	vec3 cv_0 = mix(samp_cf_start.xyz, samp_cb_end.xyz, 0.5);
-	//frag_color = vec4(cv_0, 1.0); 
 	cv_0 = desat(cv_0, 1.0).xyz; cv_0.xy += 0.1 * length(cv_0); cv_0 *= 0.4; // cv_0.x += 0.1;
-	vec3 cv_1 = mix(cv_0, dens_vec, 0.5); 
 	
+	// Dens - 
+	//vec3 cv_1 = mix(cv_0, dens_vec, 0.5); 
+	// Vel BB - 
+	vec3 cv_1 = mix(cv_0, vel_col, 0.5);
+	
+	// Final FragColor. 
 	frag_color = vec4(clamp(cv_1, 0.0, 1.0), 1.0); 
 	
-	//frag_color = vec4(cv_0, 1.0); 
-	//frag_color = vec4(dens_vec, 1.0); 	
+
+	//frag_color = vec4(cv_0, 1.0); // Cube Only Test. 
+	//frag_color = vec4(dens_vec, 1.0); // Dens Only.  	
 }
