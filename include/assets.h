@@ -54,17 +54,46 @@ float *cvert_n = new float[36 * 6]
 		-0.5, 0.5, 0.5,   0.0, 1.0, 1.0
 };
 
-float *cvert_edge = new float[8 * 6]
+float *cvert_edge = new float[24 * 6]
 {
 	// Pos + Col
-	 0.5f, -0.5f, 0.5f,   1.0f, 0.0f, 0.0f,  
-	-0.5f, -0.5f, 0.5f,   1.0f, 0.0f, 0.0f,  
-	 0.5f,  0.5f, 0.5f,   1.0f, 0.0f, 0.0f,  
-	-0.5f,  0.5f, 0.5f,   1.0f, 0.0f, 0.0f,  
-	-0.5f, -0.5f, -0.5f,  1.0f, 0.0f, 0.0f, 
-	 0.5f, -0.5f, -0.5f,  1.0f, 0.0f, 0.0f,  
-	-0.5f, 0.5f, -0.5f,   1.0f, 0.0f, 0.0f,  
-	 0.5f, 0.5f, -0.5f,   1.0f, 0.0f, 0.0f  
+
+	 // Front Bottom Edge
+	 0.5f, -0.5f, 0.5f,   1.0f, 0.0f, 0.0f,
+	-0.5f, -0.5f, 0.5f,   1.0f, 0.0f, 0.0f,
+	// Back Bottom Edge
+	0.5f, -0.5f, -0.5f,   1.0f, 0.0f, 0.0f,
+   -0.5f, -0.5f, -0.5f,   1.0f, 0.0f, 0.0f,
+    // Front Top Edge
+	0.5f, 0.5f, 0.5f,     1.0f, 0.0f, 0.0f,
+   -0.5f, 0.5f, 0.5f,     1.0f, 0.0f, 0.0f,
+   // Back Top Edge
+    0.5f, 0.5f, -0.5f,    1.0f, 0.0f, 0.0f,
+   -0.5f, 0.5f, -0.5f,    1.0f, 0.0f, 0.0f,
+	// Front Right Up Edge
+    0.5f, -0.5f, 0.5f,    1.0f, 0.0f, 0.0f,
+    0.5f,  0.5f, 0.5f,    1.0f, 0.0f, 0.0f,
+   // Front Left Up Edge.
+   -0.5f, -0.5f, 0.5f,    1.0f, 0.0f, 0.0f,
+   -0.5f,  0.5f, 0.5f,    1.0f, 0.0f, 0.0f,
+   // Back Right Up Edge
+    0.5f, -0.5f, -0.5f,   1.0f, 0.0f, 0.0f,
+	0.5f,  0.5f, -0.5f,   1.0f, 0.0f, 0.0f,
+	// Back Left Up Edge.
+	-0.5f, -0.5f, -0.5f,  1.0f, 0.0f, 0.0f,
+	-0.5f,  0.5f, -0.5f,  1.0f, 0.0f, 0.0f,
+	// Left Side Bottom Edge
+	-0.5f, -0.5f, 0.5f,   1.0f, 0.0f, 0.0f,
+	-0.5f, -0.5f, -0.5f,  1.0f, 0.0f, 0.0f,
+	// Right Side Bottom Edge
+	0.5f, -0.5f, 0.5f,   1.0f, 0.0f, 0.0f,
+	0.5f, -0.5f, -0.5f,  1.0f, 0.0f, 0.0f,
+	// Left Side Top Edge
+	-0.5f, 0.5f, 0.5f,   1.0f, 0.0f, 0.0f,
+	-0.5f, 0.5f, -0.5f,  1.0f, 0.0f, 0.0f,
+	// Right Side Top Edge
+	0.5f, 0.5f, 0.5f,    1.0f, 0.0f, 0.0f,
+	0.5f, 0.5f, -0.5f,   1.0f, 0.0f, 0.0f,
 };
 
 #endif

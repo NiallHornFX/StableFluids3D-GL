@@ -66,6 +66,7 @@ renderobject_3D_OGL::~renderobject_3D_OGL()
 	}
 
 	delete cube_vertices;  cube_vertices = nullptr;
+	delete cube_edge_vertices; cube_edge_vertices = nullptr;
 	delete cube_vert_shader_code; cube_vert_shader_code = nullptr;
 	delete cube_frag_shader_code; cube_frag_shader_code = nullptr;
 
@@ -135,7 +136,7 @@ int renderobject_3D_OGL::vertex_setup()
 	glGenVertexArrays(1, &Cube_Edge_VAO); glGenBuffers(1, &Cube_Edge_VBO);
 	glBindVertexArray(Cube_Edge_VAO);
 	glBindBuffer(GL_ARRAY_BUFFER, Cube_Edge_VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * (8 * 6), cube_edge_vertices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * (24 * 6), cube_edge_vertices, GL_STATIC_DRAW);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), 0);
 	glEnableVertexAttribArray(0); // Attrib 0 - Postion
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(sizeof(float) * 3));
@@ -713,11 +714,12 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Quad_EBO);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-		// Draw Cube Edges to Default FrameBuffer. 
+		// Draw Cube Edges to Default FrameBuffer atop. 
 		glUseProgram(0);
 		glUseProgram(cube_shader_prog);
+		glEnable(GL_MULTISAMPLE);
 		glBindVertexArray(Cube_Edge_VAO);
-		glDrawArrays(GL_LINES, 0, 8);
+		glDrawArrays(GL_LINES, 0, 24);
 
 		// POST OP \\ 
 
