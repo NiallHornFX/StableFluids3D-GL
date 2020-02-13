@@ -69,7 +69,8 @@ void main()
 	// Colour Density + Cube. 
 	vec3 dens_vec = vec3(dens_a + vel.x, dens_a + vel.y, dens_a + vel.z); 
 	vec3 cv_0 = mix(samp_cf_start.xyz, samp_cb_end.xyz, 0.5);
-	cv_0 = desat(cv_0, 1.0).xyz; cv_0.xy += 0.1 * length(cv_0); cv_0 *= 0.4; // cv_0.x += 0.1;
+	cv_0 = desat(cv_0, 1.0).xyz; cv_0.xy += 0.1 * length(cv_0); 
+	cv_0 *= 0.1; // Grid Opac. 
 	
 	// Dens - 
 	vec3 cv_1 = mix(cv_0, dens_vec, 0.5); 
