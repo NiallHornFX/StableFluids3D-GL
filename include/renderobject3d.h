@@ -75,7 +75,8 @@ public:
 	
 	enum use_fbo
 	{
-		FBO_CUBE = 0,
+		FBO_CUBE_MS = 0,
+		FBO_CUBE_S,
 		FBO_DEFAULT
 	};
 
@@ -95,6 +96,7 @@ protected:
 	void cube_fbo_setup();
 	void cube_fbo_attach(use_cube tex); // 0 front | 1 back 
 	void bindclear_fbo(use_fbo mode); // 0 Cube FBO | 1 Default FBO
+	void blitms_fbo(const GLuint &fbo_ms, const GLuint &fbo_s);
 	void get_input(const vec2<float> &m);
 
 	// DBG - 
@@ -105,7 +107,7 @@ private:
 	// Buffers -
 	GLuint Cube_VAO, Quad_VAO;
 	GLuint Cube_VBO, Quad_VBO;
-	GLuint Quad_EBO, Cube_FBO, Cube_RBO;
+	GLuint Quad_EBO, Cube_FBO_s, Cube_FBO_ms, Cube_RBO;
 
 	// Shaders -
 	GLuint cube_vert_shader, cube_frag_shader, quad_vert_shader, quad_frag_shader; // 0Cube(vs|fs), 1Quad(vs|fs)
@@ -113,7 +115,7 @@ private:
 	int cur_shader = 0; // Hacky to avoid changing Base shaderload Parms.  
 
 	// 2D Textures - 
-	GLuint tex_CFront, tex_CBack; 
+	GLuint tex_CFront_s, tex_CBack_s, tex_ms; 
 
 	// 3D Textures - 
 	GLuint tex_dens, tex_vel;
