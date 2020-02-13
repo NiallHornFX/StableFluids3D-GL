@@ -104,8 +104,8 @@ protected:
 
 private:
 	// Buffers -
-	GLuint Cube_VAO, Quad_VAO;
-	GLuint Cube_VBO, Quad_VBO;
+	GLuint Cube_VAO, Cube_Edge_VAO, Quad_VAO;
+	GLuint Cube_VBO, Cube_Edge_VBO, Quad_VBO;
 	GLuint Quad_EBO, Cube_FBO_s, Cube_FBO_ms, Cube_RBO;
 
 	// Shaders -
@@ -120,7 +120,7 @@ private:
 	GLuint tex_dens, tex_vel;
 
 	// Geo Arrays
-	GLfloat *cube_vertices, *quad_vertices; 
+	GLfloat *cube_vertices, *cube_edge_vertices, *quad_vertices; 
 	GLuint *quad_indices; 
 
 	// Cube Transform - 

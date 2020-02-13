@@ -96,8 +96,8 @@ renderobject_3D_OGL::~renderobject_3D_OGL()
 int renderobject_3D_OGL::vertex_setup()
 {
 	// Cube Verts in assets.h copy included ptr to member ptr. 
-	//cube_vertices = cvert_ccw;
-	cube_vertices = cvert_nb;
+	cube_vertices = cvert_n;
+	cube_edge_vertices = cvert_edge; 
 
 	// Vertex Screen Quad Setup - 
 	quad_vertices = new GLfloat[12]
@@ -126,6 +126,20 @@ int renderobject_3D_OGL::vertex_setup()
 	// Vertex UV Attrib - (1) Start at float*3 offset of Postion Attribs. 
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(sizeof(float) * 3));
 	glEnableVertexAttribArray(1);
+	// UnBind
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	// Cube Edge Setup \\
+
+	glGenVertexArrays(1, &Cube_Edge_VAO); glGenBuffers(1, &Cube_Edge_VBO);
+	glBindVertexArray(Cube_Edge_VAO);
+	glBindBuffer(GL_ARRAY_BUFFER, Cube_Edge_VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * (8 * 6), cube_edge_vertices, GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), 0);
+	glEnableVertexAttribArray(0); // Attrib 0 - Postion
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(sizeof(float) * 3));
+	glEnableVertexAttribArray(1); // Attrib 1 - Colour
 	// UnBind
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -556,7 +570,7 @@ void renderobject_3D_OGL::inital_renderstate()
 	cube_setup(); // Intial Cube Transform Setup
 	cube_fbo_setup(); // Inital FBO Setup 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	glEnable(GL_MULTISAMPLE);
+	//glEnable(GL_MULTISAMPLE);
 }
 
 void renderobject_3D_OGL::get_FPS()
@@ -698,6 +712,12 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 		glBindVertexArray(Quad_VAO);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Quad_EBO);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+		// Draw Cube Edges to Default FrameBuffer. 
+		glUseProgram(0);
+		glUseProgram(cube_shader_prog);
+		glBindVertexArray(Cube_Edge_VAO);
+		glDrawArrays(GL_LINES, 0, 8);
 
 		// POST OP \\ 
 
