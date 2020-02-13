@@ -456,10 +456,11 @@ void renderobject_3D_OGL::cube_fbo_setup()
 	// Gen FBOs - MultiSampled and Standard.  
 	glGenFramebuffers(1, &Cube_FBO_s); glGenFramebuffers(1, &Cube_FBO_ms);
 
-	// Gen RBO - non MultiSampled.
+	// Gen RBO - MultiSampled.
 	glGenRenderbuffers(1, &Cube_RBO);
 	glBindRenderbuffer(GL_RENDERBUFFER, Cube_RBO);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, window_size.x, window_size.y);
+	glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_DEPTH24_STENCIL8, window_size.x, window_size.y);
+	//glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, window_size.x, window_size.y); nMS
 	glBindRenderbuffer(GL_RENDERBUFFER, 0); // Unbind RBO State. 
 
 	// Gen MultiSampled Texture
@@ -487,23 +488,15 @@ void renderobject_3D_OGL::cube_fbo_setup()
 	// Bind MS FBO and Attach MSTexture and RBO (DepthStencill nonMS) to it.  
 	glBindFramebuffer(GL_FRAMEBUFFER, Cube_FBO_ms);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, tex_ms, 0); // Tex Colour (Will be Switched in RLoop)
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, Cube_RBO); // RBO DepthStenicll. NonMS, NNTB
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) std::cerr << "ERR::FrameBuffer Not Complete. Check Attachments. \n";
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, Cube_RBO); // RBO DepthStenicll. NNTB
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) std::cerr << "ERR::FrameBuffer Not Complete. Check Attachments. \n"; 
 
 	// Unbind remaing bound state.
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 }
 
-// Blit the MS FBO to the Standard FBO And its current texture colour attachment. 
-void renderobject_3D_OGL::blitms_fbo(const GLuint &fbo_ms, const GLuint &fbo_s)
-{
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, Cube_FBO_ms);
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, Cube_FBO_s); 
-	glBlitFramebuffer(0, 0, window_size.x, window_size.y, 0, 0, window_size.x, window_size.y, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-}
-
-// Bind and Clear Set FBO Ready for drawing to. 
+// Bind and Clear Set FBO Ready for drawing to. Note Bind/Clear of FBO_S is done within fbo_attachAndblit before each MS-S Blit. 
 void renderobject_3D_OGL::bindclear_fbo(use_fbo mode)
 {
 	if (mode == FBO_CUBE_MS)
@@ -514,17 +507,9 @@ void renderobject_3D_OGL::bindclear_fbo(use_fbo mode)
 		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	}
-	else if (mode == FBO_CUBE_S)
-	{
-		// Cube FBO - With Depth Test. Do Not keep bound as only blit to this.
-		glBindFramebuffer(GL_FRAMEBUFFER, Cube_FBO_s);
-		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	}
 	else if (mode == FBO_DEFAULT)
 	{
-		// Default FBO - No Depth Test. 
+		// Default FBO - No Depth Test (Quad Draw). 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glDisable(GL_DEPTH_TEST);
 		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -533,8 +518,10 @@ void renderobject_3D_OGL::bindclear_fbo(use_fbo mode)
 
 }
 
-// RenderObject_3D_OGL Cube FrameBuffer Attach - Switch FBO_Standard Texture Attachments to Blit to. Colour Only. 
-void renderobject_3D_OGL::cube_fbo_attach(use_cube tex)
+/* RenderObject_3D_OGL - CubeFBO_AttachandBlit
+	Attach - Switch FBO_Standard Cube Texture Attachments to Blit to. Colour Only. No Standard RBO. 
+	Blit - Clear FBO_Standard Colour and Blit from FBO_MultiSample to it. */
+void renderobject_3D_OGL::cube_fbo_attachAndblit(use_cube tex)
 {
 	if (tex == CUBE_FRONT) // FBO --> Cube Front Texture Attachment
 	{
@@ -548,9 +535,22 @@ void renderobject_3D_OGL::cube_fbo_attach(use_cube tex)
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex_CBack_s, 0);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
+
+	// Clear FBO_S Before Blitting - 
+	glBindFramebuffer(GL_FRAMEBUFFER, Cube_FBO_s);
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	// Blit to FBO_S and its current colour texture attachment - 
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, Cube_FBO_ms);
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, Cube_FBO_s);
+	glBlitFramebuffer(0, 0, window_size.x, window_size.y, 0, 0, window_size.x, window_size.y, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+	// Clear all bound FBO State. 
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0); glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0); glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-// Only Call this Once on RBO Initalization, After Vertex/Shader setup in RObj Ctor.
+// Only Call this Once on RenderObject Initalization, After Vertex/Shader setup in RenderObject Ctor.
 void renderobject_3D_OGL::inital_renderstate()
 {
 	cube_setup(); // Intial Cube Transform Setup
@@ -578,30 +578,29 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 			// PRE OP 
 			get_FPS();
 
-			// CUBE UPDATE 
+			// CUBE \\ 
 			cube_update(); // Transforms
+			glUseProgram(cube_shader_prog);
 
 			// CUBE FRONT 
-			
 			bindclear_fbo(FBO_CUBE_MS);
-
-			glUseProgram(cube_shader_prog);
 			// Draw Cube Front -
 			glEnable(GL_CULL_FACE);
 			glCullFace(GL_BACK); 
 			glBindVertexArray(Cube_VAO);
 			glDrawArrays(GL_TRIANGLES, 0, 36);
-			// Blit to Standard FrameBuffer Texture - 
-			cube_fbo_attach(CUBE_FRONT);
+			// Blit to Standard FrameBuffer Texture (Front) - 
+			cube_fbo_attachAndblit(CUBE_FRONT);
 
 			// CUBE BACK 
-			cube_fbo_attach(CUBE_BACK); // Cback. 
-			bindclear_fbo(FBO_CUBE); // BindClear Cube FBO
+			bindclear_fbo(FBO_CUBE_MS); 
 			// Draw Cube Back -
 			glEnable(GL_CULL_FACE);
 			glCullFace(GL_FRONT);
 			glBindVertexArray(Cube_VAO);
 			glDrawArrays(GL_TRIANGLES, 0, 36);
+			// Blit to Standard FrameBuffer Texture (Back) - 
+			cube_fbo_attachAndblit(CUBE_BACK);
 
 			// SCREEN QUAD 
 			bindclear_fbo(FBO_DEFAULT);
@@ -616,9 +615,9 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 			// Active and Bind Textures. 
 			// 2D - 
 			glActiveTexture(GL_TEXTURE0); // Cube Front. 
-			glBindTexture(GL_TEXTURE_2D, tex_CFront);
+			glBindTexture(GL_TEXTURE_2D, tex_CFront_s);
 			glActiveTexture(GL_TEXTURE1); // Cube Back. 
-			glBindTexture(GL_TEXTURE_2D, tex_CBack);
+			glBindTexture(GL_TEXTURE_2D, tex_CBack_s);
 			// 3D - 
 			glActiveTexture(GL_TEXTURE2); // Density Grid
 			glBindTexture(GL_TEXTURE_3D, tex_dens);
@@ -649,30 +648,29 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 		// PRE OP 
 		get_FPS();
 
-		// CUBE UPDATE 
+		// CUBE \\ 
 		cube_update(); // Transforms
+		glUseProgram(cube_shader_prog);
 
 		// CUBE FRONT 
-		cube_fbo_attach(CUBE_FRONT);
-		bindclear_fbo(FBO_CUBE);
-
-		float min = 3.5f;
-
-		glUseProgram(cube_shader_prog);
+		bindclear_fbo(FBO_CUBE_MS);
 		// Draw Cube Front -
-		glEnable(GL_CULL_FACE);
-		glCullFace(GL_FRONT);
-		glBindVertexArray(Cube_VAO);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-
-		// CUBE BACK 
-		cube_fbo_attach(CUBE_BACK); // Cback. 
-		bindclear_fbo(FBO_CUBE); // BindClear Cube FBO
-		// Draw Cube Back -
 		glEnable(GL_CULL_FACE);
 		glCullFace(GL_BACK);
 		glBindVertexArray(Cube_VAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
+		// Blit to Standard FrameBuffer Texture (Front) - 
+		cube_fbo_attachAndblit(CUBE_FRONT);
+
+		// CUBE BACK 
+		bindclear_fbo(FBO_CUBE_MS);
+		// Draw Cube Back -
+		glEnable(GL_CULL_FACE);
+		glCullFace(GL_FRONT);
+		glBindVertexArray(Cube_VAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		// Blit to Standard FrameBuffer Texture (Back) - 
+		cube_fbo_attachAndblit(CUBE_BACK);
 
 		// SCREEN QUAD 
 		bindclear_fbo(FBO_DEFAULT);
@@ -687,9 +685,9 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 		// Active and Bind Textures. 
 		// 2D - 
 		glActiveTexture(GL_TEXTURE0); // Cube Front. 
-		glBindTexture(GL_TEXTURE_2D, tex_CFront);
+		glBindTexture(GL_TEXTURE_2D, tex_CFront_s);
 		glActiveTexture(GL_TEXTURE1); // Cube Back. 
-		glBindTexture(GL_TEXTURE_2D, tex_CBack);
+		glBindTexture(GL_TEXTURE_2D, tex_CBack_s);
 		// 3D - 
 		glActiveTexture(GL_TEXTURE2); // Density Grid
 		glBindTexture(GL_TEXTURE_3D, tex_dens);

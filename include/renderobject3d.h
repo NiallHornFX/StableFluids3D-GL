@@ -94,9 +94,8 @@ protected:
 	void cube_setup(); 
 	void cube_update(); 
 	void cube_fbo_setup();
-	void cube_fbo_attach(use_cube tex); // 0 front | 1 back 
+	void cube_fbo_attachAndblit(use_cube tex); // 0 front | 1 back 
 	void bindclear_fbo(use_fbo mode); // 0 Cube FBO | 1 Default FBO
-	void blitms_fbo(const GLuint &fbo_ms, const GLuint &fbo_s);
 	void get_input(const vec2<float> &m);
 
 	// DBG - 
