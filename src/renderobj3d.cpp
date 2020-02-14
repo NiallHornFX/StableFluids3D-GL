@@ -675,7 +675,6 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 	{
 		// PRE OP 
 		calc_FPS();
-
 		// Wrap into MF- 
 		float fps = get_FPS(1);
 		std::string base_title = "Stable Fluids 3D Solver | Render_API: OpenGL | FPS: "; // Ideally Fetch from RenderContext Ptr.
