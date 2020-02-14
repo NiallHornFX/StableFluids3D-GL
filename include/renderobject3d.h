@@ -100,7 +100,8 @@ protected:
 
 	// DBG - 
 	void print_GL_error(); 
-	void get_FPS();
+	void calc_FPS(); 
+	float get_FPS(short mode);
 
 private:
 	// Buffers -
@@ -132,7 +133,7 @@ private:
 	GLFWwindow *window_ptr = nullptr; 
 
 	// Util Members
-	double t0 = 0.0, t1 = 0.0, dt = 0.0; 
+	double t0 = 0.0, t1 = 0.0, dt = 0.0, fps = 0.0; 
 	uint64_t step = 0;
 
 	// Shader Code Buffers - 

@@ -574,13 +574,26 @@ void renderobject_3D_OGL::inital_renderstate()
 	//glEnable(GL_MULTISAMPLE);
 }
 
-void renderobject_3D_OGL::get_FPS()
+void renderobject_3D_OGL::calc_FPS()
 {
 	step++;
 	t1 = glfwGetTime();
 	dt = t1 - t0;
 	t0 = t1;
-	if (step % 1 == 0) std::cout << std::fixed << "DEBUG::RENDER_OBJ FPS = " << 1.0f / dt << " FPS" << "\n"; // !TOD Logger Class / Utilsh. 
+	fps = 1.0f / dt;
+}
+
+float renderobject_3D_OGL::get_FPS(short mode)
+{
+	if (mode == 0)
+	{
+		if (step % 1 == 0) std::cout << std::fixed << "DEBUG::RENDER_OBJ FPS = " << fps << " FPS" << "\n"; // !TOD Logger Class / Utilsh. 
+	}
+	else if (mode == 1)
+	{
+		return fps; 
+	}
+	return 0.0f; 
 }
 
 // RenderObject_3D_OGL Shader Loader Implementation - Debug State For Out Of Solver Testing Only. 
@@ -591,7 +604,7 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 		while (!glfwWindowShouldClose(window_ptr))
 		{
 			// PRE OP 
-			get_FPS();
+			get_FPS(0);
 
 			// CUBE \\ 
 			cube_update(); // Transforms
@@ -661,7 +674,14 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 	else if (rs == rend_state::RENDER_ACTIVE)
 	{
 		// PRE OP 
-		get_FPS();
+		calc_FPS();
+
+		// Wrap into MF- 
+		float fps = get_FPS(1);
+		std::string base_title = "Stable Fluids 3D Solver | Render_API: OpenGL | FPS: "; // Ideally Fetch from RenderContext Ptr.
+		std::string fps_str = std::to_string(fps);
+		std::string title = base_title + fps_str; 
+		glfwSetWindowTitle(window_ptr, title.c_str());
 
 		// CUBE \\ 
 		cube_update(); // Transforms

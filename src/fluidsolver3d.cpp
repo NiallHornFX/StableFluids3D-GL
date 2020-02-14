@@ -1467,7 +1467,8 @@ void fluidsolver_3::solve_step(bool solve, int max_step)
 		// STEP SOURCING OPERATIONS \\ ----------------
 		float offs = sin(((float)step_count / (float)max_step) * 500.0f) * 0.1f;
 		//f3obj->implicit_sphere_source(0.1f, vec3<float>(0.0f, 1.0f, 0.55f), vec3<float>(offs + 0.4f, 0.1f, 0.5f), impsource_radius); // 0.01f
-		f3obj->implicit_sphere_source(0.1f, vec3<float>(0.0f, 1.0f, 0.55f), vec3<float>(xpos_1_N, 1.0f-ypos_1_N, 0.5f), impsource_radius); // Mouse Emitter
+		vec3<float> emit_vel = vec3<float>(0.0f, 1.0f, 0.55f) + (vec3<float>(mouse_vel.x, mouse_vel.y, 0.0f) *= 10.0f); 
+		f3obj->implicit_sphere_source(0.1f, emit_vel, vec3<float>(xpos_1_N, 1.0f-ypos_1_N, 0.5f), impsource_radius); // Mouse Emitter
 
 		// STEP - SUB - SOLVER STEP OPERATIONS \\ -------------- 
 		velocity_step();

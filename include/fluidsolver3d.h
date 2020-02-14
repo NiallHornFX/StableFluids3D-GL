@@ -147,6 +147,9 @@ protected:
 	void advect_sl_mp(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1);
 	void advect_sl_mp(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3<float>> *grid_1);
 
+	// COMBUSTION \\ - 
+
+
 	// PROJECTION \\ - 
 
 	// Projection - Gauss-Seidel Relaxation Method, with SOR (Single-Threaded)
@@ -164,6 +167,7 @@ protected:
 
 	// SOLVER - SUB SOLVERS \\ - 
 	void density_step();
+	void combustion_step(); // WIP
 	void velocity_step();
 
 	// UTILITY \\ - 

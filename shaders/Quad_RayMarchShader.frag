@@ -73,9 +73,9 @@ void main()
 	cv_0 *= 0.1; // Grid Opac. 
 	
 	// Dens - 
-	vec3 cv_1 = mix(cv_0, dens_vec, 0.5); 
+	//vec3 cv_1 = mix(cv_0, dens_vec, 0.5); 
 	// Vel BB - 
-	//vec3 cv_1 = mix(cv_0, vel_col, 0.5);
+	vec3 cv_1 = mix(cv_0, vel_col, 0.5);
 	
 	// Final FragColor. 
 	frag_color = vec4(clamp(cv_1, 0.0, 1.0), 1.0); 
