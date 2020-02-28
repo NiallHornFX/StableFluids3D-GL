@@ -183,7 +183,7 @@ protected:
 	// Static Utill - 
 	static float clamp(float val, float min, float max);
 	static float fitRange(float val, float a_min, float a_max, float b_min, float b_max);
-	static float lerp(float val_0, float val_1, float bias);
+	__forceinline static float lerp(float val_0, float val_1, float bias);
 	static float cosinterp(float val_0, float val_1, float bias);
 
 	// Delete Temp Grids
@@ -216,6 +216,16 @@ private:
 	// Render Members - 
 	renderobject_3D_OGL *render_obj; // HC OGL.
 	GLFWwindow *winptr; 
+};
+
+// Force Inline LERP TEST - 
+
+// LERP: From One Float Value to Another By 0-1 Bias Value. 
+
+
+float fluidsolver_3::lerp(float val_0, float val_1, float bias)
+{
+	return (1.0f - bias) * val_0 + bias * val_1;
 };
 
 #endif

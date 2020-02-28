@@ -14,6 +14,7 @@ public:
 	vec3() : x(0), y(0), z(0) {}
 	~vec3() {}
 
+	// Copy 
 	vec3(const vec3 &copy) : x(copy.x), y(copy.y), z(copy.z) {}
 	vec3& operator= (const vec3 &copy)
 	{
@@ -229,18 +230,16 @@ inline float vec3<T>::radtoDeg(float rad)
 
 // s1 * v1 ---> v1;
 template <class T>
-inline vec3<T>& operator* (float mult, vec3<T> &vec)
+inline vec3<T> operator* (const float mult, const vec3<T> &vec)
 {
-	vec.x *= mult, vec.y *= mult, vec.z *= mult;
-	return vec; 
+	return (vec.x *= mult, vec.y *= mult, vec.z *= mult);
 }
 
 // s1 + v1 ---> v1;
 template <class T>
-inline vec3<T>& operator+ (float add, vec3<T> &vec)
+inline vec3<T> operator+ (const float add, const vec3<T> &vec)
 {
-	vec.x += add, vec.y += add, vec.z += add;
-	return vec;
+	return (vec.x + add, vec.y + add, vec.z + add); 
 }
 
 #endif

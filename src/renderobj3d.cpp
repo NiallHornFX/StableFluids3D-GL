@@ -404,7 +404,7 @@ void renderobject_3D_OGL::cube_setup()
 	// Inital Cube Transform Setup to pass to GPU \\ 
 
 	// Model-World Matrix - 
-	cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), -0.1f);
+	cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), 0.0f);
 	//cube_model.rotate(vec3<float>(1.0f, 1.0f, 0.0f), 0.1f);
 	cube_model.label = "Cube Model";
 	cube_model.print_mat();
@@ -430,13 +430,12 @@ void renderobject_3D_OGL::cube_setup()
 void renderobject_3D_OGL::cube_update()
 {
 	//cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), matrix_4x4<float>::degtoRad(-(2.0 * dt)));
-	float ang = matrix_4x4<float>::degtoRad( (std::sinf(t1 * 1.5f) * -15.0f) * dt); // Some Fake Camera/Grid Motion.
-	ang = t1 * 0.05f; //* (1.0f * dt); 
-	std::cout << "DEBUG::Rotation Angle = " << t1 << "\n"; 
+	float ang = t1 * 0.05f; // Radians.
+	std::cout << "DEBUG::Rotation Angle = " << -ang  << " Radians" << "\n"; 
 	//cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), -ang);
 	cube_model = matrix_4x4<float>::make_rotate(vec3<float>(0.0f, 1.0f, 0.0f), -ang); // New each frame, oppose to product of prev.
 
-	// Testing Camera Translation like beahviour. 
+	//  Camera Translation Along Z. 
 	if (glfwGetKey(window_ptr, GLFW_KEY_W) == GLFW_PRESS)
 	{
 		cube_view.translate(vec3<float>(0.0f, 0.0f, 1.0f * dt));
@@ -596,6 +595,15 @@ float renderobject_3D_OGL::get_FPS(short mode)
 	return 0.0f; 
 }
 
+void renderobject_3D_OGL::update_title()
+{
+	float fps = get_FPS(1);
+	std::string base_title = "Stable Fluids 3D Solver | Render_API: OpenGL | FPS: "; // Ideally Fetch from RenderContext Ptr.
+	std::string fps_str = std::to_string(fps);
+	std::string title = base_title + fps_str;
+	glfwSetWindowTitle(window_ptr, title.c_str());
+}
+
 // RenderObject_3D_OGL Shader Loader Implementation - Debug State For Out Of Solver Testing Only. 
 void renderobject_3D_OGL::render_loop(rend_state rs)
 {
@@ -675,12 +683,7 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 	{
 		// PRE OP 
 		calc_FPS();
-		// Wrap into MF- 
-		float fps = get_FPS(1);
-		std::string base_title = "Stable Fluids 3D Solver | Render_API: OpenGL | FPS: "; // Ideally Fetch from RenderContext Ptr.
-		std::string fps_str = std::to_string(fps);
-		std::string title = base_title + fps_str; 
-		glfwSetWindowTitle(window_ptr, title.c_str());
+		update_title();
 
 		// CUBE \\ 
 		cube_update(); // Transforms

@@ -124,6 +124,7 @@ int grid3<T>::idx_3Dto1D(int i, int j, int k) const
 	return (int) i + (x_size + edge_size) * (j + (z_size + edge_size) * k);
 }
 
+/*
 template <class T>
 vec3<int> grid3<T>::idx_1Dto3D(int i) const
 {
@@ -133,13 +134,13 @@ vec3<int> grid3<T>::idx_1Dto3D(int i) const
 
 	return vec3<int>(ii, jj, kk);
 }
-
+*/
 
 //----------------------------------------------------------------------\\
 
 /* Grid3_Scalar Implmentation 
 	grid3_scalar shares most implmentation with base grid3 class, apart from implmeneting pure virtual MFs. 
-	Note: explicit use's of this-> due to C3861 from Dependemt Base Class Template <T> Members. (No Two Phase Name Lookup)
+	Note: explicit use's of this-> due to C3861 from Dependent Base Class Template <T> Members. (No Two Phase Name Lookup)
 */
 
 // Inilzation of Base grid3 Class Constructor. No Grid3_Scalar Specfic Members to initalize.

@@ -44,7 +44,7 @@ public:
 
 	// Non Virtual Indexers 
 	int idx_3Dto1D(int i, int j, int k) const;
-	vec3<int> idx_1Dto3D(int k) const;
+	__forceinline vec3<int> idx_1Dto3D(int k) const;
 
 protected:
 	std::vector<T> *grid_data;
@@ -108,6 +108,17 @@ public:
 	virtual void printinfo() const override;
 
 };
+
+// Inline (Forced) Indexing - 
+template <class T>
+vec3<int> grid3<T>::idx_1Dto3D(int i) const
+{
+	int ii = i / ((y_size + edge_size) * (z_size + edge_size));
+	int jj = (i / (z_size + edge_size)) % (y_size + edge_size);
+	int kk = i % (z_size + edge_size);
+
+	return vec3<int>(ii, jj, kk);
+}
 
 
 #endif

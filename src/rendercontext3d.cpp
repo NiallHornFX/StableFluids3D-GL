@@ -67,8 +67,8 @@ void render_context_OGL::extensions_setup()
 {
 	// GLEW Setup
 	glewExperimental = GL_TRUE;
-	glewInit();
-	if (glewInit() != GLEW_OK)
+	GLenum err = glewInit();
+	if (err != GLEW_OK)
 	{
 		std::cerr << "ERR::GLEW FAILED TO INITALIZE \n";
 	}

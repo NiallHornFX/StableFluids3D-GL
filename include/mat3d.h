@@ -2,6 +2,8 @@
 #define MAT_3_H
 
 #include <iostream>
+
+#include "vec3d.h"
 #include "vec2d.h"
 
 /*
@@ -320,12 +322,13 @@ inline matrix_4x4<T>& matrix_4x4<T>::scale(const vec3<T> &sv)
 template <class T>
 inline matrix_4x4<T> matrix_4x4<T>::make_lookAt(const vec3<T> &cam_P, const vec3<T> &look_P, const vec3<T> &up)
 {
-	vec3<T> lp_n = look_P, cp_n = cam_P; 
-	vec3<T> zz = lp_n.normalize() - cp_n.normalize();
-	vec3<T> xx = vec3<T>::cross(zz, up);
-	vec3<T> yy = vec3<T>::cross(xx.normalize(), zz.normalize());
+	vec3<T> lp_n = look_P, cp_n = cam_P;
+	vec3<T> zz = cp_n.normalize() - lp_n.normalize(); // Forw
+	vec3<T> xx = vec3<T>::cross(zz, up); // Left
+	vec3<T> yy = vec3<T>::cross(xx.normalize(), zz.normalize()); // Up
 
-	return matrix_4x4<T>(xx.x, xx.y, xx.z, 0.0f, yy.x, yy.y, yy.z, 0.0f, zz.x, zz.y, zz.z, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+	//return matrix_4x4<T>(xx.x, xx.y, xx.z, 0.0f, yy.x, yy.y, yy.z, 0.0f, zz.x, zz.y, zz.z, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f); 
+	return matrix_4x4<T>(xx.x, xx.y, xx.z, 0.0f, yy.x, yy.y, yy.z, 0.0f, zz.x, zz.y, zz.z, 0.0f, cam_P.x, cam_P.y, cam_P.z, 1.0f); // With Cam/Eye Translation. 
 }
 
 // Build and Return a new Perspective Projection Matrix Instance, based on Parms. 

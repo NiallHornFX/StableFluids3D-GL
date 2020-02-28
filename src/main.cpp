@@ -47,8 +47,12 @@ double const PI = 3.14159265359;
 int const cube = 64; // Cube Grid Size N (1-N)
 int const edge = 2; // Total Edge Cells E (0 | N+1). 
 int win_size_xy = 512; 
-int const solve_steps = 1000; 
+int const solve_steps = 100; 
 float const timestep = 1.0f / 60.0f; 
+
+// ! DEBUGGING ! \\
+// PROJECTION DISABLED
+// OPENMP DISABLED
 
 int main()
 {
@@ -70,8 +74,8 @@ int main()
 	test_fluidsolver.Parms.p_useVorticity = false;
 	test_fluidsolver.Parms.p_Do_Dens_Disp = true; 
 	test_fluidsolver.Parms.p_Do_Vel_Disp = false; 
-	test_fluidsolver.Parms.p_ProjectionType = test_fluidsolver.Parms.Project_GaussSeidel_SOR; 
-	//test_fluidsolver.Parms.p_ProjectionType = test_fluidsolver.Parms.Project_NONE_DBG;
+	//test_fluidsolver.Parms.p_ProjectionType = test_fluidsolver.Parms.Project_GaussSeidel_SOR; 
+	test_fluidsolver.Parms.p_ProjectionType = test_fluidsolver.Parms.Project_NONE_DBG;
 	test_fluidsolver.Parms.p_SOR_alpha = 1.9f;
 	test_fluidsolver.Parms.p_GS_Proj_iter = 5; 
 	test_fluidsolver.Parms.p_AdvectionType = test_fluidsolver.Parms.Advect_SL_BackTrace_Euler;

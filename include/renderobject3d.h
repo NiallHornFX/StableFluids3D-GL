@@ -102,6 +102,7 @@ protected:
 	void print_GL_error(); 
 	void calc_FPS(); 
 	float get_FPS(short mode);
+	void update_title();
 
 private:
 	// Buffers -

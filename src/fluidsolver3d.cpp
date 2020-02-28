@@ -1697,11 +1697,14 @@ float fluidsolver_3::fitRange(float val, float a_min, float a_max, float b_min, 
 	return b_min + (val - a_min)*(b_max - b_min) / (a_max - a_min);
 };
 
+
+/* Moved to Header Inline.
 // LERP: From One Float Value to Another By 0-1 Bias Value. 
 float fluidsolver_3::lerp(float val_0, float val_1, float bias)
 {
 	return (1.0f - bias) * val_0 + bias * val_1;
 };
+ */
 
 // 1D Cosine Interpolation. 
 float fluidsolver_3::cosinterp(float val_0, float val_1, float bias)
