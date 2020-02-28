@@ -574,22 +574,31 @@ void fluidsolver_3::advect_sl(grid3_scalar<float> *grid_0, grid3_scalar<float> *
 
 				// BackTrace Along U Component for X i 
 				float x = i - dt0 * u;
-				if (x < 0.5) x = 0.5;
-				if (x > N_dim + 0.5) x = N_dim + 0.5;
+				//if (x < 0.5) x = 0.5;
+				//if (x > N_dim + 0.5) x = N_dim + 0.5;
+				// Try Max/Min instead of If Branching.
+				x = std::max(x, 0.5f);
+				x = std::min(x, N_dim + 0.5f);
 				// Interp Indices i 
 				int i0 = int(x); int i1 = i0 + 1;
 
 				// BackTrace Along V Component for Y j 
 				float y = j - dt0 * v;
-				if (y < 0.5) y = 0.5;
-				if (y > N_dim + 0.5) y = N_dim + 0.5;
+				//if (y < 0.5) y = 0.5;
+				//if (y > N_dim + 0.5) y = N_dim + 0.5;
+				// Try Max/Min instead of If Branching.
+				y = std::max(y, 0.5f);
+				y = std::min(y, N_dim + 0.5f);
 				// Interp Indices j 
 				int j0 = int(y); int j1 = j0 + 1;
 
 				// BackTrace Along W Component for Z k
 				float z = k - dt0 * w;
-				if (z < 0.5) z = 0.5;
-				if (z > N_dim + 0.5) z = N_dim + 0.5;
+				//if (z < 0.5) z = 0.5;
+				//if (z > N_dim + 0.5) z = N_dim + 0.5;
+				// Try Max/Min instead of If Branching.
+				z = std::max(z, 0.5f);
+				z = std::min(z, N_dim + 0.5f);
 				// Interp Indices K
 				int k0 = int(z); int k1 = k0 + 1;
 
@@ -627,6 +636,7 @@ void fluidsolver_3::advect_sl(grid3_scalar<float> *grid_0, grid3_scalar<float> *
 				// TriLinear Interoplation Of Sampled Scalar Field Neighbours at BackTraced Postion - 
 
 				// !TODO - SIMD 
+				//float L_000_001_t = (( 1.0f - t1 ) * grid_0->getdata(i0, j0, k0)) + (t1 * grid_0->getdata(i0, j0, k1)); // Inline Lerp Calc Test
 				float L_000_001_t = lerp(grid_0->getdata(i0, j0, k0), grid_0->getdata(i0, j0, k1), t1);
 				float L_010_011_t = lerp(grid_0->getdata(i0, j1, k0), grid_0->getdata(i0, j1, k1), t1);
 				float L_100_101_s = lerp(grid_0->getdata(i1, j0, k0), grid_0->getdata(i1, j0, k1), t1);
@@ -677,22 +687,31 @@ void fluidsolver_3::advect_sl(grid3_vector<vec3<float>> *grid_0, grid3_vector<ve
 
 				// BackTrace Along U Component for X i 
 				float x = i - dt0 * u;
-				if (x < 0.5) x = 0.5;
-				if (x > N_dim + 0.5) x = N_dim + 0.5;
+				//if (x < 0.5) x = 0.5;
+				//if (x > N_dim + 0.5) x = N_dim + 0.5;
+				// Try Max/Min instead of If Branching.
+				x = std::max(x, 0.5f);
+				x = std::min(x, N_dim + 0.5f);
 				// Interp Indices i 
 				int i0 = int(x); int i1 = i0 + 1;
 
 				// BackTrace Along V Component for Y j 
 				float y = j - dt0 * v;
-				if (y < 0.5) y = 0.5;
-				if (y > N_dim + 0.5) y = N_dim + 0.5;
+				//if (y < 0.5) y = 0.5;
+				//if (y > N_dim + 0.5) y = N_dim + 0.5;
+				// Try Max/Min instead of If Branching.
+				y = std::max(y, 0.5f);
+				y = std::min(y, N_dim + 0.5f);
 				// Interp Indices j 
 				int j0 = int(y); int j1 = j0 + 1;
 
 				// BackTrace Along W Component for Z k
 				float z = k - dt0 * w;
-				if (z < 0.5) z = 0.5;
-				if (z > N_dim + 0.5) z = N_dim + 0.5;
+				//if (z < 0.5) z = 0.5;
+				//if (z > N_dim + 0.5) z = N_dim + 0.5;
+				// Try Max/Min instead of If Branching.
+				z = std::max(z, 0.5f);
+				z = std::min(z, N_dim + 0.5f);
 				// Interp Indices K
 				int k0 = int(z); int k1 = k0 + 1;
 

@@ -78,7 +78,8 @@ int main()
 	test_fluidsolver.Parms.p_ProjectionType = test_fluidsolver.Parms.Project_NONE_DBG;
 	test_fluidsolver.Parms.p_SOR_alpha = 1.9f;
 	test_fluidsolver.Parms.p_GS_Proj_iter = 5; 
-	test_fluidsolver.Parms.p_AdvectionType = test_fluidsolver.Parms.Advect_SL_BackTrace_Euler;
+	//test_fluidsolver.Parms.p_AdvectionType = test_fluidsolver.Parms.Advect_SL_BackTrace_Euler;
+	test_fluidsolver.Parms.p_AdvectionType = test_fluidsolver.Parms.Advect_NONE_DBG;
 
 	// Pass Window Pointer from RenderContext - 
 	test_fluidsolver.set_window(render_c.get_window());
