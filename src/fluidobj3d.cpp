@@ -66,8 +66,8 @@ void fluidobj_3d::integrate_force(const vec3<float> &force, float dt, int i, int
 void fluidobj_3d::print_info()
 {
 	// Just use sizeof (T) * GridData Size - 
-	std::size_t sgrid_bytes = sizeof (float) * dens->griddataptr_getter()->size(); 
-	std::size_t vgrid_bytes = sizeof (vec3<float>) * vel->griddataptr_getter()->size(); 
+	std::size_t sgrid_bytes = sizeof (float) * dens->griddatavector_getter().size(); 
+	std::size_t vgrid_bytes = sizeof (vec3<float>) * vel->griddatavector_getter().size(); 
 
 	// Correctly using 1024 B-KB-MB-GB Ranges. 
 	std::size_t sgrid_KB = sgrid_bytes / (std::size_t)1024; // 1024 Btyes Per KB. 
@@ -142,8 +142,15 @@ void fluidobj_3d::implicit_sphere_source(float dd, const vec3<float> &vv, const 
 
 }
 
+
 void fluidobj_3d::setcurtoprev(grid3_scalar<float> *grid0, grid3_scalar<float> *grid1)
 {
+	// Swap Cur with Prev, And then set Prev to Cur. Oppose to Looping through directly. Much Faster. 
+	grid0->griddatavector_getter().swap(grid1->griddatavector_getter());
+	grid1->griddatavector_getter() = grid0->griddatavector_getter(); // Reassign swapped grid1 grid_data (now in grid0) back to grid1 post swap. 
+	
+
+	/* SLOW ! 
 	// Loop Main Grid (W Edge Cells) Set PrevVel to Cur. 
 	#pragma omp parallel for num_threads(omp_get_max_threads())
 	for (int i = 0; i < t_s; i++)
@@ -154,10 +161,15 @@ void fluidobj_3d::setcurtoprev(grid3_scalar<float> *grid0, grid3_scalar<float> *
 		// Set Scalar at current cell i
 		grid0->setdata((grid1->getdata(idx_3d.x, idx_3d.y, idx_3d.z)), idx_3d.x, idx_3d.y, idx_3d.z);
 	}
+	*/
 }
 
 void fluidobj_3d::setcurtoprev(grid3_vector<vec3<float>> *grid0, grid3_vector<vec3<float>> *grid1)
 {
+	grid0->griddatavector_getter().swap(grid1->griddatavector_getter());
+	grid1->griddatavector_getter() = grid0->griddatavector_getter(); // Reassign back to grid1 post swap. 
+
+	/* SLOW !
 	// Loop Main Grid (W Edge Cells) Set PrevVel to Cur. 
 	#pragma omp parallel for num_threads(omp_get_max_threads())
 	for (int i = 0; i < t_s; i++)
@@ -167,6 +179,7 @@ void fluidobj_3d::setcurtoprev(grid3_vector<vec3<float>> *grid0, grid3_vector<ve
 		// Set Prev Density at Cell i
 		grid0->setdata((grid1->getdata(idx_3d.x, idx_3d.y, idx_3d.z)), idx_3d.x, idx_3d.y, idx_3d.z);
 	}
+	*/
 }
 
 // TEST - Wrtie To Text/ASCII (Velocity Grid)

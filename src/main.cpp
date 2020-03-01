@@ -47,7 +47,7 @@ double const PI = 3.14159265359;
 int const cube = 64; // Cube Grid Size N (1-N)
 int const edge = 2; // Total Edge Cells E (0 | N+1). 
 int win_size_xy = 512; 
-int const solve_steps = 100; 
+int const solve_steps = 1000; 
 float const timestep = 1.0f / 60.0f; 
 
 // ! DEBUGGING ! \\

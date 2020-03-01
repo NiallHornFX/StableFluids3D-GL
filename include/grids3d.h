@@ -39,15 +39,15 @@ public:
 	vec3<std::size_t> get_dimsize() const; 
 	std::size_t get_edgesize() const; 
  
-	virtual std::vector<T>* griddataptr_getter() const;
+	virtual std::vector<T>& griddatavector_getter(); 
 	virtual T* getdataarray() const;
 
 	// Non Virtual Indexers 
-	int idx_3Dto1D(int i, int j, int k) const;
+	__forceinline int idx_3Dto1D(int i, int j, int k) const;
 	__forceinline vec3<int> idx_1Dto3D(int k) const;
 
 protected:
-	std::vector<T> *grid_data;
+	std::vector<T> grid_data;
 	std::size_t x_size, y_size, z_size, edge_size, total_size;
 
 	matrix_4x4<float> GStoWS; 
@@ -118,6 +118,12 @@ vec3<int> grid3<T>::idx_1Dto3D(int i) const
 	int kk = i % (z_size + edge_size);
 
 	return vec3<int>(ii, jj, kk);
+}
+
+template <class T>
+int grid3<T>::idx_3Dto1D(int i, int j, int k) const
+{
+	return (int)i + (x_size + edge_size) * (j + (z_size + edge_size) * k);
 }
 
 

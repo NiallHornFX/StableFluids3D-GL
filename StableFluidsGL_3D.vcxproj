@@ -115,6 +115,8 @@
       <LanguageStandard>stdcpp14</LanguageStandard>
       <AdditionalIncludeDirectories>..\StableFluidsGL_3D\include;..\StableFluidsGL_3D\include\vendor;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AssemblerOutput>AssemblyAndMachineCode</AssemblerOutput>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

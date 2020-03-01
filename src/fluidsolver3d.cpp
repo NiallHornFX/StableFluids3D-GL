@@ -1481,7 +1481,9 @@ void fluidsolver_3::solve_step(bool solve, int max_step)
 
 		// PRESTEP OPERATIONS \\ ----------------
 		// Eval SphereBounds_SDF - 
+		#if dospherebound
 		sphere_bounds_set(spherebound_radius, spherebound_coliso, spherebound_offset);
+		#endif
 
 		// STEP SOURCING OPERATIONS \\ ----------------
 		float offs = sin(((float)step_count / (float)max_step) * 500.0f) * 0.1f;
@@ -1643,20 +1645,12 @@ void fluidsolver_3::dissipate(grid3_scalar<float> *grid, float disp_mult, float 
 	disp_mult = clamp(disp_mult, 0.0f, 1.0f); 
 
 	#pragma omp parallel for
-	for (int k = 1; k <= N_dim; k++)
+	for (int i = 0; i <= total_size; i++)
 	{
-		#pragma omp parallel for
-		for (int j = 1; j <= N_dim; j++)
-		{
-			#pragma omp parallel for
-			for (int i = 1; i <= N_dim; i++)
-			{
-				// Don't Mult By dt for now. 
-				float cur_scl = grid->getdata(i, j, k);
-				cur_scl *= disp_mult;
-				grid->setdata(cur_scl, i, j, k);
-			}
-		}
+		// Don't Mult By dt for now. 
+		float cur_scl = grid->getdata(i);
+		cur_scl *= disp_mult;
+		grid->setdata(cur_scl, i);
 	}
 
 }
@@ -1665,20 +1659,12 @@ void fluidsolver_3::dissipate(grid3_vector<vec3<float>> *grid, float disp_mult, 
 {
 	disp_mult = clamp(disp_mult, 0.0f, 1.0f);
 	#pragma omp parallel for
-	for (int k = 1; k <= N_dim; k++)
+	for (int i = 1; i <= N_dim; i++)
 	{
-		#pragma omp parallel for
-		for (int j = 1; j <= N_dim; j++)
-		{
-			#pragma omp parallel for
-			for (int i = 1; i <= N_dim; i++)
-			{
-				// Don't Mult By dt for now. 
-				vec3<float> cur_vel = grid->getdata(i, j, k);
-				cur_vel *= disp_mult;
-				grid->setdata(cur_vel, i, j, k);
-			}
-		}
+		// Don't Mult By dt for now. 
+		vec3<float> cur_vel = grid->getdata(i);
+		cur_vel *= disp_mult;
+		grid->setdata(cur_vel, i);
 	}
 }
 

@@ -12,6 +12,9 @@
 #include <sstream>
 #include <cassert>
 
+#include <future>
+#include <thread>
+
 extern short verbose;
 
 // Render Object Creation Classes Implementation - 
@@ -351,28 +354,31 @@ void renderobject_3D_OGL::shader_pipe(fluidobj_3d *f3obj)
 	glBindTexture(GL_TEXTURE_3D, tex_dens);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	GLfloat *ptr = (GLfloat*)f3obj->dens->grid_data->data();
+	GLfloat *ptr = (GLfloat*)f3obj->dens->grid_data.data();
 
 	// 1 Channels (Red) Single Float for total Voxel/Texel per cell value -
-	glTexImage3D(GL_TEXTURE_3D, 0, GL_R32F, (GLint) grid_size.x, (GLint) grid_size.y, (GLint) grid_size.z, 0, GL_RED, GL_FLOAT, ptr);
+	glTexImage3D(GL_TEXTURE_3D, 0, GL_R32F, (GLint)grid_size.x, (GLint)grid_size.y, (GLint)grid_size.z, 0, GL_RED, GL_FLOAT, ptr);
+
+	/* Disable Vel For now, Expensive to Pack. 
 
 	// TEXTURE - VELOCITY \\
 
 	// Pack X-Y-Z Velocity into R-G-B Components of single Velocity 3D Texture.  
-	assert(f3obj->vel->grid_data->size() == (grid_size.x * grid_size.y * grid_size.z)); 
+	// assert(f3obj->vel->grid_data->size() == (grid_size.x * grid_size.y * grid_size.z)); 
 
-	// Per Voxel (3D Texel) - [Rx|Gy|Bz]. VelocityGrid Size (1D) * 3. Thus per voxel byte stride of 3 * sizeof (float)  
+	// Per Voxel (3D Texel) - [Rx|Gy|Bz]. VelocityGrid Size (1D) * 3. Thus per voxel byte stride of 3 * sizeof (float)
+	std::size_t vel3dsize = f3obj->vel->grid_data.size() * 3;
+	//auto vel3D = std::make_unique<GLfloat[]>(vel3dsize);
+	auto vel3D = new GLfloat[vel3dsize];
 
-	std::size_t vel3dsize = f3obj->vel->grid_data->size() * 3;
-	auto vel3D = std::make_unique<GLfloat[]>(vel3dsize); 
-
-	// Merge XYZ Vel Components to 3D Scalar RGB Componets Per Cell. 
+	// Merge XYZ Vel Components to 3D Scalar RGB Componets Per Cell.
 	for (int i = 0, ch_idx = 0; i < f3obj->t_s; i++, ch_idx += 3)
 	{
 		vel3D[ch_idx] = f3obj->vel->getdata_x(i); // v.x -> R
 		vel3D[ch_idx + 1] = f3obj->vel->getdata_y(i); // v.y -> G
 		vel3D[ch_idx + 2] = f3obj->vel->getdata_z(i); // v.z -> B
 	}
+
 
 	// Flat 1D Array to 3D Velocity Texture -  
 	glBindTexture(GL_TEXTURE_3D, 0);
@@ -381,10 +387,13 @@ void renderobject_3D_OGL::shader_pipe(fluidobj_3d *f3obj)
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB, (GLint)grid_size.x, (GLint)grid_size.y, (GLint)grid_size.z, 0, GL_RGB, GL_FLOAT, vel3D.get()); 
+	glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB, (GLint)grid_size.x, (GLint)grid_size.y, (GLint)grid_size.z, 0, GL_RGB, GL_FLOAT, vel3D);
 
 	glBindTexture(GL_TEXTURE_3D, 0);
 	glUseProgram(0);
+
+	//delete vel3D; vel3D = nullptr; 
+	*/
 
 }
 
