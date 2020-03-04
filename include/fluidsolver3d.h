@@ -12,6 +12,7 @@
 #include <immintrin.h> 
 #include <functional> 
 #include <iostream>
+#include <cmath>
 
 using ushort = unsigned short; 
 using avx256 = __m256;
@@ -225,6 +226,9 @@ private:
 
 float fluidsolver_3::lerp(float val_0, float val_1, float bias)
 {
+	// Using FMAs Is Even Slower. 
+	//return std::fmaf(bias, val_0, std::fmaf(-bias, val_1, val_1));
+
 	return (1.0f - bias) * val_0 + bias * val_1;
 };
 
