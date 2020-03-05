@@ -60,7 +60,7 @@ public:
 	void solve_step(bool solve, int max_step);
 
 	// PARAMTERS \\  WIP - 
-	struct FluidSolver2_Paramters
+	struct FluidSolver3_Paramters
 	{
 		enum ProjType
 		{
@@ -147,6 +147,8 @@ protected:
 	// Semi Lagrangian RungeKutta 2 - MidPoint Advection.  
 	void advect_sl_mp(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1);
 	void advect_sl_mp(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3<float>> *grid_1);
+
+	void advect_mc(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1);
 
 	// COMBUSTION \\ - 
 
