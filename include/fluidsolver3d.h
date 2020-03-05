@@ -149,7 +149,7 @@ protected:
 	void advect_sl_mp(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3<float>> *grid_1);
 
 	void advect_mc(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1);
-
+	void advect_mc(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3<float>> *grid_1);
 	// COMBUSTION \\ - 
 
 

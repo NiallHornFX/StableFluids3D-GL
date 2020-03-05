@@ -35,6 +35,7 @@ public:
 	// LHS vec3 Arithmetic Overloads - Return new vec3 with operation of this and B vec3 completed. Do Not Modifiy this.
 	inline vec3 operator+ (const vec3 &b) const; 
 	inline vec3 operator- (const vec3 &b) const;
+	inline vec3 operator/ (T scalar) const; 
 
 	inline float operator*(const vec3 &b) const; 
 
@@ -142,6 +143,13 @@ inline vec3<T> vec3<T>::operator-(const vec3 &b) const
 	return vec3<T>(n_x, n_y, n_z);
 }
 
+// v3 = this / scalar 
+template <class T>
+inline vec3<T> vec3<T>::operator/ (T scalar) const
+{
+	vec3<T> t = *this; 
+	return vec3<T>(t.x / scalar, t.y / scalar, t.z / scalar); 
+}
 
 // _LHS vec3<T> RHS <T> Scalar,Vec3 --> Return *this modified vec3<T> \\
 
