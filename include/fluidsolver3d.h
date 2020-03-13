@@ -74,6 +74,7 @@ public:
 		{
 			Advect_SL_BackTrace_Euler = 0,
 			Advect_SL_BackTrace_RK2,
+			Advect_MC_Euler,
 			Advect_NONE_DBG
 
 			// BFECC,MacCormack ... 
@@ -143,6 +144,8 @@ protected:
 	// Semi Lagrangian (Single Backwards Euler) Advection - 
 	void advect_sl(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1);
 	void advect_sl(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3<float>> *grid_1);
+
+	void advect_sl_gs(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1);
 
 	// Semi Lagrangian RungeKutta 2 - MidPoint Advection.  
 	void advect_sl_mp(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1);
