@@ -99,6 +99,7 @@ public:
 		// Advection Paramters - 
 		AdvType p_AdvectionType = Advect_SL_BackTrace_Euler;
 		InterpType p_InteroplationType = Interoplation_Linear; 
+		float p_McC_LimiterStrength = 0.25f; 
 
 		// Diffusion Switches - 
 		bool p_Do_Vel_Diff = false, p_Do_Dens_Diff = true;

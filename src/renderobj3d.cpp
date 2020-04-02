@@ -359,10 +359,10 @@ void renderobject_3D_OGL::shader_pipe(fluidobj_3d *f3obj)
 	// 1 Channels (Red) Single Float for total Voxel/Texel per cell value -
 	glTexImage3D(GL_TEXTURE_3D, 0, GL_R32F, (GLint)grid_size.x, (GLint)grid_size.y, (GLint)grid_size.z, 0, GL_RED, GL_FLOAT, ptr);
 
-	/* Disable Vel For now, Expensive to Pack. 
-
+#if VEL_TEX == 1
 	// TEXTURE - VELOCITY \\
 
+	// Expesnive to Pack. 
 	// Pack X-Y-Z Velocity into R-G-B Components of single Velocity 3D Texture.  
 	// assert(f3obj->vel->grid_data->size() == (grid_size.x * grid_size.y * grid_size.z)); 
 
@@ -378,8 +378,6 @@ void renderobject_3D_OGL::shader_pipe(fluidobj_3d *f3obj)
 		vel3D[ch_idx + 1] = f3obj->vel->getdata_y(i); // v.y -> G
 		vel3D[ch_idx + 2] = f3obj->vel->getdata_z(i); // v.z -> B
 	}
-
-
 	// Flat 1D Array to 3D Velocity Texture -  
 	glBindTexture(GL_TEXTURE_3D, 0);
 	glActiveTexture(GL_TEXTURE3);
@@ -392,8 +390,8 @@ void renderobject_3D_OGL::shader_pipe(fluidobj_3d *f3obj)
 	glBindTexture(GL_TEXTURE_3D, 0);
 	glUseProgram(0);
 
-	//delete vel3D; vel3D = nullptr; 
-	*/
+	delete vel3D; vel3D = nullptr; 
+#endif
 
 }
 

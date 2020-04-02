@@ -23,7 +23,7 @@
 vec3<float> spherebound_offset(0.0f, 0.0f, 0.0f);  
 const float spherebound_coliso = 0.0025f; 
 float spherebound_radius = 0.005f; 
-float impsource_radius = 0.01f;
+float impsource_radius = 0.008f;
 
 extern int win_size_xy;
 extern short verbose;
@@ -1171,6 +1171,7 @@ void fluidsolver_3::advect_sl_gs(grid3_scalar<float> *grid_0, grid3_scalar<float
 
 // MacCormack Scalar Grid Overload. 
 
+
 void fluidsolver_3::advect_mc(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1)
 {
 	// Index-Grid-Index Space (on 3D Coords) Lambdas - 
@@ -1417,12 +1418,10 @@ void fluidsolver_3::advect_mc(grid3_scalar<float> *grid_0, grid3_scalar<float> *
 				//              F     +     error
 				phi1prime = phi1prime + (phi0 - phi0prime) / 2.0f; // Final McC value.  phi1prime + 0.5 * (phi0 - phi0prime);
 
-				// Need to Clamp min/max phi0prime ? (final advect loc) to neighbouring cells min and max (Limiter) to MacCormack final advection quanitity. 
-				std::tuple<float, float> f_minmax = minmax(i0b, i1b, j0b, j1b, k0b, k1b);
+				// Limiter Clamp 
+				std::tuple<float, float> f_minmax = minmax(i0f, i1f, j0f, j1f, k0f, k1f);
 				float min = std::get<0>(f_minmax); float max = std::get<1>(f_minmax);
-				// Clamp Using Limiter (Min,Max)- 
-				//phi1prime = std::max(min, std::min(phi1prime, max));
-				phi1prime = std::max(std::min(phi1prime, max), min); 
+				phi1prime = std::max(min, std::min(phi1prime, max));
 
 				// Set Final CurGrid Advected Quanitiy - 
 				grid_1->setdata(phi1prime, i, j, k);
@@ -1536,9 +1535,8 @@ void fluidsolver_3::advect_mc(grid3_vector<vec3<float>> *grid_0, grid3_vector<ve
 				float u = f3obj->vel->getdata_x(i, j, k); float v = f3obj->vel->getdata_y(i, j, k); float w = f3obj->vel->getdata_z(i, j, k);
 				phi0 = grid_0->getdata(i, j, k);
 
-				// FORWARDS TRACE (phi1prime) - 
+				// FORWARDS TRACE (Along Postive dt, along curcell (phi0) sampled velocity (phi1prime) - 
 				float dt_f = dt * N_dim;
-
 				// X i 
 				float xf = i - dt_f * u;
 				xf = std::max(xf, 0.5f); xf = std::min(xf, N_dim + 0.5f);
@@ -1556,24 +1554,23 @@ void fluidsolver_3::advect_mc(grid3_vector<vec3<float>> *grid_0, grid3_vector<ve
 				float s1f = yf - j0f;
 				float t1f = zf - k0f;
 
-				// Get Forward Traced time Value. (phi1prime)
+				// Get Forward Traced time Vector Value. (phi1prime)
 				phi1prime = cosvec(i0f, i1f, j0f, j1f, k0f, k1f, t1f, s1f, r1f);
 
-				// BACKWARDS TRACE - 
+				// BACKWARDS TRACE (Along Negative dt, along Forward Trace Sampled Vel) - 
 				float dt_b = -dt * N_dim;
-
 				// X i 
-				float xb = xf - dt_b * u;
+				float xb = xf - dt_b * phi1prime.x;
 				xb = std::max(xb, 0.5f);
 				xb = std::min(xb, N_dim + 0.5f);
 				int i0b = int(xb); int i1b = i0b + 1;
 				// Y j 
-				float yb = yf - dt_b * v;
+				float yb = yf - dt_b * phi1prime.y;
 				yb = std::max(yb, 0.5f);
 				yb = std::min(yb, N_dim + 0.5f);
 				int j0b = int(yb); int j1b = j0b + 1;
 				// Z k
-				float zb = zf - dt_b * w;
+				float zb = zf - dt_b * phi1prime.z;
 				zb = std::max(zb, 0.5f);
 				zb = std::min(zb, N_dim + 0.5f);
 				int k0b = int(zb); int k1b = k0b + 1;
@@ -1585,10 +1582,11 @@ void fluidsolver_3::advect_mc(grid3_vector<vec3<float>> *grid_0, grid3_vector<ve
 				// Get Backwards Traced time Value. (phi0prime)
 				phi0prime = cosvec(i0b, i1b, j0b, j1b, k0b, k1b, t1b, s1b, r1b);
 
+				// Solve for Error
 				phi1prime = phi1prime + (phi0 - phi0prime) / 2.0f; // UnClamped McC Vector Value 
-				vec3<float> phi1prime_uc = phi1prime; 
 
 				// Limiter (Clamp to Forward Traced Min/Max Vector Values) - 
+				vec3<float> phi1prime_uc = phi1prime;
 				std::tuple<vec3<float>, vec3<float>> v_minmax = minmax(i0f, i1f, j0f, j1f, k0f, k1f);
 				vec3<float> v_min = std::get<0>(v_minmax); vec3<float> v_max = std::get<1>(v_minmax);
 				//phi1prime = vec_clamp(v_min, v_max, phi1prime);
@@ -1597,7 +1595,6 @@ void fluidsolver_3::advect_mc(grid3_vector<vec3<float>> *grid_0, grid3_vector<ve
 				// float limit_str = 0.5f; 
 				// phi1prime = lerp(phi1prime, phi1prime_uc, limit_str); 
 
-				// No Vel Limiter 
 				grid_1->setdata(phi1prime, i, j, k);
 
 
@@ -1938,11 +1935,11 @@ void fluidsolver_3::density_step()
 
 	if (Parms.p_AdvectionType == Parms.Advect_SL_BackTrace_Euler)
 	{
-		//advect_sl(f3obj->prev_dens, f3obj->dens); // Scaled Index Space Advection
+		advect_sl(f3obj->prev_dens, f3obj->dens); // Scaled Index Space Advection
 
-	//	advect_sl_gs(f3obj->prev_dens, f3obj->dens); // Grid Space -> Index Space Advection
+		//advect_sl_gs(f3obj->prev_dens, f3obj->dens); // Grid Space -> Index Space Advection
 
-		advect_mc(f3obj->prev_dens, f3obj->dens);
+		//advect_mc(f3obj->prev_dens, f3obj->dens);
 
 		//advect_sl_mp(f3obj->prev_dens, f3obj->dens);
 	}
@@ -2083,8 +2080,10 @@ void fluidsolver_3::solve_step(bool solve, int max_step)
 		// STEP SOURCING OPERATIONS \\ ----------------
 		float offs = sin(((float)step_count / (float)max_step) * 500.0f) * 0.1f;
 		//f3obj->implicit_sphere_source(0.1f, vec3<float>(0.0f, 1.0f, 0.55f), vec3<float>(offs + 0.4f, 0.1f, 0.5f), impsource_radius); // 0.01f
-		vec3<float> emit_vel = vec3<float>(0.0f, 1.0f, 0.0f) + (vec3<float>(mouse_vel.x, mouse_vel.y, 0.0f) *= 2.0f); 
-		f3obj->implicit_sphere_source(0.5f, emit_vel, vec3<float>(xpos_1_N, 1.0f-ypos_1_N, 0.5f), impsource_radius); // Mouse Emitter
+		//vec3<float> emit_vel = vec3<float>(0.0f, 1.0f, 0.0f) + (vec3<float>(mouse_vel.x, mouse_vel.y, 0.0f) *= 2.0f); 
+		vec3<float> emit_vel = vec3<float>(0.0f, 1.0f, 0.0f); // (vec3<float>(mouse_vel.x, mouse_vel.y, 0.0f) *= 2.0f);
+		//f3obj->implicit_sphere_source(0.5f, emit_vel, vec3<float>(xpos_1_N, 1.0f-ypos_1_N, 0.5f), impsource_radius); // Mouse Emitter
+		f3obj->implicit_sphere_source(0.5f, emit_vel, vec3<float>(0.5f, 0.1f, 0.5f), impsource_radius); // Static Emitter. 
 
 		// STEP - SUB - SOLVER STEP OPERATIONS \\ -------------- 
 		velocity_step();
