@@ -22,6 +22,11 @@ For now no GUI is implemented, there are basic Inputs W/S for Camera Translation
 to re-postion the single point light illuminating the scene. 
 The Application/Solve and Render Loop is currently embedded as part of the `fluidsolver_3` class itself, within the `fluidsolver_3::solve_step()` member function.
 
+### Task List - April 2020
+
+- [x] MacCormack Advection 
+- [ ] Vorticity Confinement
+
 ## Dependencies 
 * GLFW - OpenGL Window and Context Creation.
 * GLEW - OpenGL Extensions Loading/Wangiling.

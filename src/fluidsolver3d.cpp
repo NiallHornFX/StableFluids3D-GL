@@ -1201,6 +1201,39 @@ void fluidsolver_3::advect_mc(grid3_scalar<float> *grid_0, grid3_scalar<float> *
 		return C_F; 
 	};
 
+	// Sample + Interoplate Vel Components Quanitity At Traced Cell Indices (0,1) with Coefficents (t,s,r) For McC Advection Vel - 
+	auto cosvel = [&](int i0, int i1, int j0, int j1, int k0, int k1, float t1, float s1, float r1) -> vec3<float>
+	{
+		// Interoplate Neighbours - for Velocity comp (U/x). 
+		float U_000_001_t = cosinterp(f3obj->prev_vel->getdata_x(i0, j0, k0), f3obj->prev_vel->getdata_x(i0, j0, k1), t1);
+		float U_010_011_t = cosinterp(f3obj->prev_vel->getdata_x(i0, j1, k0), f3obj->prev_vel->getdata_x(i0, j1, k1), t1);
+		float U_100_101_s = cosinterp(f3obj->prev_vel->getdata_x(i1, j0, k0), f3obj->prev_vel->getdata_x(i1, j0, k1), t1);
+		float U_110_111_t = cosinterp(f3obj->prev_vel->getdata_x(i1, j1, k0), f3obj->prev_vel->getdata_x(i1, j1, k1), t1);
+		float U_A = cosinterp(U_000_001_t, U_010_011_t, s1);
+		float U_B = cosinterp(U_100_101_s, U_110_111_t, s1);
+		float U_F = cosinterp(U_A, U_B, r1);
+
+		// Interoplate Neighbours - for Velocity comp (V/y). 
+		float V_000_001_t = cosinterp(f3obj->prev_vel->getdata_y(i0, j0, k0), f3obj->prev_vel->getdata_y(i0, j0, k1), t1);
+		float V_010_011_t = cosinterp(f3obj->prev_vel->getdata_y(i0, j1, k0), f3obj->prev_vel->getdata_y(i0, j1, k1), t1);
+		float V_100_101_s = cosinterp(f3obj->prev_vel->getdata_y(i1, j0, k0), f3obj->prev_vel->getdata_y(i1, j0, k1), t1);
+		float V_110_111_t = cosinterp(f3obj->prev_vel->getdata_y(i1, j1, k0), f3obj->prev_vel->getdata_y(i1, j1, k1), t1);
+		float V_A = cosinterp(V_000_001_t, V_010_011_t, s1);
+		float V_B = cosinterp(V_100_101_s, V_110_111_t, s1);
+		float V_F = cosinterp(V_A, V_B, r1);
+
+		// Interoplate Neighbours - for Velocity comp (W/z). 
+		float W_000_001_t = cosinterp(f3obj->prev_vel->getdata_z(i0, j0, k0), f3obj->prev_vel->getdata_z(i0, j0, k1), t1);
+		float W_010_011_t = cosinterp(f3obj->prev_vel->getdata_z(i0, j1, k0), f3obj->prev_vel->getdata_z(i0, j1, k1), t1);
+		float W_100_101_s = cosinterp(f3obj->prev_vel->getdata_z(i1, j0, k0), f3obj->prev_vel->getdata_z(i1, j0, k1), t1);
+		float W_110_111_t = cosinterp(f3obj->prev_vel->getdata_z(i1, j1, k0), f3obj->prev_vel->getdata_z(i1, j1, k1), t1);
+		float W_A = cosinterp(W_000_001_t, W_010_011_t, s1);
+		float W_B = cosinterp(W_100_101_s, W_110_111_t, s1);
+		float W_F = cosinterp(W_A, W_B, r1);
+
+		return vec3<float>(U_F, V_F, W_F);
+	};
+
 	// Return  Min/Max of Cells at 3D (0|+1) Indices. 
 	auto minmax = [&](int i0, int i1, int j0, int j1, int k0, int k1) -> std::tuple<float, float>
 	{
@@ -1257,20 +1290,22 @@ void fluidsolver_3::advect_mc(grid3_scalar<float> *grid_0, grid3_scalar<float> *
 				float s1f = phi1prime_idx.y - j0f;
 				float t1f = phi1prime_idx.z - k0f;
 
-				// Get Forward Traced time Value. (phi1prime)
+				// Get Scalar Quanitiy at Forward Traced Location (phi1prime)
 				phi1prime = cosdens(i0f, i1f, j0f, j1f, k0f, k1f, t1f, s1f, r1f);
+				// Get Velocity at Forward Traced Location (vel_f) 
+				vec3<float> vel_f = cosvel(i0f, i1f, j0f, j1f, k0f, k1f, t1f, s1f, r1f);
 
 				// BACKWARDS TRACE \\
-				// - (From Forward Traced Resulting "Particle" Location) 
+				// - (From Forward Traced Resulting "Particle" Location, along ForwardsTrace Sampled Vel, along -dt) 
 				float dt_b = -dt; // dt Time Backwards. 
 				// X i 
-				float xb = xf - dt_b * u;
+				float xb = xf - dt_b * vel_f.x;
 				xb = std::max(0.0f, std::min(xb, 1.0f)); // Clamp
 				// Y j 
-				float yb = yf - dt_b * v;
+				float yb = yf - dt_b * vel_f.y;
 				yb = std::max(0.0f, std::min(yb, 1.0f)); // Clamp
 				// Z k
-				float zb = zf - dt_b * w;
+				float zb = zf - dt_b * vel_f.z;
 				zb = std::max(0.0f, std::min(zb, 1.0f)); // Clamp
 
 				// Backward Trace Grid Space to Index Space - 
@@ -1290,13 +1325,10 @@ void fluidsolver_3::advect_mc(grid3_scalar<float> *grid_0, grid3_scalar<float> *
 				phi1prime = phi1prime + (phi0 - phi0prime) / 2.0f; // Solve for error, UnClamped McC value. 
 
 				// Clamp Advected Quanity to min,max of neigbouring traced cells (limiter) -
-				// std::tuple<float, float> f_minmax = minmax(i0b, i1b, j0b, j1b, k0b, k1b); // Min/Max of BackTrace Loc Cells. 
-				std::tuple<float, float> f_minmax = minmax(i0f, i1f, j0f, j1f, k0f, k1f); // Min/Max of ForwardTrace Loc Cells. (Correct ?)
+				std::tuple<float, float> f_minmax = minmax(i0f, i1f, j0f, j1f, k0f, k1f); // Min/Max of ForwardTrace Loc Cells. 
 				float min = std::get<0>(f_minmax); float max = std::get<1>(f_minmax);
 				// Clamp Using Limiter (Min,Max)- 
-				float phi1prime_uc = phi1prime;
 				phi1prime = std::max(min, std::min(phi1prime, max));
-				//phi1prime = lerp(phi1prime, phi1prime_uc, 1.0f); // Lerp Betweem Limited/Clamped and orginal MC. 
 
 				grid_1->setdata(phi1prime, i, j, k);
 			}
@@ -1935,11 +1967,11 @@ void fluidsolver_3::density_step()
 
 	if (Parms.p_AdvectionType == Parms.Advect_SL_BackTrace_Euler)
 	{
-		advect_sl(f3obj->prev_dens, f3obj->dens); // Scaled Index Space Advection
+		//advect_sl(f3obj->prev_dens, f3obj->dens); // Scaled Index Space Advection
 
 		//advect_sl_gs(f3obj->prev_dens, f3obj->dens); // Grid Space -> Index Space Advection
 
-		//advect_mc(f3obj->prev_dens, f3obj->dens);
+		advect_mc(f3obj->prev_dens, f3obj->dens);
 
 		//advect_sl_mp(f3obj->prev_dens, f3obj->dens);
 	}

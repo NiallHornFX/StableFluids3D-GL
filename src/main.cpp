@@ -44,7 +44,7 @@
 short verbose = 0;
 double const PI = 3.14159265359; 
 
-int const cube = 128; // Cube Grid Size N (1-N)
+int const cube = 96; // Cube Grid Size N (1-N)
 int const edge = 2; // Total Edge Cells E (0 | N+1). 
 int win_size_xy = 512; 
 int const solve_steps = 1000; 
