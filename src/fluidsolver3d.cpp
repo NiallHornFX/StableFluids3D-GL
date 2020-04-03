@@ -1474,7 +1474,8 @@ void fluidsolver_3::advect_mc(grid3_scalar<float> *grid_0, grid3_scalar<float> *
 */
 
 // MacCormack Vector Grid Overload. 
-// Note phi1prime caluclated using vec3<float> directly oppose to splitting to scalar comps. 
+// Done in "Scaled Index Scale" (dt * N_dim) Oppose to GridSpace->IndexSpace Conversions. 
+
 void fluidsolver_3::advect_mc(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3<float>> *grid_1)
 {
 	// Interoplate Vector Components Quanitity At Traced Cell Indices (0,1) with Coefficents (t,s,r) - 
@@ -1551,6 +1552,15 @@ void fluidsolver_3::advect_mc(grid3_vector<vec3<float>> *grid_0, grid3_vector<ve
 		return temp;
 	};
 
+	auto vec_lerp = [&](const vec3<float> &v_a, const vec3<float> &v_b, float bias) -> vec3<float>
+	{
+		float xx = (1.0f - bias) * v_a.x + bias * v_b.x; 
+		float yy = (1.0f - bias) * v_a.y + bias * v_b.y;
+		float zz = (1.0f - bias) * v_a.z + bias * v_b.z;
+
+		return vec3<float>(xx, yy, zz);
+	};
+
 	#pragma omp parallel for
 	for (int k = 1; k <= N_dim; k++)
 	{
@@ -1618,18 +1628,17 @@ void fluidsolver_3::advect_mc(grid3_vector<vec3<float>> *grid_0, grid3_vector<ve
 				phi1prime = phi1prime + (phi0 - phi0prime) / 2.0f; // UnClamped McC Vector Value 
 
 				// Limiter (Clamp to Forward Traced Min/Max Vector Values) - 
-				vec3<float> phi1prime_uc = phi1prime;
+				vec3<float> phi1prime_uc, phi1prime_c; 
 				std::tuple<vec3<float>, vec3<float>> v_minmax = minmax(i0f, i1f, j0f, j1f, k0f, k1f);
 				vec3<float> v_min = std::get<0>(v_minmax); vec3<float> v_max = std::get<1>(v_minmax);
-				//phi1prime = vec_clamp(v_min, v_max, phi1prime);
+				// Un-Clamped and Clamped Values for Limiter Strength. 
+				phi1prime_uc = phi1prime;
+				phi1prime_c = vec_clamp(v_min, v_max, phi1prime); 
+				// Lerp Limiter Strength 
+				phi1prime = vec_lerp(phi1prime_uc, phi1prime_c, Parms.p_McC_LimiterStrength); 
 
-				// Lerp Limiter and Unclamped McC Vector Values 
-				// float limit_str = 0.5f; 
-				// phi1prime = lerp(phi1prime, phi1prime_uc, limit_str); 
-
+				// Set Final Cur_Grid Advected Vector Cell Value. 
 				grid_1->setdata(phi1prime, i, j, k);
-
-
 
 			}
 		}
@@ -1969,21 +1978,21 @@ void fluidsolver_3::density_step()
 	{
 		//advect_sl(f3obj->prev_dens, f3obj->dens); // Scaled Index Space Advection
 
-		//advect_sl_gs(f3obj->prev_dens, f3obj->dens); // Grid Space -> Index Space Advection
+		advect_sl_gs(f3obj->prev_dens, f3obj->dens); // Grid Space -> Index Space Advection
 
-		advect_mc(f3obj->prev_dens, f3obj->dens);
+		//advect_mc(f3obj->prev_dens, f3obj->dens);
 
 		//advect_sl_mp(f3obj->prev_dens, f3obj->dens);
-	}
-	else if (Parms.p_AdvectionType == Parms.Advect_MC_Euler)
-	{
-		advect_sl(f3obj->prev_dens, f3obj->dens);
-		//advect_mc(f3obj->prev_dens, f3obj->dens);
 	}
 	else if (Parms.p_AdvectionType == Parms.Advect_SL_BackTrace_RK2)
 	{
 		advect_sl_mp(f3obj->prev_dens, f3obj->dens);
 	}
+	else if (Parms.p_AdvectionType == Parms.Advect_MC_Euler)
+	{
+		advect_mc(f3obj->prev_dens, f3obj->dens);
+	}
+
 
 	if (Parms.p_Do_Dens_Disp)
 	{
@@ -2019,17 +2028,17 @@ void fluidsolver_3::velocity_step()
 
 	if (Parms.p_AdvectionType == Parms.Advect_SL_BackTrace_Euler)
 	{
-		//advect_sl(f3obj->prev_vel, f3obj->vel);
-		advect_mc(f3obj->prev_vel, f3obj->vel);
-	}
-	else if (Parms.p_AdvectionType == Parms.Advect_MC_Euler)
-	{
-		advect_mc(f3obj->prev_vel, f3obj->vel);
+		advect_sl(f3obj->prev_vel, f3obj->vel);
 	}
 	else if (Parms.p_AdvectionType == Parms.Advect_SL_BackTrace_RK2)
 	{
 		advect_sl_mp(f3obj->prev_vel, f3obj->vel);
 	}
+	else if (Parms.p_AdvectionType == Parms.Advect_MC_Euler)
+	{
+		advect_mc(f3obj->prev_vel, f3obj->vel);
+	}
+
 
 	if (Parms.p_Do_Vel_Disp)
 	{
@@ -2092,19 +2101,21 @@ void fluidsolver_3::solve_step(bool solve, int max_step)
 		if (glfwGetKey(winptr, GLFW_KEY_J) == GLFW_PRESS)
 		{
 			Parms.p_AdvectionType = Parms.Advect_SL_BackTrace_Euler;
+			log_out << "DBG::Advection Type Changed = " << Parms.AdvType_Key[Parms.Advect_SL_BackTrace_Euler] << "\n";
 		}
 		else if (glfwGetKey(winptr, GLFW_KEY_K) == GLFW_PRESS)
 		{
 			Parms.p_AdvectionType = Parms.Advect_MC_Euler;
+			log_out << "DBG::Advection Type Changed = " << Parms.AdvType_Key[Parms.Advect_MC_Euler] << "\n";
 		}
 
-		// Get CurFrame Mouse Pos And Update Mouse Vel. 
+		// Get CurFrame Mouse Pos And Calc Updated Mouse Vel. 
 		std::this_thread::sleep_for(std::chrono::milliseconds(2));
-		updt_mousepos(step::STEP_CUR); updt_mouseposNorm(step::STEP_CUR); updt_mouseposRange(step::STEP_CUR);
+		updt_mousepos(step::STEP_CUR); updt_mouseposNorm(step::STEP_CUR); // updt_mouseposRange(step::STEP_CUR);
 		updt_mousevel(); 
 
 		// PRESTEP OPERATIONS \\ ----------------
-		// Eval SphereBounds_SDF - 
+		// Eval and Pre-Cache SphereBounds_SDF - 
 		#if dospherebound
 		sphere_bounds_set(spherebound_radius, spherebound_coliso, spherebound_offset);
 		#endif
@@ -2169,7 +2180,6 @@ void fluidsolver_3::set_window(GLFWwindow *win)
 	this->winptr = win; 
 }
 
-// NEED TO FIX MOUSE POSTION TO USE WINDOW SIZE NOT N SIZE (AS IN 2D !). 
 
 // Call To Update Mouse Pos - (Pixel (Cell Index) Space)
 void fluidsolver_3::updt_mousepos(const step step_id)
@@ -2198,7 +2208,7 @@ void fluidsolver_3::updt_mouseposNorm(const step step_id)
 	{
 		glfwGetCursorPos(winptr, &xpos_1_N, &ypos_1_N);
 
-		xpos_1_N /= 512; ypos_1_N /= 512;
+		xpos_1_N /= win_size_xy; ypos_1_N /= win_size_xy;
 		xpos_1_N = clamp(xpos_1_N, 0.0f, 1.0f);
 		ypos_1_N = clamp(ypos_1_N, 0.0f, 1.0f);
 
@@ -2209,7 +2219,7 @@ void fluidsolver_3::updt_mouseposNorm(const step step_id)
 	{
 		glfwGetCursorPos(winptr, &xpos_0_N, &ypos_0_N);
 
-		xpos_0_N /= 512; ypos_0_N /= 512;
+		xpos_0_N /= win_size_xy; ypos_0_N /= win_size_xy;
 		xpos_0_N = clamp(xpos_0_N, 0.0f, 1.0f);
 		ypos_0_N = clamp(ypos_0_N, 0.0f, 1.0f);
 
@@ -2219,15 +2229,14 @@ void fluidsolver_3::updt_mouseposNorm(const step step_id)
 }
 
 // Call To Update Mouse Pos Norm Within Clamped Range
-// NOT USED NOW Y AXIS issues are fixed within updt_mouseposNorm. Will keep for now. 
-
+// Not Used Currently, may be useful for window remapping later. 
 void fluidsolver_3::updt_mouseposRange(const step step_id)
 {
 	glfwPollEvents();
 	if (step_id == step::STEP_CUR)
 	{
 		glfwGetCursorPos(winptr, &xpos_1_R, &ypos_1_R);
-		xpos_1_R /= N_dim; ypos_1_R /= N_dim;
+		xpos_1_R /= win_size_xy; ypos_1_R /= win_size_xy;
 
 		xpos_1_R = fitRange(xpos_1_R, 0.0f, 1.0f, -1.0f, 1.0f);
 		ypos_1_R = fitRange(ypos_1_R, 0.0f, 1.0f, -1.0f, 1.0f);
@@ -2238,7 +2247,7 @@ void fluidsolver_3::updt_mouseposRange(const step step_id)
 	else if (step_id == step::STEP_PREV)
 	{
 		glfwGetCursorPos(winptr, &xpos_0_R, &ypos_0_R);
-		xpos_0_R /= N_dim; ypos_0_R /= N_dim;
+		xpos_0_R /= win_size_xy; ypos_0_R /= win_size_xy;
 
 		xpos_0_R = fitRange(xpos_1_R, 0.0f, 1.0f, -1.0f, 1.0f);
 		ypos_0_R = fitRange(ypos_1_R, 0.0f, 1.0f, -1.0f, 1.0f);

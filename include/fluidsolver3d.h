@@ -76,8 +76,14 @@ public:
 			Advect_SL_BackTrace_RK2,
 			Advect_MC_Euler,
 			Advect_NONE_DBG
+		};
 
-			// BFECC,MacCormack ... 
+		const char* AdvType_Key[4] = 
+		{
+			"Advect_SL_BackTrace_Euler",
+			"Advect_SL_BackTrace_RK2",
+			"Advect_MacCormack_Euler",
+			"Advect_NONE_DBG"
 		};
 
 		enum InterpType
