@@ -9,10 +9,12 @@
 #include <GLFW\glfw3.h>
 
 // Std Headers 
-#include <immintrin.h> 
 #include <functional> 
+#include <algorithm>
 #include <iostream>
 #include <cmath>
+
+#include <immintrin.h> 
 
 using ushort = unsigned short; 
 using avx256 = __m256;
@@ -104,7 +106,7 @@ public:
 
 		// Advection Paramters - 
 		AdvType p_AdvectionType = Advect_SL_BackTrace_Euler;
-		InterpType p_InteroplationType = Interoplation_Linear; 
+		InterpType p_InteroplationType = Interoplation_Cosine; 
 		float p_McC_LimiterStrength = 0.25f; 
 
 		// Diffusion Switches - 
@@ -160,6 +162,7 @@ protected:
 
 	void advect_mc(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1);
 	void advect_mc(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3<float>> *grid_1);
+
 	// COMBUSTION \\ - 
 
 
@@ -194,10 +197,13 @@ protected:
 	void sphere_rad_test();
 
 	// Static Utill - 
-	static float clamp(float val, float min, float max);
-	static float fitRange(float val, float a_min, float a_max, float b_min, float b_max);
+	__forceinline static float clamp(float val, float min, float max);
+	__forceinline static float fitRange(float val, float a_min, float a_max, float b_min, float b_max);
 	__forceinline static float lerp(float val_0, float val_1, float bias);
-	static float cosinterp(float val_0, float val_1, float bias);
+	__forceinline static float cosinterp(float val_0, float val_1, float bias);
+	// Grid-Index-Grid Space Conversion 
+	__forceinline static vec3<float> idx_indexToGrid(int i, int j, int k, int N_dim); 
+	__forceinline static vec3<float> idx_gridToIndex(float x, float y, float z, int N_dim);
 
 	// Delete Temp Grids
 	void del_pressure();
@@ -231,17 +237,47 @@ private:
 	GLFWwindow *winptr; 
 };
 
-// Force Inline LERP TEST - 
+// __forceinline fluidsolver_3 Utility Member Functions - 
 
 // LERP: From One Float Value to Another By 0-1 Bias Value. 
-
-
 float fluidsolver_3::lerp(float val_0, float val_1, float bias)
 {
 	// Using FMAs Is Even Slower. 
 	//return std::fmaf(bias, val_0, std::fmaf(-bias, val_1, val_1));
 
 	return (1.0f - bias) * val_0 + bias * val_1;
+}
+
+// CLAMP: Between Min and Max Range 
+float fluidsolver_3::clamp(float val, float min, float max)
+{
+	return std::max(min, std::min(val, max));
+}
+
+// FIT RANGE: Value From Some Range A to Some New Range B (Eg 0 to 1, to -1 to 1 0.5 becomes 0)
+float fluidsolver_3::fitRange(float val, float a_min, float a_max, float b_min, float b_max)
+{
+	return b_min + (val - a_min)*(b_max - b_min) / (a_max - a_min);
+}
+
+// COSINTERP 1D Cosine Interpolation. 
+float fluidsolver_3::cosinterp(float val_0, float val_1, float bias)
+{
+	float mu = (1.0f - std::cos(bias*PI)) / 2.0f;
+	return (float)(val_0*(1.0f - mu) + val_1 * mu);
+}
+
+// Space-Index Conversion MFuncs \\ 
+vec3<float> fluidsolver_3::idx_indexToGrid(int i, int j, int k, int N_dim)
+{
+	return vec3<float>((float)i / (float)N_dim, (float)j / (float)N_dim, (float)k / (float)N_dim);
+}
+
+// Return as vec3<float> to keep fractional component intact for Interp coefficents. 
+vec3<float> fluidsolver_3::idx_gridToIndex(float x, float y, float z, int N_dim)
+{
+	float N_dim_f = (float)N_dim;
+	return vec3<float>((x * N_dim_f), (y * N_dim_f), (z * N_dim_f));
 };
 
 #endif

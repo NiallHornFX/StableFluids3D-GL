@@ -48,7 +48,7 @@ int const cube = 96; // Cube Grid Size N (1-N)
 int const edge = 2; // Total Edge Cells E (0 | N+1). 
 int win_size_xy = 512; 
 int const solve_steps = 1000; 
-float const timestep = 1.0f / 60.0f; 
+float const timestep = 1.0f / 120.0f; 
 
 // ! DEBUGGING ! \\
 // OPENMP DISABLED
@@ -71,8 +71,9 @@ int main()
 	// Pre Solve Parmaters Inital Values Set -
 	test_fluidsolver.Parms.p_Do_Dens_Diff = false; 
 	test_fluidsolver.Parms.p_useVorticity = false;
-	test_fluidsolver.Parms.p_Do_Dens_Disp = true; 
 	test_fluidsolver.Parms.p_Do_Vel_Disp = false; 
+	test_fluidsolver.Parms.p_Do_Dens_Disp = true;
+	test_fluidsolver.Parms.p_Dens_Disp_Mult = 0.970f; 
 	test_fluidsolver.Parms.p_ProjectionType = test_fluidsolver.Parms.Project_GaussSeidel_SOR; 
 	//test_fluidsolver.Parms.p_ProjectionType = test_fluidsolver.Parms.Project_NONE_DBG;
 	test_fluidsolver.Parms.p_SOR_alpha = 1.9f;
