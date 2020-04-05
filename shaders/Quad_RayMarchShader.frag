@@ -58,8 +58,9 @@ void main()
 	}	
 
 	vel /= float(step_count); vel *= clamp(dens, 0.0, 1.0); 
-	dens /= float(step_count); dens *= 5.0;
-	float dens_a = dens; //dens_f + dens_b;
+	dens /= float(step_count);dens *= 2.0;
+	float dens_a = clamp(dens, 0.0, 1.0); 
+	
 	
 	// Colour Using BlackBody Lookup of vel_l
 	float vel_l = length(vel); 

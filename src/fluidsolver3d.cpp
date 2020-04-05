@@ -1120,23 +1120,10 @@ void fluidsolver_3::advect_sl_gs(grid3_scalar<float> *grid_0, grid3_scalar<float
 // then
 // phi1fprime = phi1 + (phi0 - phi0prime) / 2.0f; 
 
+/*
 // MacCormack Scalar Grid Overload. 
 void fluidsolver_3::advect_mc(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1)
 {
-	/*
-	// Index-Grid-Index Space (on 3D Coords) Lambdas - 
-	auto idx_indexToGrid = [&](int i, int j, int k) -> vec3<float>
-	{
-		return vec3<float>((float)i / (float)N_dim, (float)j / (float)N_dim, (float)k / (float)N_dim);
-	};
-	// Return as float to keep fractional component intact for Interp coefficent. 
-	auto idx_gridToIndex = [&](auto x, auto y, auto z) -> vec3<float>
-	{
-		float N_dim_f = (float)N_dim;
-		return vec3<float>((x * N_dim_f), (y * N_dim_f), (z * N_dim_f));
-	};
-	*/
-
 	// Interoplate Scalar Quanitity At Traced Cell Indices (0,1) with Coefficents (t,s,r) - 
 	auto cosdens = [&](int i0, int i1, int j0, int j1, int k0, int k1, float t1, float s1, float r1) -> float
 	{
@@ -1295,9 +1282,9 @@ void fluidsolver_3::advect_mc(grid3_scalar<float> *grid_0, grid3_scalar<float> *
 	sphere_bounds_eval(grid_1, spherebound_coliso);
 	#endif
 }
+*/
 
 
-/*
 // dt for both forward and backward advection scaled by N_dim to avoid index-grid-index space conversions.  (Done within Implicit Index Space) 
 void fluidsolver_3::advect_mc(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1)
 {
@@ -1422,12 +1409,10 @@ void fluidsolver_3::advect_mc(grid3_scalar<float> *grid_0, grid3_scalar<float> *
 	sphere_bounds_eval(grid_1, spherebound_coliso);
 	#endif
 }
-*/
-
-// MacCormack Vector Grid Overload. 
-// Done in "Scaled Index Scale" (dt * N_dim) Oppose to GridSpace->IndexSpace Conversions. 
 
 /*
+// MacCormack Vector Grid Overload. 
+// Done in "Scaled Index Scale" (dt * N_dim) Oppose to GridSpace->IndexSpace Conversions. 
 void fluidsolver_3::advect_mc(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3<float>> *grid_1)
 {
 	// Interoplate Vector Components Quanitity At Traced Cell Indices (0,1) with Coefficents (t,s,r) - 
@@ -1609,23 +1594,8 @@ void fluidsolver_3::advect_mc(grid3_vector<vec3<float>> *grid_0, grid3_vector<ve
 
 // MacCormack Vector Grid Overload. (Advect Vector Field, by f3obj Velocity Field (typical Velocity Field Self Advection)). 
 // Advection steps done in GridSpace->IDXSpace for interoplation/sampling. 
-
 void fluidsolver_3::advect_mc(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3<float>> *grid_1)
 {
-	/*
-	// Index-Grid-Index Space (on 3D Coords) Lambdas - 
-	auto idx_indexToGrid = [&](int i, int j, int k) -> vec3<float>
-	{
-		return vec3<float>((float)i / (float)N_dim, (float)j / (float)N_dim, (float)k / (float)N_dim);
-	};
-	// Return as float to keep fractional component intact for Interp coefficent. 
-	auto idx_gridToIndex = [&](auto x, auto y, auto z) -> vec3<float>
-	{
-		float N_dim_f = (float)N_dim;
-		return vec3<float>((x * N_dim_f), (y * N_dim_f), (z * N_dim_f));
-	};
-	*/
-
 	// Interoplate Vector Components Quanitity At Traced Cell Indices (0,1) with Coefficents (t,s,r) - 
 	auto cosvec = [&](int i0, int i1, int j0, int j1, int k0, int k1, float t1, float s1, float r1) -> vec3<float>
 	{
@@ -1709,6 +1679,8 @@ void fluidsolver_3::advect_mc(grid3_vector<vec3<float>> *grid_0, grid3_vector<ve
 		return vec3<float>(xx, yy, zz);
 	};
 
+	float csize = 1.0f / (float)N_dim; // Spacing / Size of Single Cell in 0-1 GS.
+
 	#pragma omp parallel for
 	for (int k = 1; k <= N_dim; k++)
 	{
@@ -1729,14 +1701,15 @@ void fluidsolver_3::advect_mc(grid3_vector<vec3<float>> *grid_0, grid3_vector<ve
 				// FORWARDS TRACE (Along Postive dt, along curcell (phi0) sampled velocity (phi1prime) - 
 				// X i 
 				float xf = phi0_gs.x - dt * u;
-				xf = std::max(0.0f, std::min(xf, 1.0f));
+				xf = std::max(csize, std::min(xf, 1.0f + csize)); // Clamp For out of bounds in gridspace. 
 				// Y j 
 				float yf = phi0_gs.y - dt * v;
-				yf = std::max(0.0f, std::min(yf, 1.0f));
+				yf = std::max(csize, std::min(yf, 1.0f + csize));
 				// Z k
 				float zf = phi0_gs.z - dt * w;
-				zf = std::max(0.0f, std::min(zf, 1.0f));
+				zf = std::max(csize, std::min(zf, 1.0f + csize));
 
+				// Forward-Traced GridSpace Coords -> IDX Space. 
 				vec3<float> phi1prime_idx = idx_gridToIndex(xf, yf, zf, N_dim);
 				int i0f = int(phi1prime_idx.x); int i1f = i0f + 1;
 				int j0f = int(phi1prime_idx.y); int j1f = j0f + 1;
@@ -1753,14 +1726,15 @@ void fluidsolver_3::advect_mc(grid3_vector<vec3<float>> *grid_0, grid3_vector<ve
 				// BACKWARDS TRACE (Along Negative dt, along Forward Trace Sampled Vel) - 
 				// X i 
 				float xb = xf - (-dt) * phi1prime.x;
-				xb = std::max(0.0f, std::min(xb, 1.0f));
+				xb = std::max(csize, std::min(xb, 1.0f + csize)); // Clamp For out of bounds in gridspace. 
 				// Y j 
 				float yb = yf - (-dt) * phi1prime.y;
-				yb = std::max(0.0f, std::min(yb, 1.0f));
+				yb = std::max(csize, std::min(yb, 1.0f + csize));
 				// Z k
 				float zb = zf - (-dt) * phi1prime.z;
-				zb = std::max(0.0f, std::min(zb, 1.0f));
+				zb = std::max(csize, std::min(zb, 1.0f + csize));
 
+				// Back-Traced GridSpace Coords -> IDX Space. 
 				vec3<float> phi0prime_idx = idx_gridToIndex(xb, yb, zb, N_dim);
 				int i0b = int(phi0prime_idx.x); int i1b = i0b + 1;
 				int j0b = int(phi0prime_idx.y); int j1b = j0b + 1;
@@ -2138,7 +2112,8 @@ void fluidsolver_3::density_step()
 	}
 	else if (Parms.p_AdvectionType == Parms.Advect_MC_Euler)
 	{
-		advect_mc(f3obj->prev_dens, f3obj->dens);
+		advect_sl_gs(f3obj->prev_dens, f3obj->dens);
+	//	advect_mc(f3obj->prev_dens, f3obj->dens);
 	}
 
 
