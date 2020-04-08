@@ -44,7 +44,7 @@
 short verbose = 0;
 double const PI = 3.14159265359; 
 
-int const cube = 128; // Cube Grid Size N (1-N)
+int const cube = 64; // Cube Grid Size N (1-N)
 int const edge = 2; // Total Edge Cells E (0 | N+1). 
 int win_size_xy = 512; 
 int const solve_steps = 1000; 
@@ -72,7 +72,7 @@ int main()
 	test_fluidsolver.Parms.p_Do_Dens_Diff = false; 
 	test_fluidsolver.Parms.p_useVorticity = false;
 	test_fluidsolver.Parms.p_Do_Vel_Disp = false; 
-	test_fluidsolver.Parms.p_Do_Dens_Disp = true;
+	test_fluidsolver.Parms.p_Do_Dens_Disp = false;
 	test_fluidsolver.Parms.p_Dens_Disp_Mult = 0.970f; 
 	test_fluidsolver.Parms.p_ProjectionType = test_fluidsolver.Parms.Project_GaussSeidel_SOR; 
 	//test_fluidsolver.Parms.p_ProjectionType = test_fluidsolver.Parms.Project_NONE_DBG;
@@ -81,7 +81,7 @@ int main()
 	test_fluidsolver.Parms.p_AdvectionType = test_fluidsolver.Parms.Advect_MC_Euler;
 	//test_fluidsolver.Parms.p_AdvectionType = test_fluidsolver.Parms.Advect_SL_BackTrace_Euler;
 	//test_fluidsolver.Parms.p_AdvectionType = test_fluidsolver.Parms.Advect_NONE_DBG;
-	test_fluidsolver.Parms.p_McC_LimiterStrength = 0.1f; 
+	test_fluidsolver.Parms.p_McC_LimiterStrength = 0.0f; 
 
 	// Pass Window Pointer from RenderContext - 
 	test_fluidsolver.set_window(render_c.get_window());

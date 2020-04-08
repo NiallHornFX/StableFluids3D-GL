@@ -58,7 +58,7 @@ void main()
 	}	
 
 	vel /= float(step_count); vel *= clamp(dens, 0.0, 1.0); 
-	dens /= float(step_count);dens *= 2.0;
+	dens /= float(step_count); dens *= 2.0;
 	float dens_a = clamp(dens, 0.0, 1.0); 
 	
 	
@@ -78,12 +78,16 @@ void main()
 	// Vel BB - 
 	vec3 cv_1 = mix(cv_0, vel_col, 0.5);
 	
-	// Final FragColor. 
+	// FINAL FragColor -
+	
 	//frag_color = vec4(clamp(cv_1, 0.0, 1.0), 1.0); 
 	
 	
+	// ALT - 
 
 	//frag_color = vec4(cv_0, 1.0); // Cube Only Test. 
-	frag_color = vec4(dens_vec, 1.0); // Dens Only.  	
+	
+	frag_color = vec4(dens_vec, 1.0); // Dens Only.  
+	
 	//frag_color = vec4(vel.xyz, 1.0); // Vel Only. 
 }

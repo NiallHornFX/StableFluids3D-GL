@@ -12,9 +12,13 @@
 #include <functional> 
 #include <algorithm>
 #include <iostream>
+#include <tuple>
 #include <cmath>
 
 #include <immintrin.h> 
+
+typedef std::tuple<vec3<float>, vec3<float>> vec3f_tuple; 
+typedef std::tuple<float, float> f_tuple; 
 
 using ushort = unsigned short; 
 using avx256 = __m256;
@@ -62,6 +66,7 @@ public:
 	void solve_step(bool solve, int max_step);
 
 	// PARAMTERS \\  WIP - 
+	// Paramters Use Inclass Init for Default Values. 
 	struct FluidSolver3_Paramters
 	{
 		enum ProjType
@@ -154,23 +159,16 @@ protected:
 	void advect_sl(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1);
 	void advect_sl(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3<float>> *grid_1);
 
-	void advect_sl_gs(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1);
-
-	// Semi Lagrangian RungeKutta 2 - MidPoint Advection.  
-	void advect_sl_mp(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1);
-	void advect_sl_mp(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3<float>> *grid_1);
-
+	// MacCormack (Single Euler) Backwards,Forwards Advection - 
 	void advect_mc(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1);
 	void advect_mc(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3<float>> *grid_1);
 
 	// COMBUSTION \\ - 
-
+	// TBD. 
 
 	// PROJECTION \\ - 
-
 	// Projection - Gauss-Seidel Relaxation Method, with SOR (Single-Threaded)
 	void project(int iter);
-
 	// Projection - Jacobi Solve (Multi-Threaded)
 	void project_jacobi(int iter); 
 
@@ -194,13 +192,24 @@ protected:
 	void updt_mouseposNorm(const step step_id); // 0-1 XY Mouse Coords
 	void updt_mouseposRange(const step step_id); // -1 to 1. 
 	void updt_mousevel();
+	// Advection Interoplation - 
+	float       interp_scalarCosine(grid3_scalar<float> *grid_0, int i0, int i1, int j0, int j1, int k0, int k1, float t1, float s1, float r1) const;
+	float       interp_scalarLinear(grid3_scalar<float> *grid_0, int i0, int i1, int j0, int j1, int k0, int k1, float t1, float s1, float r1) const;
+	vec3<float> interp_vectorLinear(grid3_vector<vec3<float>> *grid_0, int i0, int i1, int j0, int j1, int k0, int k1, float t1, float s1, float r1) const;
+	vec3<float> interp_vectorCosine(grid3_vector<vec3<float>> *grid_0, int i0, int i1, int j0, int j1, int k0, int k1, float t1, float s1, float r1) const;
+	f_tuple minmaxcell_scalar(grid3_scalar<float> *grid_0, int i0, int i1, int j0, int j1, int k0, int k1) const;
+	vec3f_tuple minmaxcell_vector(grid3_vector<vec3<float>> *grid_0, int i0, int i1, int j0, int j1, int k0, int k1) const;
+
+	// Misc Uitl - 
 	void sphere_rad_test();
 
-	// Static Utill - 
-	__forceinline static float clamp(float val, float min, float max);
+	// STATIC UTILITY \\ 
 	__forceinline static float fitRange(float val, float a_min, float a_max, float b_min, float b_max);
+	__forceinline static float clamp(float val, float min, float max);
 	__forceinline static float lerp(float val_0, float val_1, float bias);
 	__forceinline static float cosinterp(float val_0, float val_1, float bias);
+	__forceinline static vec3<float> vec_clamp(const vec3<float> &v_min, const vec3<float> &v_max, const vec3<float> v);
+	__forceinline static vec3<float> vec_lerp(const vec3<float> &v_a, const vec3<float> &v_b, float bias);
 	// Grid-Index-Grid Space Conversion 
 	__forceinline static vec3<float> idx_indexToGrid(int i, int j, int k, int N_dim); 
 	__forceinline static vec3<float> idx_gridToIndex(float x, float y, float z, int N_dim);
@@ -237,7 +246,7 @@ private:
 	GLFWwindow *winptr; 
 };
 
-// __forceinline fluidsolver_3 Utility Member Functions - 
+// INLINE (__forceinline) fluidsolver_3 Utility Member Functions - 
 
 // LERP: From One Float Value to Another By 0-1 Bias Value. 
 float fluidsolver_3::lerp(float val_0, float val_1, float bias)
@@ -265,6 +274,25 @@ float fluidsolver_3::cosinterp(float val_0, float val_1, float bias)
 {
 	float mu = (1.0f - std::cos(bias*PI)) / 2.0f;
 	return (float)(val_0*(1.0f - mu) + val_1 * mu);
+}
+
+// VEC_CLAMP: Clamp Vector v components to Min/Max Vectors components.
+vec3<float> fluidsolver_3::vec_clamp(const vec3<float> &v_min, const vec3<float> &v_max, const vec3<float> v)
+{
+	vec3<float> temp = v;
+	temp.x = std::max(v_min.x, std::min(v.x, v_max.x));
+	temp.y = std::max(v_min.y, std::min(v.y, v_max.y));
+	temp.z = std::max(v_min.z, std::min(v.z, v_max.z));
+	return temp;
+}
+
+// VEC_LERP: Linear Interoplate Between v_a and v_b components by Bias. 
+vec3<float> fluidsolver_3::vec_lerp(const vec3<float> &v_a, const vec3<float> &v_b, float bias)
+{
+	float xx = (1.0f - bias) * v_a.x + bias * v_b.x;
+	float yy = (1.0f - bias) * v_a.y + bias * v_b.y;
+	float zz = (1.0f - bias) * v_a.z + bias * v_b.z;
+	return vec3<float>(xx, yy, zz);
 }
 
 // Space-Index Conversion MFuncs \\ 
