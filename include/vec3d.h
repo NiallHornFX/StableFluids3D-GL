@@ -23,6 +23,10 @@ public:
 		return *this; 
 	}
 
+	// UD Casts.
+	operator vec3<double>() { return vec3<double>((double)x, (double)y, (double)z); }
+	operator vec3<float>() { return vec3<float>((float)x, (float)y, (float)z); }
+
 	// vec3 Vector Math Operations, Return Scalar. 
 	inline float length() const; // 
 	inline float dot(const vec3 &b) const; 

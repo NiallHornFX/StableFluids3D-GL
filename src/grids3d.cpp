@@ -166,19 +166,23 @@ template <class T>
 T grid3_scalar<T>::sampler(const vec3<float> &gs_loc, interpType interp) const
 {
 	// Util Lambdas - 
+	auto idx_gridToIndex = [this](float x, float y, float z) -> vec3<float> 
+	{
+		float N_dim_f = (this->get_dimsize()).x; // Assume Cubed Grid. 
+		return vec3<float>((x * N_dim_f), (y * N_dim_f), (z * N_dim_f));
+	};
 	auto lerp = [](const float val_0, const float val_1, float bias) -> float
 	{
 		return (1.0f - bias) * val_0 + bias * val_1;
-	}
-
+	};
 	auto cosinterp = [](float val_0, float val_1, float bias) -> float 
 	{
 		float mu = (1.0f - std::cos(bias*PI)) / 2.0f;
 		return (float)((1.0f - mu) * val_0 + val_1 * mu);
-	}
+	};
 
 	// Deduce Grid Indices and Coefficents for Interoplation - 
-	vec3<float> idx_loc = idx_gridToIndex(xf, yf, zf, N_dim); // Grid-->IdxSpace
+	vec3<float> idx_loc = idx_gridToIndex(gs_loc.x, gs_loc.y, gs_loc.z); // Grid-->IdxSpace
 	// Cell (i,j,k|+1) Indices 
 	int i0 = int(idx_loc.x); int i1 = i0 + 1;
 	int j0 = int(idx_loc.y); int j1 = j0 + 1;
@@ -192,10 +196,10 @@ T grid3_scalar<T>::sampler(const vec3<float> &gs_loc, interpType interp) const
 	if (interp == interp_TriLinear)
 	{
 		// Scalar TriLinear Interoplation
-		float L_000_001_t = lerp(grid_0->getdata(i0, j0, k0), grid_0->getdata(i0, j0, k1), r); // X
-		float L_010_011_t = lerp(grid_0->getdata(i0, j1, k0), grid_0->getdata(i0, j1, k1), r);
-		float L_100_101_s = lerp(grid_0->getdata(i1, j0, k0), grid_0->getdata(i1, j0, k1), r);
-		float L_110_111_t = lerp(grid_0->getdata(i1, j1, k0), grid_0->getdata(i1, j1, k1), r);
+		float L_000_001_t = lerp(this->getdata(i0, j0, k0), this->getdata(i0, j0, k1), r); // X
+		float L_010_011_t = lerp(this->getdata(i0, j1, k0), this->getdata(i0, j1, k1), r);
+		float L_100_101_s = lerp(this->getdata(i1, j0, k0), this->getdata(i1, j0, k1), r);
+		float L_110_111_t = lerp(this->getdata(i1, j1, k0), this->getdata(i1, j1, k1), r);
 		float L_A = lerp(L_000_001_t, L_010_011_t, s); // Y
 		float L_B = lerp(L_100_101_s, L_110_111_t, s);
 		float L_F = lerp(L_A, L_B, t); // Z
@@ -205,19 +209,19 @@ T grid3_scalar<T>::sampler(const vec3<float> &gs_loc, interpType interp) const
 	else if (interp == interp_TriCosine)
 	{
 		// Scalar TriCosine Interoplation 
-		float C_000_001_t = cosinterp(grid_0->getdata(i0, j0, k0), grid_0->getdata(i0, j0, k1), r);
-		float C_010_011_t = cosinterp(grid_0->getdata(i0, j1, k0), grid_0->getdata(i0, j1, k1), r);
-		float C_100_101_t = cosinterp(grid_0->getdata(i1, j0, k0), grid_0->getdata(i1, j0, k1), r);
-		float C_110_111_t = cosinterp(grid_0->getdata(i1, j1, k0), grid_0->getdata(i1, j1, k1), r);
-		float C_A = cosinterp(C_000_001_t, C_010_011_t, s);
+		float C_000_001_t = cosinterp(this->getdata(i0, j0, k0), this->getdata(i0, j0, k1), r); // X
+		float C_010_011_t = cosinterp(this->getdata(i0, j1, k0), this->getdata(i0, j1, k1), r);
+		float C_100_101_t = cosinterp(this->getdata(i1, j0, k0), this->getdata(i1, j0, k1), r);
+		float C_110_111_t = cosinterp(this->getdata(i1, j1, k0), this->getdata(i1, j1, k1), r);
+		float C_A = cosinterp(C_000_001_t, C_010_011_t, s); // Y
 		float C_B = cosinterp(C_100_101_t, C_110_111_t, s);
-		float C_F = cosinterp(C_A, C_B, t);
+		float C_F = cosinterp(C_A, C_B, t); // Z
 
 		return C_F;
 	}
 	else
 	{
-		std::err << "ERR::Invalid Interoplation Type Specifed \n \n";
+		std::cerr << "ERR::Invalid Interoplation Type Specifed \n \n";
 		std::terminate();
 	}
 
@@ -270,14 +274,18 @@ template <class T>
 T grid3_vector<T>::sampler(const vec3<float> &gs_loc, interpType interp) const
 {
 	// Util Lambdas - 
+	auto idx_gridToIndex = [this](float x, float y, float z) -> vec3<float>
+	{
+		float N_dim_f = (this->get_dimsize()).x; // Assume Cubed Grid. 
+		return vec3<float>((x * N_dim_f), (y * N_dim_f), (z * N_dim_f));
+	};
 	auto vec_lerp = [](const vec3<float> &v_a, const vec3<float> &v_b, float bias) -> vec3<float>
 	{
 		float xx = (1.0f - bias) * v_a.x + bias * v_b.x;
 		float yy = (1.0f - bias) * v_a.y + bias * v_b.y;
 		float zz = (1.0f - bias) * v_a.z + bias * v_b.z;
 		return vec3<float>(xx, yy, zz);
-	}
-
+	};
 	auto vec_cerp = [](const vec3<float> &v_a, const vec3<float> &v_b, float bias) -> vec3<float>
 	{
 		float mu, xx, yy, zz; 
@@ -286,10 +294,10 @@ T grid3_vector<T>::sampler(const vec3<float> &gs_loc, interpType interp) const
 		yy = (1.0f - mu) * v_a.y + v_b.y * mu;
 		zz = (1.0f - mu) * v_a.z + v_b.z * mu;
 		return vec3<float>(xx, yy, zz);
-	}
+	};
 
 	// Deduce Grid Indices and Coefficents for Interoplation - 
-	vec3<float> idx_loc = idx_gridToIndex(xf, yf, zf, N_dim); // Grid-->IdxSpace
+	vec3<float> idx_loc = idx_gridToIndex(gs_loc.x, gs_loc.y, gs_loc.z); // Grid-->IdxSpace
 	// Cell (i,j,k|+1) Indices 
 	int i0 = int(idx_loc.x); int i1 = i0 + 1;
 	int j0 = int(idx_loc.y); int j1 = j0 + 1;
@@ -303,10 +311,10 @@ T grid3_vector<T>::sampler(const vec3<float> &gs_loc, interpType interp) const
 	if (interp == interp_TriLinear)
 	{
 		// Vector TriLinear Interoplation
-		vec3<float> L_000_001_t = vec_lerp(grid_0->getdata(i0, j0, k0), grid_0->getdata(i0, j0, k1), r); // X
-		vec3<float> L_010_011_t = vec_lerp(grid_0->getdata(i0, j1, k0), grid_0->getdata(i0, j1, k1), r);
-		vec3<float> L_100_101_s = vec_lerp(grid_0->getdata(i1, j0, k0), grid_0->getdata(i1, j0, k1), r);
-		vec3<float> L_110_111_t = vec_lerp(grid_0->getdata(i1, j1, k0), grid_0->getdata(i1, j1, k1), r);
+		vec3<float> L_000_001_t = vec_lerp(this->getdata(i0, j0, k0), this->getdata(i0, j0, k1), r); // X
+		vec3<float> L_010_011_t = vec_lerp(this->getdata(i0, j1, k0), this->getdata(i0, j1, k1), r);
+		vec3<float> L_100_101_s = vec_lerp(this->getdata(i1, j0, k0), this->getdata(i1, j0, k1), r);
+		vec3<float> L_110_111_t = vec_lerp(this->getdata(i1, j1, k0), this->getdata(i1, j1, k1), r);
 		vec3<float> L_A = vec_lerp(L_000_001_t, L_010_011_t, s); // Y
 		vec3<float> L_B = vec_lerp(L_100_101_s, L_110_111_t, s);
 		vec3<float> L_F = vec_lerp(L_A, L_B, t); // Z
@@ -315,20 +323,20 @@ T grid3_vector<T>::sampler(const vec3<float> &gs_loc, interpType interp) const
 	}
 	else if (interp == interp_TriCosine)
 	{
-		// Scalar TriCosine Interoplation 
-		float C_000_001_t = vec_cerp(grid_0->getdata(i0, j0, k0), grid_0->getdata(i0, j0, k1), r);
-		float C_010_011_t = vec_cerp(grid_0->getdata(i0, j1, k0), grid_0->getdata(i0, j1, k1), r);
-		float C_100_101_t = vec_cerp(grid_0->getdata(i1, j0, k0), grid_0->getdata(i1, j0, k1), r);
-		float C_110_111_t = vec_cerp(grid_0->getdata(i1, j1, k0), grid_0->getdata(i1, j1, k1), r);
-		float C_A = vec_cerp(C_000_001_t, C_010_011_t, s);
-		float C_B = vec_cerp(C_100_101_t, C_110_111_t, s);
-		float C_F = vec_cerp(C_A, C_B, t);
+		// Vector TriCosine Interoplation 
+		vec3<float> C_000_001_t = vec_cerp(this->getdata(i0, j0, k0), this->getdata(i0, j0, k1), r); // X
+		vec3<float> C_010_011_t = vec_cerp(this->getdata(i0, j1, k0), this->getdata(i0, j1, k1), r);
+		vec3<float> C_100_101_t = vec_cerp(this->getdata(i1, j0, k0), this->getdata(i1, j0, k1), r);
+		vec3<float> C_110_111_t = vec_cerp(this->getdata(i1, j1, k0), this->getdata(i1, j1, k1), r);
+		vec3<float> C_A = vec_cerp(C_000_001_t, C_010_011_t, s); // Y
+		vec3<float> C_B = vec_cerp(C_100_101_t, C_110_111_t, s);
+		vec3<float> C_F = vec_cerp(C_A, C_B, t); // Z
 
 		return C_F;
 	}
 	else
 	{
-		std::err << "ERR::Invalid Interoplation Type Specifed \n \n";
+		std::cerr << "ERR::Invalid Interoplation Type Specifed \n \n";
 		std::terminate();
 	}
 }

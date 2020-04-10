@@ -603,27 +603,8 @@ void fluidsolver_3::advect_sl(grid3_scalar<float> *grid_0, grid3_scalar<float> *
 				float zf = phi0_gs.z - dt * w;
 				zf = std::max(csize, std::min(zf, 1.0f + csize)); 
 
-				// Get BackTraced Cell (0|+1) Indices and resulting Coefficents - 
-				vec3<float> phi1_idx = idx_gridToIndex(xf, yf, zf, N_dim); // IS.
-				// Traced Cell and +1 Indices (Floored) -
-				int i0f = (int) phi1_idx.x; int i1f = i0f + 1;
-				int j0f = (int) phi1_idx.y; int j1f = j0f + 1;
-				int k0f = (int) phi1_idx.z; int k1f = k0f + 1;
-				// Traced Interoplation Coefficents - 
-				float r1f = phi1_idx.x - (float) i0f; 
-				float s1f = phi1_idx.y - (float) j0f;
-				float t1f = phi1_idx.z - (float) k0f;
-
-				// Trilinear or TriCosine Interpolation of BackTrace Location. 
-				float phi1; 
-				if (Parms.p_InteroplationType == Parms.Interoplation_Linear)
-				{
-					phi1 = interpLin_scalar(i0f, i1f, j0f, j1f, k0f, k1f, t1f, s1f, r1f);
-				}
-				else if (Parms.p_InteroplationType == Parms.Interoplation_Cosine)
-				{
-					phi1 = interpCos_scalar(i0f, i1f, j0f, j1f, k0f, k1f, t1f, s1f, r1f);
-				}
+				// Sample at Traced Location using TriCosine Interoplation - 
+				float phi1 = grid_0->sampler(vec3<float>(xf, yf, zf), interp_TriCosine);
 
 				grid_1->setdata(phi1, i, j, k);
 			}
