@@ -93,12 +93,6 @@ public:
 			"Advect_NONE_DBG"
 		};
 
-		enum InterpType
-		{
-			Interoplation_Linear = 0, 
-			Interoplation_Cosine,
-			Interoplation_Cubic
-		};
 
 		// Using Default inclass Initalization
 		bool p_useColour = false, p_useVorticity = false, p_useFuel = false, p_useHeat = false; // Optional Grids, for Factory prep. 
@@ -111,7 +105,6 @@ public:
 
 		// Advection Paramters - 
 		AdvType p_AdvectionType = Advect_SL_BackTrace_Euler;
-		InterpType p_InteroplationType = Interoplation_Cosine; 
 		float p_McC_LimiterStrength = 0.25f; 
 
 		// Diffusion Switches - 

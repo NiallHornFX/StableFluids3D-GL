@@ -346,7 +346,7 @@ void renderobject_3D_OGL::shader_pipe(fluidobj_3d *f3obj)
 	// Shader Pipe is Passing to Quad Shader Only.
 	glUseProgram(quad_shader_prog);
 
-	// TEXTURE->SAMPLERS (Per Step) \\
+	// GRIDS-->TEXTURES-->SAMPLERS (Per Step) \\
 	// TEXTURE - DENSITY \\
 
 	glBindTexture(GL_TEXTURE_3D, 0);
