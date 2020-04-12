@@ -555,6 +555,7 @@ void fluidsolver_3::diffuse(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3
 // Semi Lagrangian Advection - Single Step (Euler) - Scalar Overload - 
 void fluidsolver_3::advect_sl(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1)
 {
+	/*
 	// Tri-Cosine Interoplation of Grid Cell Indices ijk(0|+1) with Coefficents (t,s,r). 
 	auto interpCos_scalar = [&](int i0, int i1, int j0, int j1, int k0, int k1, float t1, float s1, float r1) -> float
 	{
@@ -582,8 +583,9 @@ void fluidsolver_3::advect_sl(grid3_scalar<float> *grid_0, grid3_scalar<float> *
 
 		return L_F;
 	};
+	*/
 
-	float csize = (1.0f / (float) N_dim) * 0.5f; // Spacing / Size of Single Cell in 0.0-1.0 GS.
+	float h_csize = (1.0f / (float) N_dim) * 0.5f; // Spacing / Size of Single Cell in 0.0-1.0 GS.
 
 	for (int k = 1; k <= N_dim; k++)
 	{
@@ -593,15 +595,15 @@ void fluidsolver_3::advect_sl(grid3_scalar<float> *grid_0, grid3_scalar<float> *
 			{
 				// CURRENT phi0
 				float u = f3obj->vel->getdata_x(i, j, k); float v = f3obj->vel->getdata_y(i, j, k); float w = f3obj->vel->getdata_z(i, j, k);
-				vec3<float> phi0_gs = idx_indexToGrid(i, j, k, N_dim);
+				vec3<float> phi0_gs = grid3<float>::idx_indexToGrid(i, j, k, N_dim);
 
 				// Do SL Advection In Grid Space (BackTrace along vel) 
 				float xf = phi0_gs.x - dt * u;
-				xf = std::max(csize, std::min(xf, 1.0f + csize)); // Gridspace Clamp. 
+				xf = std::max(h_csize, std::min(xf, 1.0f + h_csize)); // Gridspace Clamp. 
 				float yf = phi0_gs.y - dt * v;
-				yf = std::max(csize, std::min(yf, 1.0f + csize)); 
+				yf = std::max(h_csize, std::min(yf, 1.0f + h_csize)); 
 				float zf = phi0_gs.z - dt * w;
-				zf = std::max(csize, std::min(zf, 1.0f + csize)); 
+				zf = std::max(h_csize, std::min(zf, 1.0f + h_csize)); 
 
 				// Sample at Traced Location using TriCosine Interoplation - 
 				float phi1 = grid_0->sampler(vec3<float>(xf, yf, zf), interp_TriCosine);
@@ -624,6 +626,7 @@ void fluidsolver_3::advect_sl(grid3_scalar<float> *grid_0, grid3_scalar<float> *
 // Semi Lagrangian Advection - Single Step (Euler) - Vector Overload - 
 void fluidsolver_3::advect_sl(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3<float>> *grid_1)
 {
+	/*
 	// Interoplate Vector Components Quanitity At Traced Cell Indices (0,1) with Coefficents (t,s,r) - 
 	auto cosvec = [&](int i0, int i1, int j0, int j1, int k0, int k1, float t1, float s1, float r1) -> vec3<float>
 	{
@@ -654,6 +657,7 @@ void fluidsolver_3::advect_sl(grid3_vector<vec3<float>> *grid_0, grid3_vector<ve
 
 		return vec3<float>(U_F, V_F, W_F);
 	};
+	*/
 
 	// Return Min/Max Vector of Cells at 3D (0|+1) Interoplation Indices (For Limiter). Needs Optimizing (SIMD). 
 	auto minmax = [&](int i0, int i1, int j0, int j1, int k0, int k1) -> std::tuple<vec3<float>, vec3<float>>
@@ -697,7 +701,7 @@ void fluidsolver_3::advect_sl(grid3_vector<vec3<float>> *grid_0, grid3_vector<ve
 			{
 				// Grid0(prev) Current Cell (i,j,k) (phi0)
 				float u = f3obj->vel->getdata_x(i, j, k); float v = f3obj->vel->getdata_y(i, j, k); float w = f3obj->vel->getdata_z(i, j, k);
-				vec3<float> phi0_gs = idx_indexToGrid(i, j, k, N_dim);
+				vec3<float> phi0_gs = grid3<float>::idx_indexToGrid(i, j, k, N_dim);
 
 				// Advection BackTrace - 
 				float xf = phi0_gs.x - dt * u;
@@ -707,19 +711,8 @@ void fluidsolver_3::advect_sl(grid3_vector<vec3<float>> *grid_0, grid3_vector<ve
 				float zf = phi0_gs.z - dt * w;
 				zf = std::max(csize, std::min(zf, 1.0f + csize));
 
-				// Traced GridSpace Coords -> IDX Space (0,+1) Indices - 
-				vec3<float> phi1prime_idx = idx_gridToIndex(xf, yf, zf, N_dim);
-				int i0f = int(phi1prime_idx.x); int i1f = i0f + 1;
-				int j0f = int(phi1prime_idx.y); int j1f = j0f + 1;
-				int k0f = int(phi1prime_idx.z); int k1f = k0f + 1;
-
-				// Traced Interoplation Coefficents Between Cell(0,+1) - 
-				float r1f = phi1prime_idx.x - i0f;
-				float s1f = phi1prime_idx.y - j0f;
-				float t1f = phi1prime_idx.z - k0f;
-
 				// Sample at BackTraced Location with Tri-Cosine Interoplation.
-				vec3<float> phi1 = cosvec(i0f, i1f, j0f, j1f, k0f, k1f, t1f, s1f, r1f);
+				vec3<float> phi1 = grid_0->sampler(vec3<float>(xf, yf, zf), interp_TriCosine);
 
 				grid_1->setdata(phi1, i, j, k);
 			}
@@ -741,6 +734,7 @@ void fluidsolver_3::advect_sl(grid3_vector<vec3<float>> *grid_0, grid3_vector<ve
 // MacCormack (Euler Per Trace (Forwards,Backwards)) Advection - SCALAR FIELD Overload - 
 void fluidsolver_3::advect_mc(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1)
 {
+	/*
 	// Tri-Cosine Interoplate Scalar Quanitity At Traced Cell Indices (0,1) Of Grid0 (PrevFrame Grid) with Coefficents (t,s,r) - 
 	auto interpCos_scalar = [&](int i0, int i1, int j0, int j1, int k0, int k1, float t1, float s1, float r1) -> float
 	{
@@ -785,6 +779,7 @@ void fluidsolver_3::advect_mc(grid3_scalar<float> *grid_0, grid3_scalar<float> *
 
 		return vec3<float>(U_F, V_F, W_F);
 	};
+	*/
 
 	// Return Min/Max (Scalar) of Cells at 3D (0|+1) Indices. 
 	auto minmax = [&](int i0, int i1, int j0, int j1, int k0, int k1) -> std::tuple<float, float>
@@ -814,7 +809,7 @@ void fluidsolver_3::advect_mc(grid3_scalar<float> *grid_0, grid3_scalar<float> *
 				// Grid0(prev) Current Cell (i,j,k) (phi0)
 				float u = f3obj->vel->getdata_x(i, j, k); float v = f3obj->vel->getdata_y(i, j, k); float w = f3obj->vel->getdata_z(i, j, k);
 				phi0 = grid_0->getdata(i, j, k);
-				vec3<float> phi0_gs = idx_indexToGrid(i, j, k, N_dim); // To Grid Space. 
+				vec3<float> phi0_gs = grid3<float>::idx_indexToGrid(i, j, k, N_dim); // To Grid Space. 
 
 				// FORWARDS TRACE (phi1prime) 
 				float dt_f = dt; // dt Time Forwards. 
@@ -825,23 +820,12 @@ void fluidsolver_3::advect_mc(grid3_scalar<float> *grid_0, grid3_scalar<float> *
 				float zf = phi0_gs.z - dt_f * w;
 				zf = std::max(csize, std::min(zf, 1.0f + csize)); 
 
-				// Forward Trace Grid Space to Index Space - 
-				vec3<float> phi1prime_idx = idx_gridToIndex(xf, yf, zf, N_dim); // IS.
-				// Forwad Trace Cell and +1 Indices (Floored). 
-				int i0f = int(phi1prime_idx.x); int i1f = i0f + 1;
-				int j0f = int(phi1prime_idx.y); int j1f = j0f + 1;
-				int k0f = int(phi1prime_idx.z); int k1f = k0f + 1;
-				// Forward Trace Interoplation Coefficents - 
-				float r1f = phi1prime_idx.x - i0f;
-				float s1f = phi1prime_idx.y - j0f;
-				float t1f = phi1prime_idx.z - k0f;
+				// Sample Scalar Quanitiy at Forward Traced Location (phi1prime)
+				phi1prime = grid_0->sampler(vec3<float>(xf, yf, zf), interp_TriCosine);
+				// Sample Velocity (prev_vel) at Forward Traced Location (vel_f) 
+				vec3<float> vel_f = f3obj->prev_vel->sampler(vec3<float>(xf, yf, zf), interp_TriCosine); 
 
-				// Get Scalar Quanitiy at Forward Traced Location (phi1prime)
-				phi1prime = interpCos_scalar(i0f, i1f, j0f, j1f, k0f, k1f, t1f, s1f, r1f);
-				// Get Velocity (prev_vel) at Forward Traced Location (vel_f) 
-				vec3<float> vel_f = interpCos_vector(i0f, i1f, j0f, j1f, k0f, k1f, t1f, s1f, r1f);
-
-				// BACKWARDS TRACE (phi0prime) \\
+				// BACKWARDS TRACE (phi0prime) 
 				// (From Forward Traced Resulting "Particle" Location, along ForwardsTrace Sampled Vel, by -dt) 
 				float dt_b = -dt; // dt Time Backwards. 
 				float xb = xf - dt_b * vel_f.x;
@@ -851,27 +835,18 @@ void fluidsolver_3::advect_mc(grid3_scalar<float> *grid_0, grid3_scalar<float> *
 				float zb = zf - dt_b * vel_f.z;
 				zb = std::max(csize, std::min(zb, 1.0f + csize));
 
-				// Backward Trace Grid Space to Index Space - 
-				vec3<float> phi0prime_idx = idx_gridToIndex(xb, yb, zb, N_dim); // IS
-				// Backward Trace Cell and +1 Indices. (Floored)
-				int i0b = int(phi0prime_idx.x); int i1b = i0b + 1;
-				int j0b = int(phi0prime_idx.y); int j1b = j0b + 1;
-				int k0b = int(phi0prime_idx.z); int k1b = k0b + 1;
-				// Backward Trace Interoplation Coefficents - 
-				float r1b = phi0prime_idx.x - i0b;
-				float s1b = phi0prime_idx.y - j0b;
-				float t1b = phi0prime_idx.z - k0b;
-
-				// Get Backwards Traced time Value. (phi0prime)
-				phi0prime = interpCos_scalar(i0b, i1b, j0b, j1b, k0b, k1b, t1b, s1b, r1b);
+				// Sample Scalar Quanitiy at Backward Traced Location (phi0prime)
+				phi0prime = grid_0->sampler(vec3<float>(xb, yb, zb), interp_TriCosine);
 
 				// Solve for error, UnClamped resulting McC value. 
 				phi1prime = phi1prime + (phi0 - phi0prime) / 2.0f; 
 
+				/* WIP ADD MINMAX (LIMITER) BACK !
 				// Clamp Advected Quanity to min,max of neigbouring traced cells (limiter) -
 				std::tuple<float, float> f_minmax = minmax(i0f, i1f, j0f, j1f, k0f, k1f); // Min/Max of ForwardTrace Loc Cells. 
 				// Clamp Using Limiter (Min,Max)- 
 				phi1prime = std::max(std::get<0>(f_minmax), std::min(phi1prime, std::get<1>(f_minmax)));
+				*/
 
 				grid_1->setdata(phi1prime, i, j, k);
 			}
@@ -891,6 +866,7 @@ void fluidsolver_3::advect_mc(grid3_scalar<float> *grid_0, grid3_scalar<float> *
 // MacCormack (Euler Per Trace (Forwards,Backwards)) Advection - VECTOR FIELD Overload - 
 void fluidsolver_3::advect_mc(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3<float>> *grid_1)
 {
+	/*
 	// Interoplate Vector Components Quanitity At Traced Cell Indices (0,1) with Coefficents (t,s,r) - 
 	auto cosvec = [&](int i0, int i1, int j0, int j1, int k0, int k1, float t1, float s1, float r1) -> vec3<float>
 	{
@@ -921,7 +897,7 @@ void fluidsolver_3::advect_mc(grid3_vector<vec3<float>> *grid_0, grid3_vector<ve
 
 		return vec3<float>(U_F, V_F, W_F);
 	};
-
+	*/
 	// Return Min/Max Vector of Cells at 3D (0|+1) Interoplation Indices (For Limiter). Needs Optimizing (SIMD). 
 	auto minmax = [&](int i0, int i1, int j0, int j1, int k0, int k1) -> std::tuple<vec3<float>, vec3<float>>
 	{
@@ -967,7 +943,7 @@ void fluidsolver_3::advect_mc(grid3_vector<vec3<float>> *grid_0, grid3_vector<ve
 				// Grid0(prev) Current Cell (i,j,k) (phi0)
 				float u = f3obj->vel->getdata_x(i, j, k); float v = f3obj->vel->getdata_y(i, j, k); float w = f3obj->vel->getdata_z(i, j, k);
 				phi0 = grid_0->getdata(i, j, k);
-				vec3<float> phi0_gs = idx_indexToGrid(i, j, k, N_dim);
+				vec3<float> phi0_gs = grid3<float>::idx_indexToGrid(i, j, k, N_dim);
 
 				// FORWARDS TRACE (Along Postive dt, along curcell (phi0) sampled velocity (phi1prime) - 
 				float xf = phi0_gs.x - dt * u;
@@ -977,21 +953,11 @@ void fluidsolver_3::advect_mc(grid3_vector<vec3<float>> *grid_0, grid3_vector<ve
 				float zf = phi0_gs.z - dt * w;
 				zf = std::max(csize, std::min(zf, 1.0f + csize));
 
-				// Forward-Traced GridSpace Coords -> IDX Space (0,+1). 
-				vec3<float> phi1prime_idx = idx_gridToIndex(xf, yf, zf, N_dim);
-				int i0f = int(phi1prime_idx.x); int i1f = i0f + 1;
-				int j0f = int(phi1prime_idx.y); int j1f = j0f + 1;
-				int k0f = int(phi1prime_idx.z); int k1f = k0f + 1;
+				// Sample Vector Quanitiy at Forward Traced Location (phi1prime)
+				phi1prime = grid_0->sampler(vec3<float>(xf, yf, zf), interp_TriCosine);
 
-				// Interoplation Coefficents ForwardTrace Between Cell(0,+1) - 
-				float r1f = phi1prime_idx.x - i0f;
-				float s1f = phi1prime_idx.y - j0f;
-				float t1f = phi1prime_idx.z - k0f;
-
-				// Get Forward Traced time Vector Value. (phi1prime)
-				phi1prime = cosvec(i0f, i1f, j0f, j1f, k0f, k1f, t1f, s1f, r1f);
-
-				// BACKWARDS TRACE (Along Negative dt, by Forward Trace Sampled Vel) (phi0prime) - 
+				// BACKWARDS TRACE (Along Negative dt, by Forward Trace Sampled Vector (assume the vector quanitiy is (Prev) Velocity)) (phi0prime) - 
+				// Note ideally need to sample f3obj->prev_vel sperealtey, incase advected vector quanitity is not velocity. 
 				float xb = xf - (-dt) * phi1prime.x;
 				xb = std::max(csize, std::min(xb, 1.0f + csize)); // GridSpace Clamp. 
 				float yb = yf - (-dt) * phi1prime.y;
@@ -999,21 +965,15 @@ void fluidsolver_3::advect_mc(grid3_vector<vec3<float>> *grid_0, grid3_vector<ve
 				float zb = zf - (-dt) * phi1prime.z;
 				zb = std::max(csize, std::min(zb, 1.0f + csize));
 
-				// Back-Traced GridSpace Coords -> IDX Space (0,+1) - 
-				vec3<float> phi0prime_idx = idx_gridToIndex(xb, yb, zb, N_dim);
-				int i0b = int(phi0prime_idx.x); int i1b = i0b + 1;
-				int j0b = int(phi0prime_idx.y); int j1b = j0b + 1;
-				int k0b = int(phi0prime_idx.z); int k1b = k0b + 1;
-				// Interoplation Coefficents BackTrace Between Cell(0,+1) - 
-				float r1b = phi0prime_idx.x - i0b;
-				float s1b = phi0prime_idx.y - j0b;
-				float t1b = phi0prime_idx.z - k0b;
-
-				// Get Backwards Traced time Value (phi0prime).
-				phi0prime = cosvec(i0b, i1b, j0b, j1b, k0b, k1b, t1b, s1b, r1b);
+				// Sample Scalar Quanitiy at Backward Traced Location (phi0prime)
+				phi0prime = grid_0->sampler(vec3<float>(xb, yb, zb), interp_TriCosine);
 
 				// Solve for Error
 				phi1prime = phi1prime + (phi0 - phi0prime) / 2.0f; // UnClamped McC Vector Value 
+
+				/* 
+				
+				FIX MIN MAX WIP 
 
 				// Limiter (Clamp to Forward Traced Min/Max Vector Values) - 
 				vec3<float> phi1prime_uc, phi1prime_c;
@@ -1024,6 +984,8 @@ void fluidsolver_3::advect_mc(grid3_vector<vec3<float>> *grid_0, grid3_vector<ve
 				phi1prime_c = vec_clamp(std::get<0>(v_minmax), std::get<1>(v_minmax), phi1prime);
 				// Lerp Limiter Strength 
 				phi1prime = vec_lerp(phi1prime_uc, phi1prime_c, Parms.p_McC_LimiterStrength);
+
+				*/
 
 				// Set Final Cur_Grid Advected Vector Cell Value. 
 				grid_1->setdata(phi1prime, i, j, k);
@@ -1497,14 +1459,14 @@ void fluidsolver_3::solve_step(bool solve, int max_step)
 		float offs = sin(((float)step_count / (float)max_step) * 500.0f) * 0.15f;
 		float offb = cos(((float)step_count / (float)max_step) * 400.0f) * 1.0; 
 		offb = (offb + 1) * 0.5f; 
-		f3obj->implicit_sphere_source(0.25f, vec3<float>(0.0f, 1.0f, offb), vec3<float>(offs + 0.4f, 0.1f, 0.5f), impsource_radius); // 0.01f
+		//f3obj->implicit_sphere_source(0.25f, vec3<float>(0.0f, 1.0f, offb), vec3<float>(offs + 0.4f, 0.1f, 0.5f), impsource_radius); // 0.01f
 
 		// Mouse Emitter -
 		/*vec3<float> emit_vel = vec3<float>(0.0f, 1.0f, 0.0f) + (vec3<float>(mouse_vel.x, mouse_vel.y, 0.0f) *= 2.0f); 
 		  f3obj->implicit_sphere_source(0.5f, emit_vel, vec3<float>(xpos_1_N, 1.0f-ypos_1_N, 0.5f), impsource_radius); */
 
 		// Static Emitter -
-		//f3obj->implicit_sphere_source(0.25f, vec3<float>(0.0f, 1.0f, 0.0f), vec3<float>(0.5f, 0.1f, 0.5f), impsource_radius);
+		f3obj->implicit_sphere_source(0.25f, vec3<float>(0.0f, 1.0f, 0.0f), vec3<float>(0.5f, 0.1f, 0.5f), impsource_radius);
 
 		// STEP - SUB - SOLVER STEP OPERATIONS \\ -------------- 
 		velocity_step();

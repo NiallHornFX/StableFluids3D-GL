@@ -186,12 +186,8 @@ protected:
 	void updt_mouseposRange(const step step_id); // -1 to 1. 
 	void updt_mousevel();
 	// Advection Interoplation - 
-	float       interp_scalarCosine(grid3_scalar<float> *grid_0, int i0, int i1, int j0, int j1, int k0, int k1, float t1, float s1, float r1) const;
-	float       interp_scalarLinear(grid3_scalar<float> *grid_0, int i0, int i1, int j0, int j1, int k0, int k1, float t1, float s1, float r1) const;
-	vec3<float> interp_vectorLinear(grid3_vector<vec3<float>> *grid_0, int i0, int i1, int j0, int j1, int k0, int k1, float t1, float s1, float r1) const;
-	vec3<float> interp_vectorCosine(grid3_vector<vec3<float>> *grid_0, int i0, int i1, int j0, int j1, int k0, int k1, float t1, float s1, float r1) const;
-	f_tuple minmaxcell_scalar(grid3_scalar<float> *grid_0, int i0, int i1, int j0, int j1, int k0, int k1) const;
-	vec3f_tuple minmaxcell_vector(grid3_vector<vec3<float>> *grid_0, int i0, int i1, int j0, int j1, int k0, int k1) const;
+//	f_tuple minmaxcell_scalar(grid3_scalar<float> *grid_0, int i0, int i1, int j0, int j1, int k0, int k1) const;
+//	vec3f_tuple minmaxcell_vector(grid3_vector<vec3<float>> *grid_0, int i0, int i1, int j0, int j1, int k0, int k1) const;
 
 	// Misc Uitl - 
 	void sphere_rad_test();
@@ -203,9 +199,7 @@ protected:
 	__forceinline static float cosinterp(float val_0, float val_1, float bias);
 	__forceinline static vec3<float> vec_clamp(const vec3<float> &v_min, const vec3<float> &v_max, const vec3<float> v);
 	__forceinline static vec3<float> vec_lerp(const vec3<float> &v_a, const vec3<float> &v_b, float bias);
-	// Grid-Index-Grid Space Conversion 
-	__forceinline static vec3<float> idx_indexToGrid(int i, int j, int k, int N_dim); 
-	__forceinline static vec3<float> idx_gridToIndex(float x, float y, float z, int N_dim);
+
 
 	// Delete Temp Grids
 	void del_pressure();
@@ -287,18 +281,5 @@ vec3<float> fluidsolver_3::vec_lerp(const vec3<float> &v_a, const vec3<float> &v
 	float zz = (1.0f - bias) * v_a.z + bias * v_b.z;
 	return vec3<float>(xx, yy, zz);
 }
-
-// Space-Index Conversion MFuncs \\ 
-vec3<float> fluidsolver_3::idx_indexToGrid(int i, int j, int k, int N_dim)
-{
-	return vec3<float>((float)i / (float)N_dim, (float)j / (float)N_dim, (float)k / (float)N_dim);
-}
-
-// Return as vec3<float> to keep fractional component intact for Interp coefficents. 
-vec3<float> fluidsolver_3::idx_gridToIndex(float x, float y, float z, int N_dim)
-{
-	float N_dim_f = (float)N_dim;
-	return vec3<float>((x * N_dim_f), (y * N_dim_f), (z * N_dim_f));
-};
 
 #endif

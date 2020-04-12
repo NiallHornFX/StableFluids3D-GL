@@ -63,6 +63,10 @@ public:
 	__forceinline int idx_3Dto1D(int i, int j, int k) const;
 	__forceinline vec3<int> idx_1Dto3D(int k) const;
 
+	// Static (Index,Grid) Space Convertersion 
+	__forceinline static vec3<float> idx_indexToGrid(int i, int j, int k, std::size_t N_dim);
+	__forceinline static vec3<float> idx_gridToIndex(float x, float y, float z, std::size_t N_dim);
+
 protected:
 	std::vector<T> grid_data;
 	std::size_t x_size, y_size, z_size, edge_size, total_size;
@@ -134,9 +138,9 @@ public:
 
 // !TO-DO Move Inlined Defs to grid3d.inl and incl. 
 
-// INLINE GRID MEMBER FUNTIONS \\ 
+// INLINE GRID MEMBER FUNTIONS (Grid_3) \\ 
 
-// Inline (Forced) Indexing - 
+// (Forced) Inline Indexing - 
 template <class T>
 vec3<int> grid3<T>::idx_1Dto3D(int i) const
 {
@@ -152,6 +156,22 @@ int grid3<T>::idx_3Dto1D(int i, int j, int k) const
 {
 	return (int) i + (x_size + edge_size) * (j + (z_size + edge_size) * k);
 }
+
+// (Forced) Inline Grid/Index Space Converters - 
+template <class T>
+vec3<float> grid3<T>::idx_indexToGrid(int i, int j, int k, std::size_t N_dim) 
+{
+	return vec3<float>((float)i / (float)N_dim, (float)j / (float)N_dim, (float)k / (float)N_dim);
+}
+
+// Return as vec3<float> to keep fractional component intact for Interp coefficents. 
+template <class T>
+vec3<float> grid3<T>::idx_gridToIndex(float x, float y, float z, std::size_t N_dim)
+{
+	float N_dim_f = (float)N_dim;
+	return vec3<float>((x * N_dim_f), (y * N_dim_f), (z * N_dim_f));
+};
+
 
 
 #endif
