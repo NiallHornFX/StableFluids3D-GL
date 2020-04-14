@@ -43,8 +43,8 @@ public:
 	T getdata(int i, int j, int k) const;
 
 	// PV Grid Sampler and MinMax -
-	virtual T sampler(const vec3<float> &gs_loc, interpType interp) const = 0;
-	//virtual std::tuple<T, T> minmax(int i0, int j0, int k0) const = 0; 
+	virtual T sampler(const vec3<float> &gs_loc, vec3<int> &r_indices, interpType interp) const = 0;
+	virtual std::tuple<T, T> minmax(int i0, int j0, int k0) const = 0; 
 
 	// V Utils
 	virtual void swap(const grid3 *B);
@@ -86,8 +86,8 @@ public:
 
 	virtual ~grid3_scalar() override;
 
-	virtual T sampler(const vec3<float> &gs_loc, interpType interp) const override; 
-	//virtual std::tuple<T, T> minmax(int i0, int j0, int k0) const override; 
+	virtual T sampler(const vec3<float> &gs_loc, vec3<int> &r_indices, interpType interp) const override;
+	virtual std::tuple<T, T> minmax(int i0, int j0, int k0) const override; 
 
 	virtual void clear() override; 
 	virtual void printinfo() const override; 
@@ -128,8 +128,8 @@ public:
 	float getdata_z(int i) const;
 	float getdata_z(int i, int j, int k) const;
 
-	virtual T sampler(const vec3<float> &gs_loc, interpType interp) const override; 
-	//virtual std::tuple<T, T> minmax(int i0, int j0, int k0) const override;
+	virtual T sampler(const vec3<float> &gs_loc, vec3<int> &r_indices, interpType interp) const override;
+	virtual std::tuple<T, T> minmax(int i0, int j0, int k0) const override;
 
 	virtual void clear() override;
 	virtual void printinfo() const override;
