@@ -44,7 +44,7 @@
 short verbose = 0;
 double const PI = 3.14159265359; 
 
-int const cube = 64; // Cube Grid Size N (1-N)
+int const cube = 128; // Cube Grid Size N (1-N)
 int const edge = 2; // Total Edge Cells E (0 | N+1). 
 int win_size_xy = 512; 
 int const solve_steps = 1000; 
@@ -68,20 +68,33 @@ int main()
 	// Create FluidSolver Instance,  Pass FluidObj Pointer to It. 
 	fluidsolver_3 test_fluidsolver (&test_fluidobj, timestep);
 
-	// Pre Solve Parmaters Inital Values Set -
+	// Inital Paramters - \\
+
+	// Diffusion - 
 	test_fluidsolver.Parms.p_Do_Dens_Diff = false; 
-	test_fluidsolver.Parms.p_useVorticity = false;
-	test_fluidsolver.Parms.p_Do_Vel_Disp = false; 
+
+	// Dissipation - 
+	test_fluidsolver.Parms.p_Do_Vel_Disp = false;
 	test_fluidsolver.Parms.p_Do_Dens_Disp = false;
-	test_fluidsolver.Parms.p_Dens_Disp_Mult = 0.980f; 
+	test_fluidsolver.Parms.p_Dens_Disp_Mult = 0.980f;
+
+	// Projection -
 	test_fluidsolver.Parms.p_ProjectionType = test_fluidsolver.Parms.Project_GaussSeidel_SOR; 
-	//test_fluidsolver.Parms.p_ProjectionType = test_fluidsolver.Parms.Project_NONE_DBG;
 	test_fluidsolver.Parms.p_SOR_alpha = 1.9f;
-	test_fluidsolver.Parms.p_GS_Proj_iter = 5; 
-	test_fluidsolver.Parms.p_AdvectionType = test_fluidsolver.Parms.Advect_MC_Euler;
-	//test_fluidsolver.Parms.p_AdvectionType = test_fluidsolver.Parms.Advect_SL_BackTrace_Euler;
+	test_fluidsolver.Parms.p_GS_Proj_iter = 5;
+	//test_fluidsolver.Parms.p_ProjectionType = test_fluidsolver.Parms.Project_NONE_DBG;
+
+	// Advection - 
+	//test_fluidsolver.Parms.p_AdvectionType = test_fluidsolver.Parms.Advect_MC_Euler;
+	test_fluidsolver.Parms.p_McC_LimiterStrength = 0.0f;
+	test_fluidsolver.Parms.p_AdvectionType = test_fluidsolver.Parms.Advect_SL_BackTrace_Euler;
 	//test_fluidsolver.Parms.p_AdvectionType = test_fluidsolver.Parms.Advect_NONE_DBG;
-	test_fluidsolver.Parms.p_McC_LimiterStrength = 0.0f; 
+
+	// Vorticty Confinement - 
+	test_fluidsolver.Parms.p_useVorticity = true; 
+	test_fluidsolver.Parms.p_vortConfine_Str = 1.0f; 
+
+	// Pass Render Context and Begin Sim/Render Loop \\ 
 
 	// Pass Window Pointer from RenderContext - 
 	test_fluidsolver.set_window(render_c.get_window());

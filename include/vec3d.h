@@ -104,11 +104,10 @@ inline float vec3<T>::angle(const vec3 &b) const
 template <class T>
 inline vec3<T>& vec3<T>::normalize()
 {
-	float l = length();
+	float l = length(); if (l == 0) { x = 0.0f, y = 0.0f, z = 0.0f; return *this; }
 	x = x / l;
 	y = y / l;
 	z = z / l;
-
 	return *this; 
 }
 

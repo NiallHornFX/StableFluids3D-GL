@@ -788,7 +788,74 @@ void fluidsolver_3::advect_mc(grid3_vector<vec3<float>> *grid_0, grid3_vector<ve
 	VORTICITY CONFINEMENT
 ==================================================== */
 
+// Caluclate Force to confine and bost vortices in velocity field.
+void fluidsolver_3::vorticty_confine()
+{
+	// Alloc Scratch Grids - 
+	curl = new grid3_vector<vec3<float>>(x_s, y_s, z_s, e_s); 
+	curl_mag = new grid3_scalar<float>(x_s, y_s, z_s, e_s);
+	vort = new grid3_vector<vec3<float>>(x_s, y_s, z_s, e_s);
 
+	float h = 1.0f / N_dim; 
+
+	// Calculate Curl from Velocity Field - 
+	for (int k = 1; k <= N_dim; k++)
+	{
+		for (int j = 1; j <= N_dim; j++)
+		{
+			for (int i = 1; i <= N_dim; i++)
+			{
+				// Velocity - Curl (Vorticity Axis)
+				float xx_c = (f3obj->vel->getdata_z(i, j+1, k) - f3obj->vel->getdata_z(i, j-1, k) / (2.0f * h)) - (f3obj->vel->getdata_y(i, j, k+1) - f3obj->vel->getdata_y(i, j, k-1) / (2.0f * h)); 
+				float yy_c = (f3obj->vel->getdata_x(i, j, k+1) - f3obj->vel->getdata_x(i, j, k-1) / (2.0f * h)) - (f3obj->vel->getdata_z(i+1, j, k) - f3obj->vel->getdata_z(i-1, j, k) / (2.0f * h));
+				float zz_c = (f3obj->vel->getdata_y(i+1, j, k) - f3obj->vel->getdata_y(i-1, j, k) / (2.0f * h)) - (f3obj->vel->getdata_x(i, j+1, k) - f3obj->vel->getdata_x(i, j-1, k) / (2.0f * h));
+				vec3<float> curl_v(xx_c, yy_c, zz_c);
+				curl->setdata(curl_v, i, j, k);
+				curl_mag->setdata(vec3<float>(xx_c, yy_c, zz_c).length(), i, j, k); // PreCalc Curl Mag. 
+			}
+		}
+	}
+
+	// Calculate Vorticty Direction From Curl Gradient, Cross and Apply Vortex Confinement Force - 
+	for (int k = 1; k <= N_dim; k++)
+	{
+		for (int j = 1; j <= N_dim; j++)
+		{
+			for (int i = 1; i <= N_dim; i++)
+			{
+				vec3<float> curl_v = curl->getdata(i, j, k);
+				// Curl Magnitude - Gradient (Vorticity Direction)
+				float xx_g = curl_mag->getdata(i + 1, j, k) - curl_mag->getdata(i - 1, j, k) / (2.0f * h);
+				float yy_g = curl_mag->getdata(i, j + 1, k) - curl_mag->getdata(i, j - 1, k) / (2.0f * h);
+				float zz_g = curl_mag->getdata(i, j, k + 1) - curl_mag->getdata(i, j, k - 1) / (2.0f * h);
+				// Normalize with CharactiersticValue (h * dt).
+				vec3<float> vort_v(xx_g, yy_g, zz_g); float l = vort_v.length();
+				float xx_n = vort_v.x / l + (h * dt);
+				float yy_n = vort_v.y / l + (h * dt);
+				float zz_n = vort_v.z / l + (h * dt);
+				if (l == 0) { xx_n = 0.0f, yy_n = 0.0f, zz_n = 0.0f; } // prevent /0 nan.
+				vec3<float> vort_vn(xx_n, yy_n, zz_n);
+				vort->setdata(vort_vn, i, j, k);
+
+				// Confine Vector Cross - 
+				vec3<float> curl_vn = curl_v; curl_vn.normalize();
+				vec3<float> conf_v = vec3<float>::cross(vort_vn, curl_v); // To Normalize Curl or not? 
+
+				// Integrate to Velocity Field. 
+				//conf_v *= Parms.p_vortConfine_Str * h; 
+				conf_v *= 5.0f * h;
+				f3obj->integrate_force(conf_v, dt, i, j, k);
+				//f3obj->integrate_force(curl_vn, dt, i, j, k);
+				//f3obj->add_velocity(conf_v, i, j, k);	
+			}
+		}
+	}
+
+	// De-Alloc Scratch Grids (Unless want to viz them)
+	delete curl; curl = nullptr; 
+	delete curl_mag; curl_mag = nullptr; 
+	delete vort; vort = nullptr; 
+}
 
 
 
@@ -1131,6 +1198,7 @@ void fluidsolver_3::density_step()
 
 void fluidsolver_3::velocity_step()
 {
+	// DIFFUSE Velocity / Copy Velocity to Prev. 
 	// If Using Diffusion, If Not Need to Manually set Cur to Prev, rather than swapping. 
 	if (Parms.p_Do_Vel_Diff == true)
 	{
@@ -1144,8 +1212,7 @@ void fluidsolver_3::velocity_step()
 		f3obj->setcurtoprev(f3obj->prev_vel, f3obj->vel);
 	}
 
-	// ADVECT VELOCITY FIELD (Self Advect) \\
-
+	// ADVECT VELOCITY FIELD (Self Advect) 
 	if (Parms.p_AdvectionType == Parms.Advect_SL_BackTrace_Euler)
 	{
 		advect_sl(f3obj->prev_vel, f3obj->vel);
@@ -1158,17 +1225,18 @@ void fluidsolver_3::velocity_step()
 	// DISSIPATE Velocity
 	if (Parms.p_Do_Vel_Disp)
 	{
-		dissipate(f3obj->vel, Parms.p_Vel_Disp_Mult, this->dt); // Density Dissipation. 
+		dissipate(f3obj->vel, Parms.p_Vel_Disp_Mult, this->dt); // Velocity Dissipation. 
 	}
 
 	// VORTEX CONFINEMENT 
 	if (Parms.p_useVorticity)
 	{
-		// Apply Vortex Confinement Force to Velocity Field. 
+		// Apply Vortex Confinement Force to Cur Velocity Field - 
+		vorticty_confine();
+
 	}
 
-	// PROJECT VELOCITY FIELD \\  (Post Advect Only) 
-
+	// PROJECT VELOCITY FIELD   (Post Advect Only) 
 	if (Parms.p_ProjectionType == Parms.Project_GaussSeidel || Parms.p_ProjectionType == Parms.Project_GaussSeidel_SOR)
 	{
 		// GS + SOR (ST) - (SOR May or May not be enabled by FluidSolver Member Paramter). 
@@ -1240,14 +1308,14 @@ void fluidsolver_3::solve_step(bool solve, int max_step)
 		float offs = sin(((float)step_count / (float)max_step) * 500.0f) * 0.15f;
 		float offb = cos(((float)step_count / (float)max_step) * 400.0f) * 1.0; 
 		offb = (offb + 1) * 0.5f; 
-		f3obj->implicit_sphere_source(0.25f, vec3<float>(0.0f, 1.0f, offb), vec3<float>(offs + 0.4f, 0.1f, 0.5f), impsource_radius); // 0.01f
+		//f3obj->implicit_sphere_source(0.25f, vec3<float>(0.0f, 1.0f, offb), vec3<float>(offs + 0.4f, 0.1f, 0.5f), impsource_radius); // 0.01f
 
 		// Mouse Emitter -
 		/*vec3<float> emit_vel = vec3<float>(0.0f, 1.0f, 0.0f) + (vec3<float>(mouse_vel.x, mouse_vel.y, 0.0f) *= 2.0f); 
 		  f3obj->implicit_sphere_source(0.5f, emit_vel, vec3<float>(xpos_1_N, 1.0f-ypos_1_N, 0.5f), impsource_radius); */
 
 		// Static Emitter -
-		//f3obj->implicit_sphere_source(0.25f, vec3<float>(0.0f, 1.0f, 0.0f), vec3<float>(0.5f, 0.1f, 0.5f), impsource_radius);
+		f3obj->implicit_sphere_source(0.25f, vec3<float>(0.0f, 1.0f, 0.0f), vec3<float>(0.5f, 0.1f, 0.5f), impsource_radius);
 
 		// STEP - SUB - SOLVER STEP OPERATIONS \\ -------------- 
 		velocity_step();

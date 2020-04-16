@@ -107,6 +107,9 @@ public:
 		AdvType p_AdvectionType = Advect_SL_BackTrace_Euler;
 		float p_McC_LimiterStrength = 0.25f; 
 
+		// Vorticty Confinement Paramters - 
+		float p_vortConfine_Str = 1.0f; 
+
 		// Diffusion Switches - 
 		bool p_Do_Vel_Diff = false, p_Do_Dens_Diff = true;
 		int p_Vel_Diff_iter = 5, p_Dens_Diff_iter = 5;
@@ -170,7 +173,7 @@ protected:
 	void dissipate(grid3_vector<vec3<float>> *grid, float disp_mult, float dt);
 
 	// VORTICITY CONFINEMENT WIP \\ - 
-	//void vorticty_confine(float strength);
+	void vorticty_confine();
 
 	// SOLVER - SUB SOLVERS \\ - 
 	void density_step();
@@ -225,8 +228,11 @@ private:
 	// Temp/Scratch Grids for Solver Use Only.
 	grid3_scalar<float> *pressure, *pressure_1;
 	grid3_scalar<float> *divergence;
-	grid3_scalar<float> *vort; // 
 	grid3_scalar<float> *spherebounds_sdf; 
+	grid3_scalar<float> *curl_mag;
+	grid3_vector<vec3<float>> *curl;
+	grid3_vector<vec3<float>> *vort;
+
 
 	// Render Members - 
 	renderobject_3D_OGL *render_obj; // HC OGL.
