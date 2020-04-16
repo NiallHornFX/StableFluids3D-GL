@@ -73,7 +73,7 @@ int main()
 	test_fluidsolver.Parms.p_useVorticity = false;
 	test_fluidsolver.Parms.p_Do_Vel_Disp = false; 
 	test_fluidsolver.Parms.p_Do_Dens_Disp = false;
-	test_fluidsolver.Parms.p_Dens_Disp_Mult = 0.970f; 
+	test_fluidsolver.Parms.p_Dens_Disp_Mult = 0.980f; 
 	test_fluidsolver.Parms.p_ProjectionType = test_fluidsolver.Parms.Project_GaussSeidel_SOR; 
 	//test_fluidsolver.Parms.p_ProjectionType = test_fluidsolver.Parms.Project_NONE_DBG;
 	test_fluidsolver.Parms.p_SOR_alpha = 1.9f;

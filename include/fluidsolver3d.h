@@ -15,7 +15,7 @@
 #include <tuple>
 #include <cmath>
 
-#include <immintrin.h> 
+#include <immintrin.h>  // SIMD
 
 typedef std::tuple<vec3<float>, vec3<float>> vec3f_tuple; 
 typedef std::tuple<float, float> f_tuple; 
@@ -51,7 +51,7 @@ enum class step
 };
 
 
-// 3D Fluid Solver Class - Interface/Decleration. 
+// 3D Fluid Solver Class - Decleration
 
 class fluidsolver_3
 {

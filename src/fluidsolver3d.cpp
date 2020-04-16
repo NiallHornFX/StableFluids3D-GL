@@ -861,11 +861,11 @@ void fluidsolver_3::project(int iter)
 				{
 					float n0 = pressure->getdata(i, j, k); // n (Pressure (l(n)) for SOR)
 
-					float pres = (divergence->getdata(i, j, k) 
-						+ pressure->getdata(i - 1, j, k) + pressure->getdata(i + 1, j, k) 
+					float pres = (divergence->getdata(i, j, k)
+						+ pressure->getdata(i - 1, j, k) + pressure->getdata(i + 1, j, k)
 						+ pressure->getdata(i, j - 1, k) + pressure->getdata(i, j + 1, k)
 						+ pressure->getdata(i, j, k - 1) + pressure->getdata(i, j, k + 1)
-						) / 6.0f;
+						) * 0.1666f; // / 6.0f;
 
 					float n1 = pres; // n+1 (Pressure (l(n+1)) for SOR)
 
@@ -1240,14 +1240,14 @@ void fluidsolver_3::solve_step(bool solve, int max_step)
 		float offs = sin(((float)step_count / (float)max_step) * 500.0f) * 0.15f;
 		float offb = cos(((float)step_count / (float)max_step) * 400.0f) * 1.0; 
 		offb = (offb + 1) * 0.5f; 
-		//f3obj->implicit_sphere_source(0.25f, vec3<float>(0.0f, 1.0f, offb), vec3<float>(offs + 0.4f, 0.1f, 0.5f), impsource_radius); // 0.01f
+		f3obj->implicit_sphere_source(0.25f, vec3<float>(0.0f, 1.0f, offb), vec3<float>(offs + 0.4f, 0.1f, 0.5f), impsource_radius); // 0.01f
 
 		// Mouse Emitter -
 		/*vec3<float> emit_vel = vec3<float>(0.0f, 1.0f, 0.0f) + (vec3<float>(mouse_vel.x, mouse_vel.y, 0.0f) *= 2.0f); 
 		  f3obj->implicit_sphere_source(0.5f, emit_vel, vec3<float>(xpos_1_N, 1.0f-ypos_1_N, 0.5f), impsource_radius); */
 
 		// Static Emitter -
-		f3obj->implicit_sphere_source(0.25f, vec3<float>(0.0f, 1.0f, 0.0f), vec3<float>(0.5f, 0.1f, 0.5f), impsource_radius);
+		//f3obj->implicit_sphere_source(0.25f, vec3<float>(0.0f, 1.0f, 0.0f), vec3<float>(0.5f, 0.1f, 0.5f), impsource_radius);
 
 		// STEP - SUB - SOLVER STEP OPERATIONS \\ -------------- 
 		velocity_step();

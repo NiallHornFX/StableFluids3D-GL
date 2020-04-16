@@ -13,7 +13,6 @@
 
 #include <omp.h> 
 
-
 extern short verbose; // Get Verbose Global from main. 
 
 //----------------------------------------------------------------------\\
@@ -151,6 +150,7 @@ T grid3_scalar<T>::sampler(const vec3<float> &gs_loc, vec3<int> &r_indices, inte
 	{
 		return (1.0f - bias) * val_0 + bias * val_1;
 	};
+
 	auto cosinterp = [](auto val_0, auto val_1, auto bias) -> auto
 	{
 		auto mu = (1.0f - std::cos(bias*PI)) / 2.0f;
@@ -205,7 +205,6 @@ T grid3_scalar<T>::sampler(const vec3<float> &gs_loc, vec3<int> &r_indices, inte
 
 // grid3 MinMax Scalar Implementation -
 // Deduce Scalar MinAndMax of <T> of cell neighbours at passed Index Space Grid Location. 
-
 template <class T>
 std::tuple<T, T> grid3_scalar<T>::minmax(int i0, int j0, int k0) const
 {
@@ -329,6 +328,7 @@ T grid3_vector<T>::sampler(const vec3<float> &gs_loc, vec3<int> &r_indices, inte
 		std::cerr << "ERR::Invalid Interoplation Type Specifed \n \n";
 		std::terminate();
 	}
+
 }
 
 // grid3 MinMax Vector Implementation -

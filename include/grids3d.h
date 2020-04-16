@@ -173,5 +173,4 @@ vec3<float> grid3<T>::idx_gridToIndex(float x, float y, float z, std::size_t N_d
 };
 
 
-
 #endif
