@@ -44,7 +44,7 @@
 short verbose = 0;
 double const PI = 3.14159265359; 
 
-int const cube = 64; // Cube Grid Size N (1-N)
+int const cube = 96; // Cube Grid Size N (1-N)
 int const edge = 2; // Total Edge Cells E (0 | N+1). 
 int win_size_xy = 512; 
 int const solve_steps = 1000; 
@@ -92,7 +92,7 @@ int main()
 
 	// Vorticty Confinement - 
 	test_fluidsolver.Parms.p_useVorticity = true; 
-	test_fluidsolver.Parms.p_vortConfine_Str = 10.0f; 
+	test_fluidsolver.Parms.p_vortConfine_Str = 7.5f; 
 
 	// Pass Render Context and Begin Sim/Render Loop \\ 
 

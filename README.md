@@ -2,35 +2,34 @@
 
 ![Demo GIF - Updated Feb 12th](gif_demo.gif) ![Demo GIF - Updated Feb 14th](gif_demo_bb.gif)
 
-This is a 3D Implementation of Jos Stams famous paper [Stable Fluids](https://d2f99xq7vri1nk.cloudfront.net/legacy_app_files/pdf/ns.pdf "Paper") on the CPU.
-Implemented in C++ in an OOP Framework style, with OpenGL currently the only implemented Graphics API, For Ray Marching the resulting 3D Density Grid. 
-However the `renderobject_3D` abstract base Class can be implemented to support other API Backends. This Multi-Render Handler abstraction will be futher increased later.  
-I chose to implement this as a CPU Solver first, mainly because in VFX CPU Solvers take precdence, my GPU Implementation will become part of this project later. 
 
-The Advection Method implemented currently uses Semi-Lagrangian (Single Step, Forward Euler), with ethier Linear or Cosine Interpolation. 
-The Pressure Projection step uses a Matrix-less implementation of the Gauss-Seidel (Single-Threaded) with Successive Over Relaxation or Jacobi (Multi-Threaded) 
+This is a 3D Implementation of Jos Stams famous paper *Stable Fluids Paper [Stable Fluids](https://d2f99xq7vri1nk.cloudfront.net/legacy_app_files/pdf/ns.pdf "StableFluidsPaper") [1]* on the CPU.
+Implemented in C++ in an OOP Framework style, with OpenGL currently the only implemented Graphics API, For Ray Marching the resulting 3D Density Grid. 
+However the `renderobject_3D` abstract base Class can be implemented to support other API Backends. This Multi-Render Handler abstraction will be futher increased later.  I chose to implement this as a CPU Solver first, mainly because in VFX CPU Solvers take precedence, my GPU Implementation will become part of this project later. 
+
+The Advection Method implemented currently uses Semi-Lagrangian (Single Step, Forward Euler) or MacCormack Advection based of [Selle et al. 2007](http://physbam.stanford.edu/~fedkiw/papers/stanford2006-09.pdf "MacCormackPaper") [2], with ethier Linear or Cosine Interpolation. 
+With optional use of Vortex Confinement force, based on [Fedkiw et al. 2001](https://web.stanford.edu/class/cs237d/smoke.pdf "VortConfinePaper") [3] to boost vortices lost due to numerical dissipation. 
+The Pressure Projection step uses a matrix-less implementation of the Gauss-Seidel (Single-Threaded) with Successive Over Relaxation or Jacobi (Multi-Threaded) 
 iterative linear solvers to compute the pressure grid. While the Jacobi method can be safeley Multi-Threaded increasing performance, its simultaneous displacements
 result in much slower convergence than the Gauss-Seidel method, espeically when using Successive Over Relaxation which increases convergence simmilar to the
 Conjugate Gradient Method, because of its successive displacements been applied within each solve iteration, thus its favoured as the default pressure solver.
 
-*The Second Order accurate Runge Kutta 2 (MidPoint) Method is currently implemented but not enabled in solver just yet.  
-*SSE and AVX Intrinsics are been implemented to speed up Linear Interpolations aswell as Gradient calculations.
-*OpenMP used for Data Parallelism based Multithreading on LockFree Solver operations where applicable. Plan to replace with TBB. 
-
 I Chose to implement my own templated vector and matrix classes oppose to using GLM. These are been further refined. The Project as a whole has a long way to go.
-For now no GUI is implemented, there are basic Inputs W/S for Camera Translation and Page Up/Down for Emission Source Scaling. The Mouse can be used
-to re-postion the single point light illuminating the scene. 
+
 The Application/Solve and Render Loop is currently embedded as part of the `fluidsolver_3` class itself, within the `fluidsolver_3::solve_step()` member function.
 
 ### Task List - April 2020
 
 - [x] MacCormack Advection 
-- [ ] Vorticity Confinement
+- [x] Vorticity Confinement
+- [ ] Integrate TBB
+- [ ] SIMD Instructions
+- [ ] IM-GUI
+- [ ] RayMarcher Refactor
 
 ## Dependencies 
 * GLFW - OpenGL Window and Context Creation.
 * GLEW - OpenGL Extensions Loading/Wangiling.
-* OpenMP 2.0 - Data Parallelism Multithreading. 
 
 ## Building ##
 CMake Build System is planned, for now relies on Visual Studio 2017+ (vc141). Libaries of GLFW and GLEW are statically Linked to the application as of now. 
@@ -61,3 +60,9 @@ Tested on Windows 7 and Windows 10. Linux Support coming soon.
 	// Call FluidSolver Solve_Step Member Function to begin Simulation and Rendering - 
 	test_fluidsolver.solve_step(true, solve_steps);
 ````
+
+## Implemented Papers ##
+
+1. - J. Stam. Stable fluids. In Proc. of SIGGRAPH 99, pages 121–128, 1999.
+2. - S. Andrew, F. Ronald, Kim, Byungmoon, Liu, Yingjie, and Rossignac, Jarek. An unconditionally stable maccormack method. J. Sci. Comput., 35(2-3), June 2008
+3. - R. Fedkiw, J. Stam, AND JENSEN, H. 2001. Visual simulation ofsmoke. In Proc. of ACM SIGGRAPH 2001, 15–22.
