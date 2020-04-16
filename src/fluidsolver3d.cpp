@@ -806,9 +806,9 @@ void fluidsolver_3::vorticty_confine()
 			for (int i = 1; i <= N_dim; i++)
 			{
 				// Velocity - Curl (Vorticity Axis)
-				float xx_c = (f3obj->vel->getdata_z(i, j+1, k) - f3obj->vel->getdata_z(i, j-1, k) / (2.0f * h)) - (f3obj->vel->getdata_y(i, j, k+1) - f3obj->vel->getdata_y(i, j, k-1) / (2.0f * h)); 
-				float yy_c = (f3obj->vel->getdata_x(i, j, k+1) - f3obj->vel->getdata_x(i, j, k-1) / (2.0f * h)) - (f3obj->vel->getdata_z(i+1, j, k) - f3obj->vel->getdata_z(i-1, j, k) / (2.0f * h));
-				float zz_c = (f3obj->vel->getdata_y(i+1, j, k) - f3obj->vel->getdata_y(i-1, j, k) / (2.0f * h)) - (f3obj->vel->getdata_x(i, j+1, k) - f3obj->vel->getdata_x(i, j-1, k) / (2.0f * h));
+				float xx_c = ( (f3obj->vel->getdata_z(i, j+1, k) - f3obj->vel->getdata_z(i, j-1, k)) / (2.0f * h) ) - ( (f3obj->vel->getdata_y(i, j, k+1) - f3obj->vel->getdata_y(i, j, k-1)) / (2.0f * h) ); 
+				float yy_c = ( (f3obj->vel->getdata_x(i, j, k+1) - f3obj->vel->getdata_x(i, j, k-1)) / (2.0f * h) ) - ( (f3obj->vel->getdata_z(i+1, j, k) - f3obj->vel->getdata_z(i-1, j, k)) / (2.0f * h) );
+				float zz_c = ( (f3obj->vel->getdata_y(i+1, j, k) - f3obj->vel->getdata_y(i-1, j, k)) / (2.0f * h) ) - ( (f3obj->vel->getdata_x(i, j+1, k) - f3obj->vel->getdata_x(i, j-1, k)) / (2.0f * h) );
 				vec3<float> curl_v(xx_c, yy_c, zz_c);
 				curl->setdata(curl_v, i, j, k);
 				curl_mag->setdata(vec3<float>(xx_c, yy_c, zz_c).length(), i, j, k); // PreCalc Curl Mag. 
@@ -816,7 +816,7 @@ void fluidsolver_3::vorticty_confine()
 		}
 	}
 
-	// Calculate Vorticty Direction From Curl Gradient, Cross and Apply Vortex Confinement Force - 
+	// Calculate Vorticty Direction From Curl Length Gradient, Cross and Apply Vortex Confinement Force - 
 	for (int k = 1; k <= N_dim; k++)
 	{
 		for (int j = 1; j <= N_dim; j++)
@@ -825,9 +825,13 @@ void fluidsolver_3::vorticty_confine()
 			{
 				vec3<float> curl_v = curl->getdata(i, j, k);
 				// Curl Magnitude - Gradient (Vorticity Direction)
-				float xx_g = curl_mag->getdata(i + 1, j, k) - curl_mag->getdata(i - 1, j, k) / (2.0f * h);
-				float yy_g = curl_mag->getdata(i, j + 1, k) - curl_mag->getdata(i, j - 1, k) / (2.0f * h);
-				float zz_g = curl_mag->getdata(i, j, k + 1) - curl_mag->getdata(i, j, k - 1) / (2.0f * h);
+				//float xx_g = (std::fabsf(curl_mag->getdata(i + 1, j, k)) - std::fabsf(curl_mag->getdata(i - 1, j, k))) / (2.0f * h);
+				//float yy_g = (std::fabsf(curl_mag->getdata(i, j + 1, k)) - std::fabsf(curl_mag->getdata(i, j - 1, k))) / (2.0f * h);
+				//float zz_g = (std::fabsf(curl_mag->getdata(i, j, k + 1)) - std::fabsf(curl_mag->getdata(i, j, k - 1))) / (2.0f * h);
+				float xx_g = (curl_mag->getdata(i + 1, j, k) - curl_mag->getdata(i - 1, j, k)) / (2.0f * h);
+				float yy_g = (curl_mag->getdata(i, j + 1, k) - curl_mag->getdata(i, j - 1, k)) / (2.0f * h);
+				float zz_g = (curl_mag->getdata(i, j, k + 1) - curl_mag->getdata(i, j, k - 1)) / (2.0f * h);
+
 				// Normalize with CharactiersticValue (h * dt).
 				vec3<float> vort_v(xx_g, yy_g, zz_g); float l = vort_v.length();
 				float xx_n = vort_v.x / l + (h * dt);
@@ -839,14 +843,11 @@ void fluidsolver_3::vorticty_confine()
 
 				// Confine Vector Cross - 
 				vec3<float> curl_vn = curl_v; curl_vn.normalize();
-				vec3<float> conf_v = vec3<float>::cross(vort_vn, curl_v); // To Normalize Curl or not? 
+				vec3<float> conf_v = vec3<float>::cross(vort_vn, curl_v); // To Normalize Curl or not? Nope. 
 
 				// Integrate to Velocity Field. 
-				//conf_v *= Parms.p_vortConfine_Str * h; 
-				conf_v *= 5.0f * h;
+				conf_v *= Parms.p_vortConfine_Str * h; 
 				f3obj->integrate_force(conf_v, dt, i, j, k);
-				//f3obj->integrate_force(curl_vn, dt, i, j, k);
-				//f3obj->add_velocity(conf_v, i, j, k);	
 			}
 		}
 	}
