@@ -2,6 +2,7 @@
 
 ![Demo GIF - Updated Feb 12th](gif_demo.gif) ![Demo GIF - Updated Feb 14th](gif_demo_bb.gif)
 
+Note this project is been re-factored into a CPU + GPU Based Realtime Eulerian Fluid Simulation Project, i'm working on (Fall 2020). Keeping this for memories sake. 
 
 This is a 3D Implementation of Jos Stams famous paper *Stable Fluids Paper [Stable Fluids](https://d2f99xq7vri1nk.cloudfront.net/legacy_app_files/pdf/ns.pdf "StableFluidsPaper") [1]* on the CPU.
 Implemented in C++ in an OOP Framework style, with OpenGL currently the only implemented Graphics API, For Ray Marching the resulting 3D Density Grid. 
@@ -14,7 +15,7 @@ iterative linear solvers to compute the pressure grid. While the Jacobi method c
 result in much slower convergence than the Gauss-Seidel method, espeically when using Successive Over Relaxation which increases convergence simmilar to the
 Conjugate Gradient Method, because of its successive displacements been applied within each solve iteration, thus its favoured as the default pressure solver.
 
-I Chose to implement my own templated vector and matrix classes oppose to using GLM. These are been further refined. The Project as a whole has a long way to go.
+I Chose to implement my own templated vector and matrix classes oppose to using GLM. These are been further refined. 
 
 The Application/Solve and Render Loop is currently embedded as part of the `fluidsolver_3` class itself, within the `fluidsolver_3::solve_step()` member function.
 
@@ -22,18 +23,15 @@ The Application/Solve and Render Loop is currently embedded as part of the `flui
 
 - [x] MacCormack Advection 
 - [x] Vorticity Confinement
-- [ ] Integrate TBB
-- [ ] SIMD Instructions
-- [ ] IM-GUI
+- [x] OpenMP Multithreading
 - [ ] RayMarcher Refactor
 
-## Dependencies 
+## Dependencies (See "thirdpaty_License.md")
 * GLFW - OpenGL Window and Context Creation.
 * GLEW - OpenGL Extensions Loading/Wangiling.
 
 ## Building ##
-CMake Build System is planned, for now relies on Visual Studio 2017+ (vc141). Libaries of GLFW and GLEW are statically Linked to the application as of now. 
-Tested on Windows 7 and Windows 10. Linux Support coming soon. 
+Currently uses shipped Visual Studio 2017 (vc141) Solution. Libaries of GLFW and GLEW are statically Linked to the application as of now. Tested on Windows 7 and Windows 10. 
 
 ## Use Case - Setup Example ##
 ````C++
