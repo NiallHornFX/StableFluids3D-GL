@@ -1,4 +1,4 @@
-# Stable Fluids 3D - Fluid Solver - Work In Progress !
+# Stable Fluids 3D - (CPU) Fluid Solver 
 
 ![Demo GIF - Updated Feb 12th](gif_demo.gif) ![Demo GIF - Updated Feb 14th](gif_demo_bb.gif)
 
