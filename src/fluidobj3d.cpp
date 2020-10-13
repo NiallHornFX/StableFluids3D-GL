@@ -103,20 +103,20 @@ void fluidobj_3d::implicit_sphere_source(float dd, const vec3<float> &vv, const 
 	float surf_isothresh = 0.01f; 
 
 	#pragma omp parallel for
-	for (int k = 1; k <= z_s; k++)
+    for (std::size_t k = 1; k <= z_s; k++)
 	{
 		#pragma omp parallel for
-		for (int j = 1; j <= y_s; j++)
+        for (std::size_t j = 1; j <= y_s; j++)
 		{
 			#pragma omp parallel for
-			for (int i = 1; i <= x_s; i++)
+            for (std::size_t i = 1; i <= x_s; i++)
 			{
 				// Implicit Sphere/sphere Function: (X-u)^2 + (Y-v)^2 + (Z-w)^2 - r . >= 0 <= Thresh == Surface. > Thresh = Exterior. < 0 = Interior. Cells. 
 				vec3<float> cell_gridSpace( float((i * h) - offset.x), float((j * h) - offset.y), float((k * h) - offset.z)); // Index 0-N to Grid Space 0-1. 
 				float sphere_func = ((cell_gridSpace.x * cell_gridSpace.x) + (cell_gridSpace.y * cell_gridSpace.y) + (cell_gridSpace.z * cell_gridSpace.z)) - rad;
 
 				// INSIDE Cells Sourcing - 
-				if (sphere_func < 0.0f)
+                if (sphere_func < surf_isothresh)
 				{
 					add_density(dd, i, j, k);
 					add_velocity(vv, i, j, k);

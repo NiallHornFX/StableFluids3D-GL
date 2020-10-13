@@ -58,7 +58,7 @@ public:
 	std::size_t x_s, y_s, z_s, e_s, t_s; // X Size, Y Size, Z Size, Edge Size, Total Size. 
 private:
 
-	// SCALAR GRIDS \\
+    // SCALAR GRIDS
 
 	// Scalar Grid - Density
 	grid3_scalar<float> *prev_dens;
@@ -77,7 +77,7 @@ private:
 	// Scalar Grid - Collide (Marker)
 	grid3_scalar<float> *col;
 
-	// VECTOR GRIDS \\
+    // VECTOR GRIDS
 
 	// Vector Grid - Velocity
 	grid3_vector<vec3<float>> *prev_vel;
@@ -87,7 +87,7 @@ private:
 	grid3_vector<vec3<float>> *vc;
 	grid3_vector<vec3<float>> *curl;
 
-	// DEBUG GRIDS \\ 
+    // DEBUG GRIDS
 
 	// Grids for Rendering Debugging Purposes 
 	grid3_vector<vec3<float>> *preproj_vel;  

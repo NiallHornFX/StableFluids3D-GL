@@ -3,6 +3,8 @@
 
 extern const double PI;
 
+#include<cmath>
+
 template <class T>
 class vec2
 {
@@ -50,15 +52,14 @@ public:
 };
 
 
-// vec2 Implementation \\
-
-// _vec2 Math Operations \\
+// vec2 Implementation
+// _vec2 Math Operations
 
 // length = Sqrt((this->x * this->x) + (this->y * this->y))
 template <class T>
 inline float vec2<T>::length() const
 {
-	return std::sqrtf(std::powf(x, 2.0) + std::powf(y, 2.0));
+    return sqrtf(::powf(x, 2.0) + powf(y, 2.0));
 }
 
 // vec2 Dot Product 
@@ -72,7 +73,7 @@ inline float vec2<T>::dot(const vec2 &b) const
 template <class T>
 inline float vec2<T>::operator*(const vec2 &b) const
 {
-	dot(b);
+    return dot(b);
 }
 
 // vec2 Angle - Angle Between this & b (Radians) 
@@ -82,7 +83,7 @@ inline float vec2<T>::angle(const vec2 &b) const
 {
 	vec2 v1 = *this, v2 = b;
 
-	float theta = std::acosf((v1.normalize()).dot(v2.normalize()));
+    float theta = acosf((v1.normalize()).dot(v2.normalize()));
 	return theta;
 }
 
@@ -108,7 +109,7 @@ inline vec2<T>& vec2<T>::clear()
 }
 
 
-// _LHS vec2 Operand overloads \\
+// _LHS vec2 Operand overloads
 
 // Vector Additon and Subtraction with LHS and RHS Vector. Return new resulting vec2. 
 // v3 = this + v2
@@ -132,7 +133,7 @@ inline vec2<T> vec2<T>::operator-(const vec2 &b) const
 }
 
 
-// _LHS vec2<T> RHS <T> Scalar,Vec2 --> Return *this modified vec2<T> \\
+// _LHS vec2<T> RHS <T> Scalar,Vec2 --> Return *this modified vec2<T>
 
 // vec2 Addition by Scalar or vec2
 // this->x += scalar, this->y += scalar ---> *this
@@ -188,24 +189,24 @@ vec2<T>& vec2<T>::operator/=(const vec2 &b)
 	return *this;
 }
 
-// Static vec2 (Utility) Member Functions \\
+// Static vec2 (Utility) Member Functions
 
 // Degrees to Radians
 template <class T>
-static inline float vec2<T>::degtoRad(float deg)
+inline float vec2<T>::degtoRad(float deg)
 {
 	return (float)deg * (PI / 180.0f);
 }
 
 // Radians to Degrees 
 template <class T>
-static inline float vec2<T>::radtoDeg(float rad)
+inline float vec2<T>::radtoDeg(float rad)
 {
 	return (float)rad * (180.0f / PI);
 }
 
 
-// _RHS vec2 Operand Global Operator Overload Free Functions \\ 
+// _RHS vec2 Operand Global Operator Overload Free Functions
 
 // s1 * v1 ---> v1;
 template <class T>

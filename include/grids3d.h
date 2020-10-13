@@ -60,12 +60,12 @@ public:
 	virtual T* getdataarray() const;
 
 	// Indexers 
-	__forceinline int idx_3Dto1D(int i, int j, int k) const;
-	__forceinline vec3<int> idx_1Dto3D(int k) const;
+    inline int idx_3Dto1D(int i, int j, int k) const;
+    inline vec3<int> idx_1Dto3D(int k) const;
 
 	// Static (Index,Grid) Space Convertersion 
-	__forceinline static vec3<float> idx_indexToGrid(int i, int j, int k, std::size_t N_dim);
-	__forceinline static vec3<float> idx_gridToIndex(float x, float y, float z, std::size_t N_dim);
+    inline static vec3<float> idx_indexToGrid(int i, int j, int k, std::size_t N_dim);
+    inline static vec3<float> idx_gridToIndex(float x, float y, float z, std::size_t N_dim);
 
 protected:
 	std::vector<T> grid_data;
@@ -138,7 +138,7 @@ public:
 
 // !TO-DO Move Inlined Defs to grid3d.inl and incl. 
 
-// INLINE GRID MEMBER FUNTIONS (Grid_3) \\ 
+// INLINE GRID MEMBER FUNTIONS (Grid_3)
 
 // (Forced) Inline Indexing - 
 template <class T>

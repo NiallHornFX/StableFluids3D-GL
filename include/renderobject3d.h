@@ -1,13 +1,20 @@
 #ifndef RENDEROBJECT_H
 #define RENDEROBJECT_H
 
+/*
 // Prevent Glew and GLFW multiple inclusion/implmentation defintion. 
 #ifndef GLEW_STATIC
 #define GLEW_STATIC  
 #include <GLEW\glew.h>
 #include <GLFW\glfw3.h>
-#endif 
+#endif
+*/
 
+// Vendor Headers
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+
+// Project Headers
 #include "grids3d.h"
 
 // Forward Decls - 

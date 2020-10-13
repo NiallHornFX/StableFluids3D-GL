@@ -2,9 +2,11 @@
 #define MAT_3_H
 
 #include <iostream>
+#include <cstring>
 
 #include "vec3d.h"
 #include "vec2d.h"
+
 
 /*
 	Matrix 4x4 Implementation, Template and or Inline Def in Header. 
@@ -36,14 +38,14 @@ public:
 	// Copy Ctor
 	matrix_4x4(const matrix_4x4 &copy)
 	{
-		memcpy(comp, copy.comp, (sizeof(T) * m_size));
+        std::memcpy(comp, copy.comp, (sizeof(T) * m_size));
 	}
 
 	// Copy Assign 
 	matrix_4x4& operator= (const matrix_4x4 &copy)
 	{
 		if (&copy == this) return *this;
-		memcpy(comp, copy.comp, (sizeof(T) * m_size));
+        std::memcpy(comp, copy.comp, (sizeof(T) * m_size));
 	}
 
 	~matrix_4x4() {};
@@ -97,11 +99,11 @@ public:
 	const char* label = nullptr; 
 };
 
-// ------------------------------------------------- \\
+// -------------------------------------------------
 
-// Templates/Inline MFs Implemenation \\
+// Templates/Inline MFs Implemenation
 
-// matrix_4x4 Utils \\
+// matrix_4x4 Utils
 
 template <class T>
 inline void matrix_4x4<T>::clear()
@@ -162,7 +164,7 @@ inline void matrix_4x4<T>::print_mat()
 	std::cout << "\nDEBUG::MATRIX OUPUT END. \n--------------------\n";
 }
 
-// matrix_4x4 Math Operators \\
+// matrix_4x4 Math Operators
 
 // Matrix C = A Operator B. (Dont Modifiy Input Matrices). 
 template <class T>

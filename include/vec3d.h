@@ -63,15 +63,15 @@ public:
 };
 
 
-// vec3 Implementation \\
+// vec3 Implementation
 
-// _vec3 Math Operations \\
+// _vec3 Math Operations
 
 // length = Sqrt((this->x * this->x) + (this->y * this->y) + (this->z * this->z))
 template <class T>
 inline float vec3<T>::length() const
 {
-	return std::sqrtf(std::powf(x, 2.0) + std::powf(y, 2.0) + std::powf(z, 2.0));
+    return sqrtf(powf(x, 2.0) + powf(y, 2.0) + powf(z, 2.0));
 }
 
 // vec3 Dot Product 
@@ -85,7 +85,7 @@ inline float vec3<T>::dot(const vec3 &b) const
 template <class T>
 inline float vec3<T>::operator*(const vec3 &b) const
 {
-	dot(b);
+    return dot(b);
 }
 
 // vec3 Angle - Angle Between this & b (Radians) 
@@ -95,7 +95,7 @@ inline float vec3<T>::angle(const vec3 &b) const
 {
 	vec3 v1 = *this, v2 = b; 
 
-	float theta = std::acosf((v1.normalize()).dot(v2.normalize())); 
+    float theta = acosf((v1.normalize()).dot(v2.normalize()));
 	return theta;
 }
 
@@ -121,7 +121,7 @@ inline vec3<T>& vec3<T>::clear()
 }
 
 
-// _LHS vec3 Operand overloads \\
+// _LHS vec3 Operand overloads
 
 // Vector Additon and Subtraction with LHS and RHS Vector. Return new resulting vec3. 
 // v3 = this + v2
@@ -154,7 +154,7 @@ inline vec3<T> vec3<T>::operator/ (T scalar) const
 	return vec3<T>(t.x / scalar, t.y / scalar, t.z / scalar); 
 }
 
-// _LHS vec3<T> RHS <T> Scalar,Vec3 --> Return *this modified vec3<T> \\
+// _LHS vec3<T> RHS <T> Scalar,Vec3 --> Return *this modified vec3<T>
 
 // vec3 Addition by Scalar or vec3
 // this->x += scalar, this->y += scalar, this->z += scalar ---> *this
@@ -220,7 +220,7 @@ inline vec3<T> vec3<T>::cross(const vec3 &a, const vec3 &b)
 	return vec3<T>(cx, cy, cz);
 }
 
-// Static vec3 (Utility) Member Functions \\
+// Static vec3 (Utility) Member Functions
 
 // Degrees to Radians
 template <class T>
@@ -237,7 +237,7 @@ inline float vec3<T>::radtoDeg(float rad)
 }
 
 
-// _RHS vec3 Operand Global Operator Overload Free Functions \\ 
+// _RHS vec3 Operand Global Operator Overload Free Functions
 
 // s1 * v1 ---> v1;
 template <class T>

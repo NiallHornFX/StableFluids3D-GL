@@ -6,7 +6,7 @@
 
 extern short verbose;
 
-// Render Context Creation Classes Implementation \\
+// Render Context Creation Classes Implementation
 
 // Render Context ABC Constructor
 render_context::render_context(int sizex, int sizey)

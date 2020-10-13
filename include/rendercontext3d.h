@@ -1,9 +1,9 @@
 #ifndef RENDERCONTEXT_H
 #define RENDERCONTEXT_H
 
-#define GLEW_STATIC 
-#include <GLEW\glew.h>
-#include <GLFW\glfw3.h>
+// Vendor Headers
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
 
 // Abstract Base Class Interface for Each Specfic API To Implement Render Context Setup. 
 class render_context

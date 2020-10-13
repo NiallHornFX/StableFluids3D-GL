@@ -5,8 +5,8 @@
 #include "fluidobj3d.h"
 #include "renderobject3d.h" 
 
-// Vendor Headers - 
-#include <GLFW\glfw3.h>
+// Vendor Headers
+#include <GLFW/glfw3.h>
 
 // Std Headers 
 #include <functional> 
@@ -26,7 +26,7 @@ using avx256 = __m256;
 // SIMD - Free Function Utilties -
 
 // SIMD - 8 Float (m256) Addition Together. 
-__forceinline float simd256_hAdd(__m256 a) 
+inline float simd256_hAdd(__m256 a)
 {
 	__m256 t1 = _mm256_hadd_ps(a, a);
 	__m256 t2 = _mm256_hadd_ps(t1, t1);
@@ -36,7 +36,7 @@ __forceinline float simd256_hAdd(__m256 a)
 }
 
 // SIMD - 4 Float (m128) Addition Together. 
-__forceinline float simd128_hAdd(__m128 a)
+inline float simd128_hAdd(__m128 a)
 {
 	__m128 t1 = _mm_hadd_ps(a, a);
 	__m128 t2 = _mm_hadd_ps(t1, t1);
@@ -168,7 +168,7 @@ protected:
 	// Projection - Jacobi Solve (Multi-Threaded)
 	void project_jacobi(int iter); 
 
-	// DISSIPATION \\ 
+    // DISSIPATION \\ -
 	void dissipate(grid3_scalar<float> *grid, float disp_mult, float dt);
 	void dissipate(grid3_vector<vec3<float>> *grid, float disp_mult, float dt);
 
@@ -195,13 +195,13 @@ protected:
 	// Misc Uitl - 
 	void sphere_rad_test();
 
-	// STATIC UTILITY \\ 
-	__forceinline static float fitRange(float val, float a_min, float a_max, float b_min, float b_max);
-	__forceinline static float clamp(float val, float min, float max);
-	__forceinline static float lerp(float val_0, float val_1, float bias);
-	__forceinline static float cosinterp(float val_0, float val_1, float bias);
-	__forceinline static vec3<float> vec_clamp(const vec3<float> &v_min, const vec3<float> &v_max, const vec3<float> v);
-	__forceinline static vec3<float> vec_lerp(const vec3<float> &v_a, const vec3<float> &v_b, float bias);
+    // STATIC UTILITY
+    inline static float fitRange(float val, float a_min, float a_max, float b_min, float b_max);
+    inline static float clamp(float val, float min, float max);
+    inline static float lerp(float val_0, float val_1, float bias);
+    inline static float cosinterp(float val_0, float val_1, float bias);
+    inline static vec3<float> vec_clamp(const vec3<float> &v_min, const vec3<float> &v_max, const vec3<float> v);
+    inline static vec3<float> vec_lerp(const vec3<float> &v_a, const vec3<float> &v_b, float bias);
 
 
 	// Delete Temp Grids
@@ -257,7 +257,7 @@ float fluidsolver_3::clamp(float val, float min, float max)
 }
 
 // FIT RANGE: Value From Some Range A to Some New Range B (Eg 0 to 1, to -1 to 1 0.5 becomes 0)
-float fluidsolver_3::fitRange(float val, float a_min, float a_max, float b_min, float b_max)
+inline float fluidsolver_3::fitRange(float val, float a_min, float a_max, float b_min, float b_max)
 {
 	return b_min + (val - a_min)*(b_max - b_min) / (a_max - a_min);
 }
@@ -265,7 +265,7 @@ float fluidsolver_3::fitRange(float val, float a_min, float a_max, float b_min, 
 // COSINTERP 1D Cosine Interpolation. 
 float fluidsolver_3::cosinterp(float val_0, float val_1, float bias)
 {
-	float mu = (1.0f - std::cos(bias*PI)) / 2.0f;
+    float mu = (1.0f - std::cos(bias*PI)) / 2.0f;
 	return (float)(val_0*(1.0f - mu) + val_1 * mu);
 }
 

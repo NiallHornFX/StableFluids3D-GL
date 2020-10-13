@@ -9,6 +9,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <cstring>
 #include <sstream>
 #include <cassert>
 
@@ -118,7 +119,7 @@ int renderobject_3D_OGL::vertex_setup()
 		1,2,3  // Tri 2
 	};
 
-	// Cube Setup \\
+    // Cube Setup
 
 	glGenVertexArrays(1, &Cube_VAO); glGenBuffers(1, &Cube_VBO);
 	glBindVertexArray(Cube_VAO);
@@ -134,7 +135,7 @@ int renderobject_3D_OGL::vertex_setup()
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-	// Cube Edge Setup \\
+    // Cube Edge Setup
 
 	glGenVertexArrays(1, &Cube_Edge_VAO); glGenBuffers(1, &Cube_Edge_VBO);
 	glBindVertexArray(Cube_Edge_VAO);
@@ -148,7 +149,7 @@ int renderobject_3D_OGL::vertex_setup()
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-	// Full Screen Quad Setup \\ 
+    // Full Screen Quad Setup
 
 	glGenVertexArrays(1, &Quad_VAO);
 	glGenBuffers(1, &Quad_VBO);
@@ -194,7 +195,7 @@ void renderobject_3D_OGL::shader_checkCompile(const char *type, int shader)
 	char err_log_v[len], err_log_f[len];
 
 	// Vertex Shader Check - 
-	if (strcmp(type, "vertex") == 0)
+    if (std::strcmp(type, "vertex") == 0)
 	{
 		GLuint cur_vert_shader;
 		if (shader == 0) { cur_vert_shader = cube_vert_shader; } else if (shader == 1) { cur_vert_shader = quad_vert_shader; }
@@ -213,7 +214,7 @@ void renderobject_3D_OGL::shader_checkCompile(const char *type, int shader)
 	}
 	
 	// Fragment Shader Check - 
-	if (strcmp(type, "fragment") == 0)
+    if (std::strcmp(type, "fragment") == 0)
 	{
 		GLuint cur_frag_shader;
 		if (shader == 0) { cur_frag_shader = cube_frag_shader; } else if (shader == 1) { cur_frag_shader = quad_frag_shader; }
@@ -282,7 +283,7 @@ int renderobject_3D_OGL::shader_loader(const char *vert_path, const char *frag_p
 
 		if (vert_shader_load.is_open() || frag_shader_load.is_open()) std::cerr << "ERR::Shader Closed Incorrectly \n";
 	}
-	catch (std::ifstream::failure err)
+    catch (std::ifstream::failure &err)
 	{
 		std::cerr << "ERR::Shader Load Err: " << err.what() << "\n";
 		std::terminate();
@@ -346,8 +347,8 @@ void renderobject_3D_OGL::shader_pipe(fluidobj_3d *f3obj)
 	// Shader Pipe is Passing to Quad Shader Only.
 	glUseProgram(quad_shader_prog);
 
-	// GRIDS-->TEXTURES-->SAMPLERS (Per Step) \\
-	// TEXTURE - DENSITY \\
+    // GRIDS-->TEXTURES-->SAMPLERS (Per Step)
+    // TEXTURE - DENSITY
 
 	glBindTexture(GL_TEXTURE_3D, 0);
 	glActiveTexture(GL_TEXTURE2);
@@ -408,7 +409,7 @@ void renderobject_3D_OGL::get_input(const vec2<float> &m)
 // RenderObject_3D_OGL Cube Setup - Setup Cube Transforms (Initalize, and then cube_update() in RLoop?)
 void renderobject_3D_OGL::cube_setup()
 {
-	// Inital Cube Transform Setup to pass to GPU \\ 
+    // Inital Cube Transform Setup to pass to GPU
 
 	// Model-World Matrix - 
 	cube_model.rotate(vec3<float>(0.0f, 1.0f, 0.0f), 0.0f);
@@ -621,7 +622,7 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 			// PRE OP 
 			get_FPS(0);
 
-			// CUBE \\ 
+            // CUBE
 			cube_update(); // Transforms
 			glUseProgram(cube_shader_prog);
 
@@ -672,7 +673,7 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Quad_EBO);
 			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-			// POST OP \\ 
+            // POST OP
 
 			// Clear Render State. 
 			glUseProgram(0);
@@ -692,7 +693,7 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 		calc_FPS();
 		update_title();
 
-		// CUBE \\ 
+        // CUBE
 		cube_update(); // Transforms
 		glUseProgram(cube_shader_prog);
 
@@ -750,7 +751,7 @@ void renderobject_3D_OGL::render_loop(rend_state rs)
 		glBindVertexArray(Cube_Edge_VAO);
 		glDrawArrays(GL_LINES, 0, 24);
 
-		// POST OP \\ 
+        // POST OP
 
 		// Clear Render State. 
 		glUseProgram(0);

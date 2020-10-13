@@ -71,11 +71,12 @@ fluidsolver_3::~fluidsolver_3()
 
 void fluidsolver_3::del_pressure()
 {
-	// If Initalized, or not set to nullptr, then delete what there pointing to. 
-	if (pressure || pressure != nullptr)
+    /*
+    // If Initalized, or not set to nullptr, then delete what there pointing to.
+    if (pressure != nullptr)
 	{
-		delete pressure;
-		pressure = nullptr;
+        delete pressure;
+        pressure = nullptr;
 	}
 
 	// if P_useJacobi ...?
@@ -84,6 +85,7 @@ void fluidsolver_3::del_pressure()
 		delete pressure_1;
 		pressure_1 = nullptr;
 	}
+    */
 }
 
 void fluidsolver_3::del_divergence()
@@ -450,7 +452,7 @@ void fluidsolver_3::sphere_bounds_eval(grid3_vector<vec3<float>> *grid, float co
    ==================================================== */
 // Gauss-Seidel Based Diffusion, not Thread Safe Possible Race Condtion of Neighbour Cells own diffusion.
 
-// ** DIFFUSION-SCALAR-FIELD-LINSOLVE IMPLEMENTATION ** \\ 
+// ** DIFFUSION-SCALAR-FIELD-LINSOLVE IMPLEMENTATION **
 
 void fluidsolver_3::diffuse(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1, float diff, ushort iter)
 {
@@ -489,7 +491,7 @@ void fluidsolver_3::diffuse(grid3_scalar<float> *grid_0, grid3_scalar<float> *gr
 	}
 }
 
-// ** DIFFUSION-VECTOR-FIELD-LINSOLVE IMPLEMENTATION ** \\ 
+// ** DIFFUSION-VECTOR-FIELD-LINSOLVE IMPLEMENTATION **
 
 void fluidsolver_3::diffuse(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3<float>> *grid_1, float diff, ushort iter)
 {
@@ -550,7 +552,7 @@ void fluidsolver_3::diffuse(grid3_vector<vec3<float>> *grid_0, grid3_vector<vec3
 	ADVECTION
    ==================================================== */
 
-// SEMI LAGRANGIAN - SINGLE STEP (EULER) ADVECTION \\
+// SEMI LAGRANGIAN - SINGLE STEP (EULER) ADVECTION
 
 // Semi Lagrangian Advection - Single Step (Euler) - Scalar Overload - 
 void fluidsolver_3::advect_sl(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1)
@@ -599,13 +601,13 @@ void fluidsolver_3::advect_sl(grid3_vector<vec3<float>> *grid_0, grid3_vector<ve
 {
 	float h_csize = (1.0f / (float)N_dim) * 0.5f; // Half Size of Single Cell (in 0.0-1.0 GS) for ethierside of GS clamp.
 
-	#pragma omp for
+    //#pragma omp for
 	for (int k = 1; k <= N_dim; k++)
 	{
-		#pragma omp for
+        //#pragma omp for
 		for (int j = 1; j <= N_dim; j++)
 		{
-			#pragma omp parallel for
+            //#pragma omp parallel for
 			for (int i = 1; i <= N_dim; i++)
 			{
 				// Grid0(prev) Current Cell (i,j,k) (phi0)
@@ -639,7 +641,7 @@ void fluidsolver_3::advect_sl(grid3_vector<vec3<float>> *grid_0, grid3_vector<ve
 }
 
 
-// MACCORMACK - (EULER) ADVECTION \\
+// MACCORMACK - (EULER) ADVECTION
 
 // MacCormack (Euler Per Trace (Forwards,Backwards)) Advection - SCALAR FIELD Overload - 
 void fluidsolver_3::advect_mc(grid3_scalar<float> *grid_0, grid3_scalar<float> *grid_1)
@@ -716,13 +718,13 @@ void fluidsolver_3::advect_mc(grid3_vector<vec3<float>> *grid_0, grid3_vector<ve
 {
 	float h_csize = (1.0f / (float)N_dim) * 0.5f; // Half Size of Single Cell (in 0.0-1.0 GS) for ethierside of GS clamp.
 
-	#pragma omp for
+    //#pragma omp for
 	for (int k = 1; k <= N_dim; k++)
 	{
-		#pragma omp for
+        //#pragma omp for
 		for (int j = 1; j <= N_dim; j++)
 		{
-			#pragma omp parallel for
+            //#pragma omp parallel for
 			for (int i = 1; i <= N_dim; i++)
 			{
 				vec3<float> phi0, phi0prime, phi1, phi1prime;
@@ -883,13 +885,13 @@ void fluidsolver_3::project(int iter)
 	// DIVERGENCE FIELD CALC \\ -
 
 	// Thread Safe, Per Cell Operations. 
-	#pragma omp for
+    //#pragma omp for
 	for (int k = 1; k <= N_dim; k++)
 	{
-		#pragma omp for
+        //#pragma omp for
 		for (int j = 1; j <= N_dim; j++)
 		{
-			#pragma omp parallel for
+            //#pragma omp parallel for
 			for (int i = 1; i <= N_dim; i++)
 			{
 				// Init to 0 
@@ -914,7 +916,7 @@ void fluidsolver_3::project(int iter)
 	sphere_bounds_eval(pressure, spherebound_coliso);
 	#endif
 
-	// PRESSURE FIELD LINEAR SOLVE \\ 
+    // PRESSURE FIELD LINEAR SOLVE
 
 	for (int l = 0; l < iter; l++)
 	{
@@ -954,7 +956,7 @@ void fluidsolver_3::project(int iter)
 					if (l == iter - 1)
 					{
 						// Check Error Value of Resulting Pressure Solve Convergence (b-Ax) wip -
-						error += std::fabsf(divergence->getdata(i, j, k)) - std::fabsf(pressure->getdata(i, j, k));
+                        error += fabsf(divergence->getdata(i, j, k)) - fabsf(pressure->getdata(i, j, k));
 					}
 				}
 			}
@@ -973,13 +975,13 @@ void fluidsolver_3::project(int iter)
 		if (l == iter - 1)
 		{
 			// Average Total Error (Over num of Cells) and Print. 
-			total_error = std::fabsf(error / (float(pow(N_dim, 2))));
-			std::cout << "DBG::PRESSURE SOLVER ERROR = " << std::scientific << std::fabsf(total_error) << "\n";
+            total_error = fabsf(error / (float(pow(N_dim, 2))));
+            std::cout << "DBG::PRESSURE SOLVER ERROR = " << std::scientific << fabsf(total_error) << "\n";
 		}
 
 	}
 	
-	// SUBTRACT PRESSURE GRADEINT FROM VELOCITY FIELD \\  
+    // SUBTRACT PRESSURE GRADEINT FROM VELOCITY FIELD
 
 	// Thread Safe, Per Cell Operations. 
 	#pragma omp parallel for
@@ -1075,7 +1077,7 @@ void fluidsolver_3::project_jacobi(int iter)
 	sphere_bounds_eval(pressure, spherebound_coliso);
 	#endif
 
-	// PRESSURE FIELD LINEAR SOLVE \\ 
+    // PRESSURE FIELD LINEAR SOLVE
 	for (int l = 0; l < iter; l++)
 	{
 		#pragma omp parallel for
@@ -1470,7 +1472,7 @@ void fluidsolver_3::dissipate(grid3_scalar<float> *grid, float disp_mult, float 
 	disp_mult = clamp(disp_mult, 0.0f, 1.0f); 
 
 	#pragma omp parallel for
-	for (int i = 0; i <= total_size; i++)
+    for (std::size_t i = 0; i <= total_size; i++)
 	{
 		// Don't Mult By dt for now. 
 		float cur_scl = grid->getdata(i);
@@ -1495,13 +1497,13 @@ void fluidsolver_3::dissipate(grid3_vector<vec3<float>> *grid, float disp_mult, 
 
 void fluidsolver_3::add_velocity(const vec3<float> &vel)
 {
-	#pragma omp for
+    //#pragma omp for collapse
 	for (int k = 1; k <= N_dim; k++)
 	{
-		#pragma omp for
+        //#pragma omp for
 		for (int j = 1; j <= N_dim; j++)
 		{
-			#pragma omp parallel for
+            //#pragma omp parallel for
 			for (int i = 1; i <= N_dim; i++)
 			{
 				// Only Within Emission Sphere? Add alt ImpSource with MouseVel passed from solver..

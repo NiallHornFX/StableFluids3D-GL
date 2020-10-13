@@ -18,9 +18,8 @@
 #include <memory>
 
 // Vendor Headers
-#define GLEW_STATIC 
-#include <GLEW\glew.h>
-#include <GLFW\glfw3.h>
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
 
 // Project Headers 
 #include "vec3d.h"
@@ -50,7 +49,7 @@ int win_size_xy = 512;
 int const solve_steps = 1000; 
 float const timestep = 1.0f / 60.0f; 
 
-// ! DEBUGGING ! \\
+// ! DEBUGGING !
 // OPENMP DISABLED
 
 int main()
@@ -68,7 +67,7 @@ int main()
 	// Create FluidSolver Instance,  Pass FluidObj Pointer to It. 
 	fluidsolver_3 test_fluidsolver (&test_fluidobj, timestep);
 
-	// Inital Paramters - \\
+    // Inital Paramters -
 
 	// Diffusion - 
 	test_fluidsolver.Parms.p_Do_Dens_Diff = false; 
@@ -94,7 +93,7 @@ int main()
 	test_fluidsolver.Parms.p_useVorticity = true; 
 	test_fluidsolver.Parms.p_vortConfine_Str = 7.5f; 
 
-	// Pass Render Context and Begin Sim/Render Loop \\ 
+    // Pass Render Context and Begin Sim/Render Loop
 
 	// Pass Window Pointer from RenderContext - 
 	test_fluidsolver.set_window(render_c.get_window());

@@ -11,16 +11,17 @@
 #include <string>
 #include <cassert>
 
+// Ext
 #include <omp.h> 
 
 extern short verbose; // Get Verbose Global from main. 
 
-//----------------------------------------------------------------------\\
+//----------------------------------------------------------------------
 
-// Grid3 ABC Implmentation \\ 
+// Grid3 ABC Implmentation
 
 template <class T>
-grid3<T>::grid3<T>(std::size_t x_s, std::size_t y_s, std::size_t z_s, std::size_t e_s)
+grid3<T>::grid3(std::size_t x_s, std::size_t y_s, std::size_t z_s, std::size_t e_s)
 	: x_size(x_s), y_size(y_s), z_size(z_s), edge_size(e_s)
 {
 	total_size = (x_size + edge_size) * (y_size + edge_size) * (z_size + edge_size);
@@ -37,7 +38,7 @@ grid3<T>::~grid3()
 
 // Grid 3 ABC Virtual Default Implmenetation - 
 
-// Grid_Data - SETTERS \\
+// Grid_Data - SETTERS
 
 template <class T>
 void grid3<T>::setdata(T data, int i)
@@ -120,7 +121,7 @@ T* grid3<T>::getdataarray() const
 // Indexers (NonStatic Inline) & Grid-IDX-Grid Space Converters (Static Inline, implemented in Header). 
 
 
-//----------------------------------------------------------------------\\
+//----------------------------------------------------------------------
 
 /* Grid3_Scalar Implmentation 
 	grid3_scalar shares most implmentation with base grid3 class, apart from implmeneting pure virtual MFs. 
@@ -129,7 +130,7 @@ T* grid3<T>::getdataarray() const
 
 // Inilzation of Base grid3 Class Constructor. No Grid3_Scalar Specfic Members to initalize.
 template <class T>
-grid3_scalar<T>::grid3_scalar<T>(std::size_t x_s, std::size_t y_s, std::size_t z_s, std::size_t e_s)
+grid3_scalar<T>::grid3_scalar(std::size_t x_s, std::size_t y_s, std::size_t z_s, std::size_t e_s)
 	: grid3<T>(x_s, y_s, z_s, e_s) {}
 
 template <class T>
@@ -242,7 +243,7 @@ void grid3_scalar<T>::printinfo() const
 	std::cout << "DEBUG::Grid 2D Scalar " << " Info END. \n \n";
 }
 
-//----------------------------------------------------------------------\\
+//----------------------------------------------------------------------
 
 /*	Grid3_Vector Implmentation 
 	grid3_vector shares some implementations with Base class, adds per component getter/setter MFs, aswell as defining/ovr Pure Virtaul MFs.
@@ -251,7 +252,7 @@ void grid3_scalar<T>::printinfo() const
 
 // Inilzation of Base grid3 Class Constructor. No Grid3_Vector Specfic Members to initalize.
 template <class T>
-grid3_vector<T>::grid3_vector<T>(std::size_t x_s, std::size_t y_s, std::size_t z_s, std::size_t e_s)
+grid3_vector<T>::grid3_vector(std::size_t x_s, std::size_t y_s, std::size_t z_s, std::size_t e_s)
 	: grid3<T>(x_s, y_s, z_s, e_s) {}
 
 template <class T>
@@ -495,7 +496,7 @@ float grid3_vector<T>::getdata_z(int i, int j, int k) const
 }
 
 
-//----------------------------------------------------------------------\\
+//----------------------------------------------------------------------
 
 // Explicit Instations - (Defintion of Templated Classes is Sepreated into this source file).
 
